@@ -41,7 +41,7 @@ def test_row_expansion_functionality():
 
         # Create mock expanded content widget
         expanded_content = Mock(spec=Static)
-        expanded_content.renderable = ""
+        expanded_content.content = ""
         mock_styles = Mock()
         mock_styles.display = "none"
         expanded_content.styles = mock_styles
@@ -145,7 +145,7 @@ def test_row_expansion_with_missing_data():
 
         # Create mock expanded content widget
         expanded_content = Mock(spec=Static)
-        expanded_content.renderable = ""
+        expanded_content.content = ""
         mock_styles = Mock()
         mock_styles.display = "none"
         expanded_content.styles = mock_styles
@@ -211,7 +211,7 @@ def test_row_expansion_with_no_selected_session():
 
         # Create mock expanded content widget
         expanded_content = Mock(spec=Static)
-        expanded_content.renderable = ""
+        expanded_content.content = ""
 
         # Track the content that gets updated
         updated_content = ""
