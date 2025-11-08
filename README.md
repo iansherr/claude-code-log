@@ -393,3 +393,6 @@ uv run claude-code-log
 - figure out minimum Python version and introduce a testing matrix
 - add minimalist theme and make it light + dark; animate gradient background in fancy theme
 - do we need special handling for hooks?
+- make processing parallel, currently we only use 1 CPU (core) and it's slow
+- migrate cache from JSON files to SQLite to make it faster and more versatile for downstream tasks and analytics
+- add more realistic fixtures reproducing the log directory structure for more thorough testing

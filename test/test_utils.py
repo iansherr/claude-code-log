@@ -11,8 +11,18 @@ from claude_code_log.utils import (
     should_skip_message,
     should_use_as_session_starter,
     extract_text_content_length,
+    create_session_preview,
+    is_warmup_only_session,
 )
-from claude_code_log.models import TextContent, ToolUseContent
+from claude_code_log.models import (
+    TextContent,
+    ToolUseContent,
+    UserTranscriptEntry,
+    UserMessage,
+    AssistantTranscriptEntry,
+    AssistantMessage,
+)
+from claude_code_log.patterns import strip_ide_tags
 
 
 class TestSystemMessageDetection:
@@ -361,3 +371,263 @@ class TestEdgeCases:
         # Test with init in the middle of command name
         init_middle = "<command-name>reinit</command-name><command-message>Reinitialize</command-message>"
         assert should_use_as_session_starter(init_middle) is False
+
+
+class TestWarmupMessageFiltering:
+    """Test warmup message filtering in session starters."""
+
+    def test_should_not_use_warmup_as_starter(self):
+        """Test that 'Warmup' messages are filtered out from session starters."""
+        assert should_use_as_session_starter("Warmup") is False
+
+    def test_should_not_use_warmup_with_whitespace_as_starter(self):
+        """Test that 'Warmup' with whitespace is filtered out."""
+        assert should_use_as_session_starter("  Warmup  ") is False
+        assert should_use_as_session_starter("\nWarmup\n") is False
+        assert should_use_as_session_starter("\t Warmup \t") is False
+
+    def test_should_use_warmup_in_sentence_as_starter(self):
+        """Test that messages containing 'Warmup' in a sentence are not filtered."""
+        assert (
+            should_use_as_session_starter("Let's warmup with a simple example") is True
+        )
+        assert should_use_as_session_starter("Warmup exercises are important") is True
+
+    def test_should_not_use_case_sensitive_warmup(self):
+        """Test that warmup filtering is case-sensitive."""
+        # Only exact "Warmup" is filtered, not "warmup" or "WARMUP"
+        assert should_use_as_session_starter("warmup") is True
+        assert should_use_as_session_starter("WARMUP") is True
+        assert should_use_as_session_starter("WarmUp") is True
+
+
+class TestIDETagStripping:
+    """Test IDE tag stripping from preview text."""
+
+    def test_strip_ide_opened_file_tag(self):
+        """Test that <ide_opened_file> tags are stripped."""
+        text = "<ide_opened_file>The user opened the file /path/to/file.py in the IDE.</ide_opened_file>User message here"
+        result = strip_ide_tags(text)
+        assert result == "User message here"
+        assert "<ide_opened_file>" not in result
+
+    def test_strip_ide_selection_tag(self):
+        """Test that <ide_selection> tags are stripped."""
+        text = "<ide_selection>The user selected lines 42 to 46 from /path/to/file.py</ide_selection>Can you help with this code?"
+        result = strip_ide_tags(text)
+        assert result == "Can you help with this code?"
+        assert "<ide_selection>" not in result
+
+    def test_strip_ide_diagnostics_tag(self):
+        """Test that <ide_diagnostics> tags are stripped."""
+        text = '<post-tool-use-hook><ide_diagnostics>[{"severity": "error"}]</ide_diagnostics></post-tool-use-hook>Fix this error please'
+        result = strip_ide_tags(text)
+        assert result == "Fix this error please"
+        assert "<ide_diagnostics>" not in result
+
+    def test_strip_multiple_ide_tags(self):
+        """Test stripping multiple IDE tags from the same text."""
+        text = (
+            "<ide_opened_file>File opened</ide_opened_file>"
+            "<ide_selection>Lines selected</ide_selection>"
+            "Actual user message"
+        )
+        result = strip_ide_tags(text)
+        assert result == "Actual user message"
+        assert "<ide_opened_file>" not in result
+        assert "<ide_selection>" not in result
+
+    def test_strip_ide_tags_with_no_remaining_text(self):
+        """Test stripping IDE tags when there's no other text."""
+        text = "<ide_selection>The user selected some code</ide_selection>"
+        result = strip_ide_tags(text)
+        assert result == ""
+
+    def test_strip_ide_tags_from_text_without_tags(self):
+        """Test that normal text is unchanged when no IDE tags present."""
+        text = "This is a normal message without any IDE tags"
+        result = strip_ide_tags(text)
+        assert result == text
+
+    def test_strip_ide_tags_preserves_whitespace(self):
+        """Test that whitespace in remaining text is preserved."""
+        text = "<ide_selection>Selection info</ide_selection>  \n  Actual message with spacing  "
+        result = strip_ide_tags(text)
+        # strip_ide_tags calls .strip() at the end
+        assert result == "Actual message with spacing"
+
+    def test_create_session_preview_strips_ide_tags(self):
+        """Test that create_session_preview strips IDE tags."""
+        text = "<ide_selection>User selected code</ide_selection>Can you refactor this function?"
+        preview = create_session_preview(text)
+        assert preview == "Can you refactor this function?"
+        assert "<ide_selection>" not in preview
+
+    def test_create_session_preview_handles_ide_tags_and_truncation(self):
+        """Test that IDE tags are stripped before truncation."""
+        # Create a message with IDE tag + long content
+        long_message = "x" * 1100  # Exceeds FIRST_USER_MESSAGE_PREVIEW_LENGTH (1000)
+        text = f"<ide_selection>Selection info</ide_selection>{long_message}"
+        preview = create_session_preview(text)
+
+        # Should strip IDE tag first, then truncate
+        assert "<ide_selection>" not in preview
+        assert preview.endswith("...")
+        assert len(preview) == 1003  # 1000 chars + "..."
+
+    def test_create_session_preview_multiple_ide_tags(self):
+        """Test preview creation with multiple IDE tags in content blocks."""
+        text = (
+            "<ide_opened_file>File: test.py</ide_opened_file>"
+            "<ide_selection>Lines 1-10</ide_selection>"
+            "Please review this code for bugs"
+        )
+        preview = create_session_preview(text)
+        assert preview == "Please review this code for bugs"
+        assert "<ide_opened_file>" not in preview
+        assert "<ide_selection>" not in preview
+
+
+class TestWarmupAndIDETagsCombined:
+    """Test combined warmup + IDE tag scenarios."""
+
+    def test_warmup_with_ide_tag_filtered(self):
+        """Test that warmup messages with IDE tags are still filtered."""
+        text = "<ide_selection>Some selection</ide_selection>Warmup"
+        # First check if it would be used as starter (should be False)
+        clean_text = strip_ide_tags(text)
+        assert should_use_as_session_starter(clean_text) is False
+
+    def test_ide_tag_only_message_not_used_as_starter(self):
+        """Test that IDE-tag-only messages result in empty preview."""
+        text = "<ide_selection>The user selected lines 42 to 46</ide_selection>"
+        preview = create_session_preview(text)
+        assert preview == ""
+        # Empty string is technically valid as a starter, but won't be shown in UI
+        assert should_use_as_session_starter(preview) is True
+
+
+class TestWarmupOnlySessionDetection:
+    """Test detection of warmup-only sessions."""
+
+    def _create_user_entry(
+        self, session_id: str, content: str, uuid: str, timestamp: str
+    ):
+        """Helper to create a UserTranscriptEntry with all required fields."""
+        return UserTranscriptEntry(
+            type="user",
+            sessionId=session_id,
+            parentUuid=None,
+            isSidechain=False,
+            userType="external",
+            cwd="/test",
+            version="1.0.0",
+            message=UserMessage(role="user", content=content),
+            uuid=uuid,
+            timestamp=timestamp,
+        )
+
+    def _create_assistant_entry(
+        self, session_id: str, content: str, uuid: str, timestamp: str, parent_uuid: str
+    ):
+        """Helper to create an AssistantTranscriptEntry with all required fields."""
+        return AssistantTranscriptEntry(
+            type="assistant",
+            sessionId=session_id,
+            parentUuid=parent_uuid,
+            isSidechain=False,
+            userType="external",
+            cwd="/test",
+            version="1.0.0",
+            message=AssistantMessage(
+                id="msg-id",
+                type="message",
+                role="assistant",
+                model="claude-3-5-sonnet",
+                content=[TextContent(type="text", text=content)],
+            ),
+            uuid=uuid,
+            timestamp=timestamp,
+        )
+
+    def test_session_with_only_warmup_messages(self):
+        """Test that a session with only warmup messages is detected."""
+        session_id = "test-session-1"
+        messages = [
+            self._create_user_entry(
+                session_id, "Warmup", "msg-1", "2025-01-01T10:00:00Z"
+            ),
+            self._create_assistant_entry(
+                session_id,
+                "I'm ready to help!",
+                "msg-2",
+                "2025-01-01T10:00:01Z",
+                "msg-1",
+            ),
+        ]
+
+        assert is_warmup_only_session(messages, session_id) is True
+
+    def test_session_with_real_messages(self):
+        """Test that a session with real messages is not detected as warmup-only."""
+        session_id = "test-session-2"
+        messages = [
+            self._create_user_entry(
+                session_id, "Hello, can you help me?", "msg-1", "2025-01-01T10:00:00Z"
+            ),
+            self._create_assistant_entry(
+                session_id, "Sure!", "msg-2", "2025-01-01T10:00:01Z", "msg-1"
+            ),
+        ]
+
+        assert is_warmup_only_session(messages, session_id) is False
+
+    def test_session_with_warmup_and_real_messages(self):
+        """Test that a session with both warmup and real messages is not warmup-only."""
+        session_id = "test-session-3"
+        messages = [
+            self._create_user_entry(
+                session_id, "Warmup", "msg-1", "2025-01-01T10:00:00Z"
+            ),
+            self._create_assistant_entry(
+                session_id, "Ready!", "msg-2", "2025-01-01T10:00:01Z", "msg-1"
+            ),
+            self._create_user_entry(
+                session_id,
+                "Now help me debug this code",
+                "msg-3",
+                "2025-01-01T10:00:02Z",
+            ),
+        ]
+
+        assert is_warmup_only_session(messages, session_id) is False
+
+    def test_session_with_multiple_warmup_messages(self):
+        """Test session with multiple warmup messages."""
+        session_id = "test-session-4"
+        messages = [
+            self._create_user_entry(
+                session_id, "  Warmup  ", "msg-1", "2025-01-01T10:00:00Z"
+            ),
+            self._create_user_entry(
+                session_id, "Warmup", "msg-2", "2025-01-01T10:00:01Z"
+            ),
+        ]
+
+        assert is_warmup_only_session(messages, session_id) is True
+
+    def test_nonexistent_session(self):
+        """Test checking a session ID that doesn't exist."""
+        messages = [
+            self._create_user_entry(
+                "different-session", "Hello", "msg-1", "2025-01-01T10:00:00Z"
+            ),
+        ]
+
+        # Should return False (no user messages may mean system messages exist)
+        assert is_warmup_only_session(messages, "nonexistent-session") is False
+
+    def test_empty_messages_list(self):
+        """Test with empty messages list."""
+        # Should return False (no user messages may mean system messages exist)
+        assert is_warmup_only_session([], "any-session") is False

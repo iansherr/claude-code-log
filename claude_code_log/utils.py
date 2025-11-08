@@ -67,9 +67,13 @@ def should_use_as_session_starter(text_content: str) -> bool:
     """
     Determine if a user message should be used as a session starter preview.
 
-    This filters out system messages and most command messages, except for 'init' commands
-    which are typically the start of a new session.
+    This filters out system messages, warmup messages, and most command messages,
+    except for 'init' commands which are typically the start of a new session.
     """
+    # Skip warmup messages
+    if text_content.strip() == "Warmup":
+        return False
+
     # Skip system messages
     if is_system_message(text_content):
         return False
@@ -93,9 +97,18 @@ def create_session_preview(text_content: str) -> str:
 
     Returns:
         A preview string, truncated to FIRST_USER_MESSAGE_PREVIEW_LENGTH with
-        ellipsis if needed, and with init commands converted to friendly descriptions.
+        ellipsis if needed, with init commands converted to friendly descriptions,
+        and with IDE notification tags stripped out.
     """
-    preview_content = extract_init_command_description(text_content)
+    from .patterns import strip_ide_tags
+
+    # First strip IDE tags to get clean user content
+    clean_content = strip_ide_tags(text_content)
+
+    # Then apply init command description transformation
+    preview_content = extract_init_command_description(clean_content)
+
+    # Finally truncate if needed
     if len(preview_content) > FIRST_USER_MESSAGE_PREVIEW_LENGTH:
         return preview_content[:FIRST_USER_MESSAGE_PREVIEW_LENGTH] + "..."
     return preview_content
@@ -149,3 +162,47 @@ def extract_working_directories(
     # Sort by timestamp (most recent first) and return just the paths
     sorted_dirs = sorted(working_directories.items(), key=lambda x: x[1], reverse=True)
     return [path for path, _ in sorted_dirs]
+
+
+def is_warmup_only_session(messages: List[TranscriptEntry], session_id: str) -> bool:
+    """Check if a session contains only warmup messages (no real user content).
+
+    A warmup-only session is one where there are user messages AND all of them are
+    literally "Warmup" text. Sessions with no user messages at all are NOT considered
+    warmup-only as they may contain system messages or other important content.
+
+    Args:
+        messages: List of all transcript messages
+        session_id: The session ID to check
+
+    Returns:
+        True if the session only contains warmup user messages, False otherwise
+    """
+    from .models import UserTranscriptEntry
+    from .parser import extract_text_content
+
+    # Find all user messages for this session
+    user_messages = []
+    for message in messages:
+        if (
+            isinstance(message, UserTranscriptEntry)
+            and hasattr(message, "sessionId")
+            and getattr(message, "sessionId") == session_id
+            and hasattr(message, "message")
+        ):
+            user_messages.append(message)
+
+    # If no user messages at all, NOT warmup-only (may have system messages, etc.)
+    if not user_messages:
+        return False
+
+    # Check if ALL user messages are literally "Warmup" text
+    for user_msg in user_messages:
+        text_content = extract_text_content(user_msg.message.content)
+        # Only check for exact "Warmup" match, not general session starter filter
+        if text_content.strip() != "Warmup":
+            # Found a non-warmup user message, so this is NOT a warmup-only session
+            return False
+
+    # All user messages are "Warmup", so this is warmup-only
+    return True

@@ -1171,14 +1171,17 @@ def extract_ide_notifications(text: str) -> tuple[List[str], str]:
         where notifications are pre-rendered HTML divs and remaining_text
         is the message content with IDE tags removed.
     """
-    import re
+    from .patterns import (
+        IDE_DIAGNOSTICS_PATTERN,
+        IDE_OPENED_FILE_PATTERN,
+        IDE_SELECTION_PATTERN,
+    )
 
     notifications: List[str] = []
     remaining_text = text
 
     # Pattern 1: <ide_opened_file>content</ide_opened_file>
-    ide_file_pattern = r"<ide_opened_file>(.*?)</ide_opened_file>"
-    file_matches = list(re.finditer(ide_file_pattern, remaining_text, flags=re.DOTALL))
+    file_matches = list(IDE_OPENED_FILE_PATTERN.finditer(remaining_text))
 
     for match in file_matches:
         content = match.group(1).strip()
@@ -1187,13 +1190,10 @@ def extract_ide_notifications(text: str) -> tuple[List[str], str]:
         notifications.append(notification_html)
 
     # Remove ide_opened_file tags
-    remaining_text = re.sub(ide_file_pattern, "", remaining_text, flags=re.DOTALL)
+    remaining_text = IDE_OPENED_FILE_PATTERN.sub("", remaining_text)
 
     # Pattern 2: <ide_selection>content</ide_selection>
-    selection_pattern = r"<ide_selection>(.*?)</ide_selection>"
-    selection_matches = list(
-        re.finditer(selection_pattern, remaining_text, flags=re.DOTALL)
-    )
+    selection_matches = list(IDE_SELECTION_PATTERN.finditer(remaining_text))
 
     for match in selection_matches:
         content = match.group(1).strip()
@@ -1216,11 +1216,10 @@ def extract_ide_notifications(text: str) -> tuple[List[str], str]:
         notifications.append(notification_html)
 
     # Remove ide_selection tags
-    remaining_text = re.sub(selection_pattern, "", remaining_text, flags=re.DOTALL)
+    remaining_text = IDE_SELECTION_PATTERN.sub("", remaining_text)
 
     # Pattern 3: <post-tool-use-hook><ide_diagnostics>JSON</ide_diagnostics></post-tool-use-hook>
-    hook_pattern = r"<post-tool-use-hook>\s*<ide_diagnostics>(.*?)</ide_diagnostics>\s*</post-tool-use-hook>"
-    hook_matches = list(re.finditer(hook_pattern, remaining_text, flags=re.DOTALL))
+    hook_matches = list(IDE_DIAGNOSTICS_PATTERN.finditer(remaining_text))
 
     for match in hook_matches:
         json_content = match.group(1).strip()
@@ -1250,7 +1249,7 @@ def extract_ide_notifications(text: str) -> tuple[List[str], str]:
             notifications.append(notification_html)
 
     # Remove hook tags
-    remaining_text = re.sub(hook_pattern, "", remaining_text, flags=re.DOTALL)
+    remaining_text = IDE_DIAGNOSTICS_PATTERN.sub("", remaining_text)
 
     return notifications, remaining_text.strip()
 
@@ -2356,11 +2355,29 @@ def generate_html(
                                     "input": tool_input,
                                 }
 
+    # Filter out messages from warmup-only sessions
+    from .utils import is_warmup_only_session
+
+    # Collect session IDs to filter
+    warmup_session_ids = {
+        getattr(msg, "sessionId", "")
+        for msg in messages
+        if hasattr(msg, "sessionId")
+        and is_warmup_only_session(messages, getattr(msg, "sessionId", ""))
+    }
+
     # Process messages into template-friendly format
     template_messages: List[TemplateMessage] = []
 
     for message in messages:
         message_type = message.type
+
+        # Skip messages from warmup-only sessions
+        if (
+            hasattr(message, "sessionId")
+            and getattr(message, "sessionId") in warmup_session_ids
+        ):
+            continue
 
         # Skip summary messages - they should already be attached to their sessions
         if isinstance(message, SummaryTranscriptEntry):
@@ -2765,9 +2782,16 @@ def generate_html(
             )
             template_messages.append(tool_template_message)
 
+    # Filter out warmup-only sessions from navigation
+    filtered_session_order = [
+        session_id
+        for session_id in session_order
+        if not is_warmup_only_session(messages, session_id)
+    ]
+
     # Prepare session navigation data
     session_nav: List[Dict[str, Any]] = []
-    for session_id in session_order:
+    for session_id in filtered_session_order:
         session_info = sessions[session_id]
 
         # Format timestamp range

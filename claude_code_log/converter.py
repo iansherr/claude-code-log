@@ -299,12 +299,21 @@ def _update_cache_with_session_data(
                             usage.cache_read_input_tokens
                         )
 
-    # Update cache with session data
-    cache_manager.update_session_cache(sessions_cache_data)
+    # Filter out warmup-only sessions before caching
+    from .utils import is_warmup_only_session
+
+    filtered_sessions_cache_data = {
+        session_id: session_data
+        for session_id, session_data in sessions_cache_data.items()
+        if not is_warmup_only_session(messages, session_id)
+    }
+
+    # Update cache with filtered session data
+    cache_manager.update_session_cache(filtered_sessions_cache_data)
 
     # Update cache with working directories
     cache_manager.update_working_directories(
-        extract_working_directories(list(sessions_cache_data.values()))
+        extract_working_directories(list(filtered_sessions_cache_data.values()))
     )
 
     # Update cache with project aggregates
@@ -452,6 +461,8 @@ def _generate_individual_session_files(
     cache_was_updated: bool = False,
 ) -> None:
     """Generate individual HTML files for each session."""
+    from .utils import is_warmup_only_session
+
     # Find all unique session IDs
     session_ids: set[str] = set()
     for message in messages:
@@ -459,6 +470,13 @@ def _generate_individual_session_files(
             session_id: str = getattr(message, "sessionId")
             if session_id:
                 session_ids.add(session_id)
+
+    # Filter out warmup-only sessions
+    session_ids = {
+        session_id
+        for session_id in session_ids
+        if not is_warmup_only_session(messages, session_id)
+    }
 
     # Get session data from cache for better titles
     session_data: Dict[str, Any] = {}
