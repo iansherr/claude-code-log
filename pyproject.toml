@@ -3,7 +3,7 @@ name = "claude-code-log"
 version = "0.8.0"
 description = "Convert Claude Code transcript JSONL files to HTML"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
