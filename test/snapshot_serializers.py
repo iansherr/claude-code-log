@@ -46,4 +46,13 @@ class NormalisedHTMLSerializer(AmberSnapshotExtension):
             html,
         )
 
+        # Last modified timestamps in project index (timezone-dependent)
+        # 🕒 2023-11-14 23:15:00 -> 🕒 [LAST_MODIFIED]
+        # These come from datetime.fromtimestamp() which uses local timezone
+        html = re.sub(
+            r"🕒 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}</div>",
+            "🕒 [LAST_MODIFIED]</div>",
+            html,
+        )
+
         return html
