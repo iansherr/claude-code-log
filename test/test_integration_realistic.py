@@ -10,6 +10,7 @@ These tests use real-world data copied from ~/.claude/projects/ to test:
 
 import json
 import shutil
+import sys
 import tempfile
 import time
 import uuid
@@ -535,10 +536,18 @@ class TestGetDefaultProjectsDir:
 class TestFindProjectsByCwd:
     """Test project discovery with custom projects directory."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Test data uses Unix-style directory names that require Unix path conversion",
+    )
     def test_find_projects_with_custom_dir(self, temp_projects_copy: Path) -> None:
-        """Test find_projects_by_cwd works with custom projects directory."""
+        """Test find_projects_by_cwd works with custom projects directory.
+
+        This test uses Unix-style paths because the test data directories are named
+        using Unix path conventions (e.g., -Users-dain-workspace-JSSoundRecorder).
+        The path conversion logic is platform-specific, so this test only runs on Unix.
+        """
         # This tests that when we have a custom projects_dir, the matching still works
-        # We need at least one project that matches the structure
         results = find_projects_by_cwd(
             temp_projects_copy, "/Users/dain/workspace/JSSoundRecorder"
         )
