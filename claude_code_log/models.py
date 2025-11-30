@@ -197,6 +197,7 @@ class BaseTranscriptEntry(BaseModel):
     uuid: str
     timestamp: str
     isMeta: Optional[bool] = None
+    agentId: Optional[str] = None  # Agent ID for sidechain messages
 
 
 class UserTranscriptEntry(BaseTranscriptEntry):
