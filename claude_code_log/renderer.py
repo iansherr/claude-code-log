@@ -3130,14 +3130,21 @@ def _reorder_sidechain_template_messages(
 
             # Deduplicate: find the last sidechain assistant with text content
             # that matches the Task result content
-            task_result_content = message.raw_text_content
+            task_result_content = (
+                message.raw_text_content.strip() if message.raw_text_content else None
+            )
             if task_result_content and message.type == "tool_result":
                 # Find the last assistant message in this sidechain
                 for sidechain_msg in reversed(sidechain_msgs):
+                    sidechain_text = (
+                        sidechain_msg.raw_text_content.strip()
+                        if sidechain_msg.raw_text_content
+                        else None
+                    )
                     if (
                         sidechain_msg.type == "assistant"
-                        and sidechain_msg.raw_text_content
-                        and sidechain_msg.raw_text_content == task_result_content
+                        and sidechain_text
+                        and sidechain_text == task_result_content
                     ):
                         # Replace with note pointing to the Task result
                         forward_link_html = "<p><em>(Task summary — already displayed in Task tool result above)</em></p>"
@@ -3584,10 +3591,9 @@ def _process_messages_loop(
                 uuid=getattr(message, "uuid", None),
             )
 
-            # Store raw text for sidechain assistant deduplication
-            # (handled later in _reorder_sidechain_template_messages)
-            if message_type == "assistant" and is_sidechain and text_content.strip():
-                template_message.raw_text_content = text_content.strip()
+            # Store raw text content for potential future use (e.g., deduplication,
+            # alternative output formats). Stripping happens when used.
+            template_message.raw_text_content = text_content
 
             template_messages.append(template_message)
 
