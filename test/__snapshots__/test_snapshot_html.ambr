@@ -4766,18 +4766,18 @@
       
       
       <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-0' id='msg-d-0'>
+      <div class='message session-header' data-message-id='session-test_session' id='msg-session-test_session'>
           <div class='header'>Session: test_ses</div>
           
           
-          <div class='fold-bar' data-message-id='d-0' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='session-test_session' data-border-color='session-header'>
               
               
-              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='session-test_session' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>4 users</span>
               </div>
-              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-0' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='session-test_session' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
                   <span class='fold-icon'>▼▼</span>
                   <span class='fold-label'>4 users, 3 assistants, 2 more total</span>
               </div>
@@ -4789,7 +4789,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
+      <div class='message user session-test_session' data-message-id='d-0' id='msg-d-0'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -4801,10 +4801,10 @@
           </div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-0' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-1' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 assistant</span>
               </div>
@@ -4816,7 +4816,7 @@
       
       
       
-      <div class='message assistant d-0 d-1' data-message-id='d-2' id='msg-d-2'>
+      <div class='message assistant session-test_session d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -4855,7 +4855,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-3' id='msg-d-3'>
+      <div class='message user session-test_session' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -4867,10 +4867,10 @@
           </div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-2' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-3' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-2' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -4882,7 +4882,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-0 d-3' data-message-id='d-4' id='msg-d-4-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-2' data-message-id='d-3' id='msg-d-3-first'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
               <div class='header-info'>
@@ -4899,7 +4899,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-0 d-3' data-message-id='d-5' id='msg-d-5-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-2' data-message-id='d-4' id='msg-d-4-last'>
           <div class='header'>
               <span title="ID: tool_001"></span>
               <div class='header-info'>
@@ -4916,7 +4916,7 @@
       
       
       
-      <div class='message assistant d-0 d-3' data-message-id='d-6' id='msg-d-6'>
+      <div class='message assistant session-test_session d-2' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -4948,7 +4948,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-7' id='msg-d-7'>
+      <div class='message user session-test_session' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -4960,10 +4960,10 @@
           </div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-6' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-7' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-6' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -4975,7 +4975,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-0 d-7' data-message-id='d-8' id='msg-d-8-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-6' data-message-id='d-7' id='msg-d-7-first'>
           <div class='header'>
               <span title="ID: tool_002">🛠️ Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
               <div class='header-info'>
@@ -4992,7 +4992,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-0 d-7' data-message-id='d-9' id='msg-d-9-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-6' data-message-id='d-8' id='msg-d-8-last'>
           <div class='header'>
               <span title="ID: tool_002"></span>
               <div class='header-info'>
@@ -5011,7 +5011,7 @@
       
       
       
-      <div class='message assistant d-0 d-7' data-message-id='d-10' id='msg-d-10'>
+      <div class='message assistant session-test_session d-6' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -5039,7 +5039,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-11' id='msg-d-11'>
+      <div class='message user session-test_session' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -9496,20 +9496,20 @@
       
       
       <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-0' id='msg-d-0'>
+      <div class='message session-header' data-message-id='session-edge_cases' id='msg-session-edge_cases'>
           <div class='header'>Session: Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer. • edge_cas</div>
           
           
-          <div class='fold-bar' data-message-id='d-0' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='session-edge_cases' data-border-color='session-header'>
               
               
-              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold (all levels) all 8 descendants' data-title-folded='Unfold (1st level) 3 users' title='Fold (all levels) all 8 descendants'>
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='session-edge_cases' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
                   <span class='fold-icon'>▼</span>
-                  <span class='fold-label'>3 users</span>
+                  <span class='fold-label'>4 users</span>
               </div>
-              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-0' data-title-unfolded='Fold (to 1st level) 3 users' data-title-folded='Unfold (all levels) all 8 descendants' title='Fold (to 1st level) 3 users'>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='session-edge_cases' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
                   <span class='fold-icon'>▼▼</span>
-                  <span class='fold-label'>3 users, 2 assistants, 3 more total</span>
+                  <span class='fold-label'>4 users, 2 assistants, 3 more total</span>
               </div>
               
           </div>
@@ -9519,7 +9519,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
+      <div class='message user session-edge_cases' data-message-id='d-0' id='msg-d-0'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -9531,10 +9531,10 @@
           </div>
           <div class='content'><pre>Here&#x27;s a message with some **markdown** formatting, `inline code`, and even a [link](https://example.com). Let&#x27;s see how it renders!</pre></div>
           
-          <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-0' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-1' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 assistant</span>
               </div>
@@ -9546,7 +9546,7 @@
       
       
       
-      <div class='message assistant d-0 d-1' data-message-id='d-2' id='msg-d-2'>
+      <div class='message assistant session-edge_cases d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -9604,7 +9604,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-3' id='msg-d-3'>
+      <div class='message user session-edge_cases' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -9616,14 +9616,14 @@
           </div>
           <div class='content'><pre>Let&#x27;s test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</pre></div>
           
-          <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-2' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-3' data-title-unfolded='Fold (all levels) all 4 descendants' data-title-folded='Unfold (1st level) 1 tool, 1 system, 1 more' title='Fold (all levels) all 4 descendants'>
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-2' data-title-unfolded='Fold (all levels) all 4 descendants' data-title-folded='Unfold (1st level) 1 tool, 1 system, 1 more' title='Fold (all levels) all 4 descendants'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 system, 1 more</span>
               </div>
-              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-3' data-title-unfolded='Fold (to 1st level) 1 tool, 1 system, 1 more' data-title-folded='Unfold (all levels) all 4 descendants' title='Fold (to 1st level) 1 tool, 1 system, 1 more'>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-2' data-title-unfolded='Fold (to 1st level) 1 tool, 1 system, 1 more' data-title-folded='Unfold (all levels) all 4 descendants' title='Fold (to 1st level) 1 tool, 1 system, 1 more'>
                   <span class='fold-icon'>▼▼</span>
                   <span class='fold-label'>2 tools, 1 system, 1 more total</span>
               </div>
@@ -9635,7 +9635,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-0 d-3' data-message-id='d-4' id='msg-d-4-first'>
+      <div class='message tool_use paired-message pair_first session-edge_cases d-2' data-message-id='d-3' id='msg-d-3-first'>
           <div class='header'>
               <span title="ID: tool_edge_001">🛠️ FailingTool</span>
               <div class='header-info'>
@@ -9657,7 +9657,7 @@
       
       
       
-      <div class='message tool_result error paired-message pair_last d-0 d-3' data-message-id='d-5' id='msg-d-5-last'>
+      <div class='message tool_result error paired-message pair_last session-edge_cases d-2' data-message-id='d-4' id='msg-d-4-last'>
           <div class='header'>
               <span title="ID: tool_edge_001">🚨 Error</span>
               <div class='header-info'>
@@ -9674,7 +9674,7 @@
       
       
       
-      <div class='message system paired-message pair_first d-0 d-3' data-message-id='d-6' id='msg-d-6-first'>
+      <div class='message system paired-message pair_first session-edge_cases d-2' data-message-id='d-5' id='msg-d-5-first'>
           <div class='header'>
               <span>⚙️ System</span>
               <div class='header-info'>
@@ -9693,7 +9693,7 @@
       
       
       
-      <div class='message system command-output paired-message pair_last d-0 d-3' data-message-id='d-7' id='msg-d-7-last'>
+      <div class='message system command-output paired-message pair_last session-edge_cases d-2' data-message-id='d-6' id='msg-d-6-last'>
           <div class='header'>
               <span>System</span>
               <div class='header-info'>
@@ -9715,7 +9715,7 @@
       
       
       
-      <div class='message assistant d-0 d-3' data-message-id='d-8' id='msg-d-8'>
+      <div class='message assistant session-edge_cases d-2' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -9730,10 +9730,10 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>I see the long Lorem ipsum text wraps nicely! Long text handling is important for readability. The CSS should handle word wrapping automatically.</p>
   </div></div>
           
-          <div class='fold-bar' data-message-id='d-8' data-border-color='assistant'>
+          <div class='fold-bar' data-message-id='d-7' data-border-color='assistant'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-8' data-title-unfolded='Fold 1 tool' data-title-folded='Unfold (1st level) 1 tool' title='Fold 1 tool'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-7' data-title-unfolded='Fold 1 tool' data-title-folded='Unfold (1st level) 1 tool' title='Fold 1 tool'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool</span>
               </div>
@@ -9745,7 +9745,7 @@
       
       
       
-      <div class='message tool_use d-0 d-3 d-8' data-message-id='d-9' id='msg-d-9'>
+      <div class='message tool_use session-edge_cases d-2 d-7' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tool_edge_002">🛠️ MultiEdit</span>
               <div class='header-info'>
@@ -9785,7 +9785,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-10' id='msg-d-10'>
+      <div class='message user session-edge_cases' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -9801,17 +9801,34 @@
       
       
       
+      
+      <div class='message user session-edge_cases' data-message-id='d-10' id='msg-d-10'>
+          <div class='header'>
+              <span>🤷 User</span>
+              <div class='header-info'>
+                  <div class='timestamp-row'>
+                      <span class='timestamp' data-timestamp='2025-06-14T11:03:01Z'>2025-06-14 11:03:01</span>
+                  </div>
+                  
+              </div>
+          </div>
+          <div class='content'><pre>wow error</pre></div>
+          
+      </div>
+      
+      
+      
       <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-11' id='msg-d-11'>
+      <div class='message session-header' data-message-id='session-todowrite_session' id='msg-session-todowrite_session'>
           <div class='header'>Session: todowrit</div>
           
           
-          <div class='fold-bar' data-message-id='d-11' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='session-todowrite_session' data-border-color='session-header'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-11' data-title-unfolded='Fold 1 tool, 1 user' data-title-folded='Unfold (1st level) 1 tool, 1 user' title='Fold 1 tool, 1 user'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='session-todowrite_session' data-title-unfolded='Fold 1 tool' data-title-folded='Unfold (1st level) 1 tool' title='Fold 1 tool'>
                   <span class='fold-icon'>▼</span>
-                  <span class='fold-label'>1 tool, 1 user</span>
+                  <span class='fold-label'>1 tool</span>
               </div>
               
           </div>
@@ -9821,7 +9838,7 @@
       
       
       
-      <div class='message tool_use d-11' data-message-id='d-12' id='msg-d-12'>
+      <div class='message tool_use session-todowrite_session' data-message-id='d-11' id='msg-d-11'>
           <div class='header'>
               <span title="ID: toolu_todowrite_002">📝 Todo List</span>
               <div class='header-info'>
@@ -9870,23 +9887,6 @@
               
       </div>
       </div>
-          
-      </div>
-      
-      
-      
-      
-      <div class='message user d-11' data-message-id='d-13' id='msg-d-13'>
-          <div class='header'>
-              <span>🤷 User</span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2025-06-14T11:03:01Z'>2025-06-14 11:03:01</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='content'><pre>wow error</pre></div>
           
       </div>
       
@@ -14333,16 +14333,20 @@
       
       
       <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-0' id='msg-d-0'>
+      <div class='message session-header' data-message-id='session-session_b' id='msg-session-session_b'>
           <div class='header'>Session: session_</div>
           
           
-          <div class='fold-bar' data-message-id='d-0' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='session-session_b' data-border-color='session-header'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold 1 user' data-title-folded='Unfold (1st level) 1 user' title='Fold 1 user'>
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='session-session_b' data-title-unfolded='Fold (all levels) all 3 descendants' data-title-folded='Unfold (1st level) 2 users' title='Fold (all levels) all 3 descendants'>
                   <span class='fold-icon'>▼</span>
-                  <span class='fold-label'>1 user</span>
+                  <span class='fold-label'>2 users</span>
+              </div>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='session-session_b' data-title-unfolded='Fold (to 1st level) 2 users' data-title-folded='Unfold (all levels) all 3 descendants' title='Fold (to 1st level) 2 users'>
+                  <span class='fold-icon'>▼▼</span>
+                  <span class='fold-label'>2 users, 1 assistant total</span>
               </div>
               
           </div>
@@ -14352,7 +14356,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
+      <div class='message user session-session_b' data-message-id='d-0' id='msg-d-0'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -14364,25 +14368,12 @@
           </div>
           <div class='content'><pre>This is from a different session file to test multi-session handling.</pre></div>
           
-      </div>
-      
-      
-      
-      <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-2' id='msg-d-2'>
-          <div class='header'>Session: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. • test_ses</div>
-          
-          
-          <div class='fold-bar' data-message-id='d-2' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='d-0' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-2' data-title-unfolded='Fold (all levels) all 11 descendants' data-title-folded='Unfold (1st level) 5 users' title='Fold (all levels) all 11 descendants'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
                   <span class='fold-icon'>▼</span>
-                  <span class='fold-label'>5 users</span>
-              </div>
-              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-2' data-title-unfolded='Fold (to 1st level) 5 users' data-title-folded='Unfold (all levels) all 11 descendants' title='Fold (to 1st level) 5 users'>
-                  <span class='fold-icon'>▼▼</span>
-                  <span class='fold-label'>5 users, 4 assistants, 2 more total</span>
+                  <span class='fold-label'>1 assistant</span>
               </div>
               
           </div>
@@ -14392,34 +14383,7 @@
       
       
       
-      <div class='message user d-2' data-message-id='d-3' id='msg-d-3'>
-          <div class='header'>
-              <span>🤷 User</span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2025-07-03T15:50:07.874907Z'>2025-07-03 15:50:07</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
-          
-          <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
-              
-              
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-3' data-title-unfolded='Fold 2 assistants' data-title-folded='Unfold (1st level) 2 assistants' title='Fold 2 assistants'>
-                  <span class='fold-icon'>▼</span>
-                  <span class='fold-label'>2 assistants</span>
-              </div>
-              
-          </div>
-          
-      </div>
-      
-      
-      
-      
-      <div class='message assistant d-2 d-3' data-message-id='d-4' id='msg-d-4'>
+      <div class='message assistant session-session_b d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -14439,7 +14403,74 @@
       
       
       
-      <div class='message assistant d-2 d-3' data-message-id='d-5' id='msg-d-5'>
+      <div class='message user session-session_b' data-message-id='d-2' id='msg-d-2'>
+          <div class='header'>
+              <span>🤷 User</span>
+              <div class='header-info'>
+                  <div class='timestamp-row'>
+                      <span class='timestamp' data-timestamp='2025-07-03T15:54:07.874717Z'>2025-07-03 15:54:07</span>
+                  </div>
+                  
+              </div>
+          </div>
+          <div class='content'><pre>Perfect! This should appear without any session divider above it.</pre></div>
+          
+      </div>
+      
+      
+      
+      <div class="session-divider"></div>
+      <div class='message session-header' data-message-id='session-test_session' id='msg-session-test_session'>
+          <div class='header'>Session: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. • test_ses</div>
+          
+          
+          <div class='fold-bar' data-message-id='session-test_session' data-border-color='session-header'>
+              
+              
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='session-test_session' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
+                  <span class='fold-icon'>▼</span>
+                  <span class='fold-label'>4 users</span>
+              </div>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='session-test_session' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
+                  <span class='fold-icon'>▼▼</span>
+                  <span class='fold-label'>4 users, 3 assistants, 2 more total</span>
+              </div>
+              
+          </div>
+          
+      </div>
+      
+      
+      
+      
+      <div class='message user session-test_session' data-message-id='d-3' id='msg-d-3'>
+          <div class='header'>
+              <span>🤷 User</span>
+              <div class='header-info'>
+                  <div class='timestamp-row'>
+                      <span class='timestamp' data-timestamp='2025-07-03T15:50:07.874907Z'>2025-07-03 15:50:07</span>
+                  </div>
+                  
+              </div>
+          </div>
+          <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
+          
+          <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
+              
+              
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-3' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
+                  <span class='fold-icon'>▼</span>
+                  <span class='fold-label'>1 assistant</span>
+              </div>
+              
+          </div>
+          
+      </div>
+      
+      
+      
+      
+      <div class='message assistant session-test_session d-3' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -14478,24 +14509,7 @@
       
       
       
-      <div class='message user d-2' data-message-id='d-6' id='msg-d-6'>
-          <div class='header'>
-              <span>🤷 User</span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2025-07-03T15:54:07.874717Z'>2025-07-03 15:54:07</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='content'><pre>Perfect! This should appear without any session divider above it.</pre></div>
-          
-      </div>
-      
-      
-      
-      
-      <div class='message user d-2' data-message-id='d-7' id='msg-d-7'>
+      <div class='message user session-test_session' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -14507,10 +14521,10 @@
           </div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-5' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-7' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-5' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -14522,7 +14536,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-2 d-7' data-message-id='d-8' id='msg-d-8-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-5' data-message-id='d-6' id='msg-d-6-first'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
               <div class='header-info'>
@@ -14539,7 +14553,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-2 d-7' data-message-id='d-9' id='msg-d-9-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-5' data-message-id='d-7' id='msg-d-7-last'>
           <div class='header'>
               <span title="ID: tool_001"></span>
               <div class='header-info'>
@@ -14556,7 +14570,7 @@
       
       
       
-      <div class='message assistant d-2 d-7' data-message-id='d-10' id='msg-d-10'>
+      <div class='message assistant session-test_session d-5' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -14588,7 +14602,7 @@
       
       
       
-      <div class='message user d-2' data-message-id='d-11' id='msg-d-11'>
+      <div class='message user session-test_session' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -14600,10 +14614,10 @@
           </div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-11' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-9' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-11' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-9' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -14615,7 +14629,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-2 d-11' data-message-id='d-12' id='msg-d-12-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-9' data-message-id='d-10' id='msg-d-10-first'>
           <div class='header'>
               <span title="ID: tool_002">🛠️ Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
               <div class='header-info'>
@@ -14632,7 +14646,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-2 d-11' data-message-id='d-13' id='msg-d-13-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-9' data-message-id='d-11' id='msg-d-11-last'>
           <div class='header'>
               <span title="ID: tool_002"></span>
               <div class='header-info'>
@@ -14651,7 +14665,7 @@
       
       
       
-      <div class='message assistant d-2 d-11' data-message-id='d-14' id='msg-d-14'>
+      <div class='message assistant session-test_session d-9' data-message-id='d-12' id='msg-d-12'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -14679,7 +14693,7 @@
       
       
       
-      <div class='message user d-2' data-message-id='d-15' id='msg-d-15'>
+      <div class='message user session-test_session' data-message-id='d-13' id='msg-d-13'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -19085,18 +19099,18 @@
       
       
       <div class="session-divider"></div>
-      <div class='message session-header' data-message-id='d-0' id='msg-d-0'>
+      <div class='message session-header' data-message-id='session-test_session' id='msg-session-test_session'>
           <div class='header'>Session: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. • test_ses</div>
           
           
-          <div class='fold-bar' data-message-id='d-0' data-border-color='session-header'>
+          <div class='fold-bar' data-message-id='session-test_session' data-border-color='session-header'>
               
               
-              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
+              <div class='fold-bar-section fold-one-level' data-action='fold-one' data-target='session-test_session' data-title-unfolded='Fold (all levels) all 9 descendants' data-title-folded='Unfold (1st level) 4 users' title='Fold (all levels) all 9 descendants'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>4 users</span>
               </div>
-              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='d-0' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
+              <div class='fold-bar-section fold-all-levels' data-action='fold-all' data-target='session-test_session' data-title-unfolded='Fold (to 1st level) 4 users' data-title-folded='Unfold (all levels) all 9 descendants' title='Fold (to 1st level) 4 users'>
                   <span class='fold-icon'>▼▼</span>
                   <span class='fold-label'>4 users, 3 assistants, 2 more total</span>
               </div>
@@ -19108,7 +19122,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
+      <div class='message user session-test_session' data-message-id='d-0' id='msg-d-0'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -19120,10 +19134,10 @@
           </div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-0' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-1' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-0' data-title-unfolded='Fold 1 assistant' data-title-folded='Unfold (1st level) 1 assistant' title='Fold 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 assistant</span>
               </div>
@@ -19135,7 +19149,7 @@
       
       
       
-      <div class='message assistant d-0 d-1' data-message-id='d-2' id='msg-d-2'>
+      <div class='message assistant session-test_session d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -19174,7 +19188,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-3' id='msg-d-3'>
+      <div class='message user session-test_session' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -19186,10 +19200,10 @@
           </div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-2' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-3' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-2' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -19201,7 +19215,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-0 d-3' data-message-id='d-4' id='msg-d-4-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-2' data-message-id='d-3' id='msg-d-3-first'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
               <div class='header-info'>
@@ -19218,7 +19232,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-0 d-3' data-message-id='d-5' id='msg-d-5-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-2' data-message-id='d-4' id='msg-d-4-last'>
           <div class='header'>
               <span title="ID: tool_001"></span>
               <div class='header-info'>
@@ -19235,7 +19249,7 @@
       
       
       
-      <div class='message assistant d-0 d-3' data-message-id='d-6' id='msg-d-6'>
+      <div class='message assistant session-test_session d-2' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -19267,7 +19281,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-7' id='msg-d-7'>
+      <div class='message user session-test_session' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>
@@ -19279,10 +19293,10 @@
           </div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
+          <div class='fold-bar' data-message-id='d-6' data-border-color='user'>
               
               
-              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-7' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
+              <div class='fold-bar-section fold-one-level full-width' data-action='fold-one' data-target='d-6' data-title-unfolded='Fold 1 tool, 1 assistant' data-title-folded='Unfold (1st level) 1 tool, 1 assistant' title='Fold 1 tool, 1 assistant'>
                   <span class='fold-icon'>▼</span>
                   <span class='fold-label'>1 tool, 1 assistant</span>
               </div>
@@ -19294,7 +19308,7 @@
       
       
       
-      <div class='message tool_use paired-message pair_first d-0 d-7' data-message-id='d-8' id='msg-d-8-first'>
+      <div class='message tool_use paired-message pair_first session-test_session d-6' data-message-id='d-7' id='msg-d-7-first'>
           <div class='header'>
               <span title="ID: tool_002">🛠️ Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
               <div class='header-info'>
@@ -19311,7 +19325,7 @@
       
       
       
-      <div class='message tool_result paired-message pair_last d-0 d-7' data-message-id='d-9' id='msg-d-9-last'>
+      <div class='message tool_result paired-message pair_last session-test_session d-6' data-message-id='d-8' id='msg-d-8-last'>
           <div class='header'>
               <span title="ID: tool_002"></span>
               <div class='header-info'>
@@ -19330,7 +19344,7 @@
       
       
       
-      <div class='message assistant d-0 d-7' data-message-id='d-10' id='msg-d-10'>
+      <div class='message assistant session-test_session d-6' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🤖 Assistant</span>
               <div class='header-info'>
@@ -19358,7 +19372,7 @@
       
       
       
-      <div class='message user d-0' data-message-id='d-11' id='msg-d-11'>
+      <div class='message user session-test_session' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤷 User</span>
               <div class='header-info'>

@@ -3033,6 +3033,11 @@ def generate_html(
                 }
             )
 
+    # Reorder messages so each session's messages follow their session header
+    # This fixes interleaving that occurs when sessions are resumed
+    with log_timing("Reorder session messages", t_start):
+        template_messages = _reorder_session_template_messages(template_messages)
+
     # Identify and mark paired messages (command+output, tool_use+tool_result, etc.)
     with log_timing("Identify message pairs", t_start):
         _identify_message_pairs(template_messages)
@@ -3072,6 +3077,68 @@ def generate_html(
         )
 
     return html_output
+
+
+def _reorder_session_template_messages(
+    messages: List[TemplateMessage],
+) -> List[TemplateMessage]:
+    """Reorder template messages to group all messages under their correct session headers.
+
+    When a user resumes session A into session B, Claude Code copies messages from
+    session A into session B's JSONL file (keeping their original sessionId). After
+    global chronological sorting, these copied messages get interleaved. This function
+    fixes that by grouping all messages by session_id and inserting them after their
+    corresponding session header.
+
+    This must be called BEFORE _identify_message_pairs and _reorder_paired_messages,
+    since those functions expect messages to be in session-grouped order.
+
+    Args:
+        messages: Template messages (including session headers)
+
+    Returns:
+        Reordered messages with all messages grouped under their session headers
+    """
+    # First pass: extract session headers and group non-header messages by session_id
+    session_headers: List[TemplateMessage] = []
+    session_messages_map: Dict[str, List[TemplateMessage]] = {}
+
+    for message in messages:
+        if message.is_session_header:
+            session_headers.append(message)
+            # Initialize the list for this session (preserves session order)
+            if message.session_id and message.session_id not in session_messages_map:
+                session_messages_map[message.session_id] = []
+        else:
+            session_id = message.session_id
+            if session_id:
+                if session_id not in session_messages_map:
+                    session_messages_map[session_id] = []
+                session_messages_map[session_id].append(message)
+
+    # If no session headers, return original order
+    if not session_headers:
+        return messages
+
+    # Second pass: for each session header, insert all messages with that session_id
+    result: List[TemplateMessage] = []
+    used_sessions: set[str] = set()
+
+    for header in session_headers:
+        result.append(header)
+        session_id = header.session_id
+
+        if session_id and session_id in session_messages_map:
+            # Messages are already in timestamp order from original processing
+            result.extend(session_messages_map[session_id])
+            used_sessions.add(session_id)
+
+    # Append any messages that weren't matched to a session header (shouldn't happen normally)
+    for session_id, msgs in session_messages_map.items():
+        if session_id not in used_sessions:
+            result.extend(msgs)
+
+    return result
 
 
 def _reorder_sidechain_template_messages(
