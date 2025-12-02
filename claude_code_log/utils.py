@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Utility functions for message filtering and processing."""
 
-from typing import Union, List
+import re
+from typing import Dict, List, Union
 
 from claude_code_log.cache import SessionCacheData
-from .models import ContentItem, TextContent, TranscriptEntry
+from .models import ContentItem, TextContent, TranscriptEntry, UserTranscriptEntry
 
 
 def is_system_message(text_content: str) -> bool:
@@ -67,9 +68,13 @@ def should_use_as_session_starter(text_content: str) -> bool:
     """
     Determine if a user message should be used as a session starter preview.
 
-    This filters out system messages and most command messages, except for 'init' commands
-    which are typically the start of a new session.
+    This filters out system messages, warmup messages, and most command messages,
+    except for 'init' commands which are typically the start of a new session.
     """
+    # Skip warmup messages
+    if text_content.strip() == "Warmup":
+        return False
+
     # Skip system messages
     if is_system_message(text_content):
         return False
@@ -93,9 +98,16 @@ def create_session_preview(text_content: str) -> str:
 
     Returns:
         A preview string, truncated to FIRST_USER_MESSAGE_PREVIEW_LENGTH with
-        ellipsis if needed, and with init commands converted to friendly descriptions.
+        ellipsis if needed, with init commands converted to friendly descriptions,
+        and IDE tags replaced with compact emoji indicators.
     """
+    # Apply init command transformation first
     preview_content = extract_init_command_description(text_content)
+
+    # Apply compact IDE tag indicators BEFORE truncation
+    preview_content = _compact_ide_tags_for_preview(preview_content)
+
+    # Then truncate if needed
     if len(preview_content) > FIRST_USER_MESSAGE_PREVIEW_LENGTH:
         return preview_content[:FIRST_USER_MESSAGE_PREVIEW_LENGTH] + "..."
     return preview_content
@@ -149,3 +161,172 @@ def extract_working_directories(
     # Sort by timestamp (most recent first) and return just the paths
     sorted_dirs = sorted(working_directories.items(), key=lambda x: x[1], reverse=True)
     return [path for path, _ in sorted_dirs]
+
+
+# IDE tag patterns for compact preview rendering (same as renderer.py)
+IDE_OPENED_FILE_PATTERN = re.compile(
+    r"<ide_opened_file>(.*?)</ide_opened_file>", re.DOTALL
+)
+IDE_SELECTION_PATTERN = re.compile(r"<ide_selection>(.*?)</ide_selection>", re.DOTALL)
+IDE_DIAGNOSTICS_PATTERN = re.compile(
+    r"<post-tool-use-hook>\s*<ide_diagnostics>(.*?)</ide_diagnostics>\s*</post-tool-use-hook>",
+    re.DOTALL,
+)
+
+
+def _compact_ide_tags_for_preview(text_content: str) -> str:
+    """Replace verbose IDE tags with compact emoji indicators for previews.
+
+    Only processes IDE tags at the START of the content (where VS Code places them).
+    Tags appearing later in the text (e.g., inside quoted JSONL) are left unchanged.
+
+    Transforms:
+    - <ide_opened_file>...path/to/file...</ide_opened_file> -> 📎 /path/to/file
+    - <ide_selection>...path/to/file...</ide_selection> -> ✂️ /path/to/file
+    - <ide_diagnostics>...</ide_diagnostics> -> 🩺 diagnostics
+
+    Args:
+        text_content: Raw text content that may contain IDE tags
+
+    Returns:
+        Text with leading IDE tags replaced by compact indicators
+    """
+
+    def _extract_file_path(content: str) -> str | None:
+        """Extract file path from IDE tag content."""
+        # Try to find an absolute path (starts with /)
+        # Stop at: whitespace, colon followed by newline, or "in the IDE"
+        path_match = re.search(
+            r"(/[^\s:]+(?:\.[^\s:]+)?)(?::\s|\s+in\s+the\s+IDE|\s*$|\s)", content
+        )
+        if path_match:
+            return path_match.group(1).rstrip(".:")
+
+        # Fallback: look for "file" or "from" followed by a path
+        path_match = re.search(r"(?:file|from)\s+(/[^\s:]+)", content)
+        if path_match:
+            return path_match.group(1).rstrip(".:")
+
+        return None
+
+    # Process only LEADING IDE tags - stop when we hit non-IDE content
+    # This prevents replacing tags inside quoted strings/JSONL content
+    compact_parts: list[str] = []
+    remaining = text_content
+
+    while remaining:
+        # Try to match each IDE tag type at the start of remaining text
+        # Check for <ide_opened_file> at start
+        match = re.match(
+            r"^\s*<ide_opened_file>(.*?)</ide_opened_file>", remaining, re.DOTALL
+        )
+        if match:
+            content = match.group(1).strip()
+            filepath = _extract_file_path(content)
+            compact_parts.append(f"📎 {filepath}" if filepath else "📎 file")
+            remaining = remaining[match.end() :]
+            continue
+
+        # Check for <ide_selection> at start
+        match = re.match(
+            r"^\s*<ide_selection>(.*?)</ide_selection>", remaining, re.DOTALL
+        )
+        if match:
+            content = match.group(1).strip()
+            filepath = _extract_file_path(content)
+            compact_parts.append(f"✂️ {filepath}" if filepath else "✂️ selection")
+            remaining = remaining[match.end() :]
+            continue
+
+        # Check for <post-tool-use-hook><ide_diagnostics>...</ide_diagnostics></post-tool-use-hook> at start
+        match = re.match(
+            r"^\s*<post-tool-use-hook>\s*<ide_diagnostics>.*?</ide_diagnostics>\s*</post-tool-use-hook>",
+            remaining,
+            re.DOTALL,
+        )
+        if match:
+            compact_parts.append("🩺 diagnostics")
+            remaining = remaining[match.end() :]
+            continue
+
+        # No more IDE tags at start - stop processing
+        break
+
+    # Combine compact indicators with remaining content
+    if compact_parts:
+        # Add newline between indicators and content if there's remaining text
+        prefix = "\n".join(compact_parts)
+        if remaining.strip():
+            return f"{prefix}\n{remaining.lstrip()}"
+        return prefix
+
+    return text_content
+
+
+def is_warmup_only_session(messages: List[TranscriptEntry], session_id: str) -> bool:
+    """Check if a session contains only warmup user messages.
+
+    A warmup session is one where ALL user messages are literally just "Warmup".
+    Sessions with no user messages return False (not considered warmup).
+
+    Args:
+        messages: List of all transcript entries
+        session_id: The session ID to check
+
+    Returns:
+        True if ALL user messages in the session are "Warmup", False otherwise
+    """
+    from .parser import extract_text_content
+
+    user_messages_in_session: List[str] = []
+
+    for message in messages:
+        if (
+            isinstance(message, UserTranscriptEntry)
+            and getattr(message, "sessionId", "") == session_id
+            and hasattr(message, "message")
+        ):
+            text_content = extract_text_content(message.message.content).strip()
+            user_messages_in_session.append(text_content)
+
+    # No user messages = not a warmup session
+    if not user_messages_in_session:
+        return False
+
+    # All user messages must be exactly "Warmup"
+    return all(msg == "Warmup" for msg in user_messages_in_session)
+
+
+def get_warmup_session_ids(messages: List[TranscriptEntry]) -> set[str]:
+    """Get set of session IDs that are warmup-only sessions.
+
+    Pre-computes warmup status for all sessions for efficiency (O(n) once,
+    then O(1) lookup per session).
+
+    Args:
+        messages: List of all transcript entries
+
+    Returns:
+        Set of session IDs that contain only warmup messages
+    """
+    from .parser import extract_text_content
+
+    # Group user message text by session
+    session_user_messages: Dict[str, List[str]] = {}
+
+    for message in messages:
+        if isinstance(message, UserTranscriptEntry) and hasattr(message, "message"):
+            session_id = getattr(message, "sessionId", "")
+            if session_id:
+                text_content = extract_text_content(message.message.content).strip()
+                if session_id not in session_user_messages:
+                    session_user_messages[session_id] = []
+                session_user_messages[session_id].append(text_content)
+
+    # Find sessions where ALL user messages are "Warmup"
+    warmup_sessions: set[str] = set()
+    for session_id, user_msgs in session_user_messages.items():
+        if user_msgs and all(msg == "Warmup" for msg in user_msgs):
+            warmup_sessions.add(session_id)
+
+    return warmup_sessions

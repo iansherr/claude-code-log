@@ -12,6 +12,7 @@ from .utils import (
     should_use_as_session_starter,
     create_session_preview,
     extract_working_directories,
+    get_warmup_session_ids,
 )
 from .cache import CacheManager, SessionCacheData, get_library_version
 from .parser import (
@@ -303,10 +304,18 @@ def _update_cache_with_session_data(
                             usage.cache_read_input_tokens
                         )
 
-    # Update cache with session data
+    # Filter out warmup-only sessions before caching
+    warmup_session_ids = get_warmup_session_ids(messages)
+    sessions_cache_data = {
+        sid: data
+        for sid, data in sessions_cache_data.items()
+        if sid not in warmup_session_ids
+    }
+
+    # Update cache with filtered session data
     cache_manager.update_session_cache(sessions_cache_data)
 
-    # Update cache with working directories
+    # Update cache with working directories (from filtered sessions)
     cache_manager.update_working_directories(
         extract_working_directories(list(sessions_cache_data.values()))
     )
@@ -456,12 +465,15 @@ def _generate_individual_session_files(
     cache_was_updated: bool = False,
 ) -> None:
     """Generate individual HTML files for each session."""
-    # Find all unique session IDs
+    # Pre-compute warmup sessions to exclude them
+    warmup_session_ids = get_warmup_session_ids(messages)
+
+    # Find all unique session IDs (excluding warmup sessions)
     session_ids: set[str] = set()
     for message in messages:
         if hasattr(message, "sessionId"):
             session_id: str = getattr(message, "sessionId")
-            if session_id:
+            if session_id and session_id not in warmup_session_ids:
                 session_ids.add(session_id)
 
     # Get session data from cache for better titles

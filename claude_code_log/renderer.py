@@ -2927,12 +2927,24 @@ def generate_html(
     combined_transcript_link: Optional[str] = None,
 ) -> str:
     """Generate HTML from transcript messages using Jinja2 templates."""
+    from .utils import get_warmup_session_ids
+
     # Performance timing
     t_start = time.time()
 
     with log_timing("Initialization", t_start):
         if not title:
             title = "Claude Transcript"
+
+    # Filter out warmup-only sessions
+    with log_timing("Filter warmup sessions", t_start):
+        warmup_session_ids = get_warmup_session_ids(messages)
+        if warmup_session_ids:
+            messages = [
+                msg
+                for msg in messages
+                if getattr(msg, "sessionId", None) not in warmup_session_ids
+            ]
 
     # Pre-process to find and attach session summaries
     with log_timing("Session summary processing", t_start):
