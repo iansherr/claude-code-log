@@ -207,11 +207,11 @@
     margin-right: 6em;
 }
 
-/* System warnings/info (assistant-initiated) */
+/* System warnings/info at tool level (e.g., hook notifications) */
 .system-warning,
 .system-info {
-    margin-left: 0;
-    margin-right: 10em;
+    margin-left: 2em;
+    margin-right: 6em;
 }
 
 /* Sidechain messages (sub-assistant hierarchy) */

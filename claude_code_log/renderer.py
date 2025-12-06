@@ -2842,8 +2842,8 @@ def _get_message_hierarchy_level(css_class: str, is_sidechain: bool) -> int:
     Correct hierarchy based on logical nesting:
     - Level 0: Session headers
     - Level 1: User messages
-    - Level 2: System messages, Assistant, Thinking
-    - Level 3: Tool use/result (nested under assistant)
+    - Level 2: System commands/errors, Assistant, Thinking
+    - Level 3: Tool use/result, System info/warning (nested under assistant)
     - Level 4: Sidechain assistant/thinking (nested under Task tool result)
     - Level 5: Sidechain tools (nested under sidechain assistant)
 
@@ -2858,7 +2858,13 @@ def _get_message_hierarchy_level(css_class: str, is_sidechain: bool) -> int:
     if "user" in css_class and not is_sidechain:
         return 1
 
-    # System messages at level 2 (siblings to assistant, under user)
+    # System info/warning at level 3 (tool-related, e.g., hook notifications)
+    if (
+        "system-info" in css_class or "system-warning" in css_class
+    ) and not is_sidechain:
+        return 3
+
+    # System commands/errors at level 2 (siblings to assistant)
     if "system" in css_class and not is_sidechain:
         return 2
 
