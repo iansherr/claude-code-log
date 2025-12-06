@@ -149,47 +149,24 @@ Adds text/markdown/chat output formats via new `content_extractor.py` module.
 
 **Note**: The original Phase 4 plan targeted tool formatters (~600 lines), but due to tight coupling with `escape_html`, `render_markdown`, and other utilities, we extracted a cleaner subset: code highlighting and diff rendering. The remaining tool formatters could be extracted in a future phase once the shared utilities are better factored.
 
-## Planned Future Phases
-
-### Phase 5: Message Processing Decomposition
+### Phase 5: Message Processing Decomposition ✅ PARTIAL
 
 **Goal**: Break down the 687-line `_process_messages_loop()` into smaller functions
 
-**Current Structure** (lines 3400-4086):
-```
-_process_messages_loop()
-├── Session header creation
-├── Message type detection (user/assistant/system/summary)
-├── Content extraction and rendering
-├── Tool use context building
-├── CSS class determination
-├── TemplateMessage creation
-├── Message processors (_process_command_message, etc.)
-└── Stats accumulation
-```
+**Changes**:
+- ✅ Created `_process_system_message()` function (~88 lines) - handles hook summaries, commands, system messages
+- ✅ Created `ToolItemResult` dataclass for structured tool processing results
+- ✅ Created `_process_tool_use_item()` function (~84 lines) - handles tool_use content items
+- ✅ Created `_process_tool_result_item()` function (~71 lines) - handles tool_result content items
+- ✅ Created `_process_thinking_item()` function (~21 lines) - handles thinking content
+- ✅ Created `_process_image_item()` function (~17 lines) - handles image content
+- ✅ Replaced ~220 lines of nested conditionals with clean dispatcher pattern
 
-**Proposed Decomposition**:
-1. **`_create_session_header()`** - Session header TemplateMessage creation
-2. **`_process_user_message()`** - User message handling
-3. **`_process_assistant_message()`** - Assistant message with tool use extraction
-4. **`_process_system_message()`** - System message (commands, errors, info)
-5. **`_process_summary_message()`** - Summary handling
-6. **Message type router** - Dispatch to appropriate processor
+**Result**: `_process_messages_loop()` reduced from ~687 to ~460 lines (33% smaller)
 
-**Key Insight**: The current processors (`_process_command_message`, `_process_bash_input`, etc.) return `(header, content, css_class, border_color)` tuples. Consider using a dataclass:
+**Note**: File size increased slightly (3730 → 3814 lines) due to new helper functions, but the main loop is now much more maintainable with focused, testable helper functions. Further decomposition (session tracking, token usage extraction) could reduce it to ~200 lines but would require more complex parameter passing.
 
-```python
-@dataclass
-class ProcessedContent:
-    header: str
-    content: str
-    css_class: str
-    border_color: str
-    preview_content: str = ""
-    additional_css: str = ""
-```
-
-**Expected Result**: `_process_messages_loop()` reduced to ~200 lines of orchestration
+## Planned Future Phases
 
 ### Phase 6: Message Pairing Simplification
 
@@ -267,14 +244,14 @@ For maximum impact with minimum risk:
 
 ## Metrics to Track
 
-| Metric | Baseline (v0.9) | Current (Phase 3-4 done) | Target |
-|--------|-----------------|-------------------------|--------|
-| renderer.py lines | 4246 | 3730 | <3000 |
-| Largest function | ~687 lines | ~687 lines | <100 lines |
+| Metric | Baseline (v0.9) | Current (Phase 5 done) | Target |
+|--------|-----------------|------------------------|--------|
+| renderer.py lines | 4246 | 3814 | <3000 |
+| Largest function | ~687 lines | ~460 lines | <100 lines |
 | Module count | 3 (renderer, timings, models) | 5 (+ansi_colors, +renderer_code) | 6-7 |
 | Test coverage | ~78% | ~78% | >85% |
 
-**Progress**: 516 lines extracted from renderer.py (12% reduction)
+**Progress**: Main loop reduced by 33% (687 → 460 lines). File grew slightly due to new helper functions, but code is now more modular and testable.
 
 ## Quality Gates
 

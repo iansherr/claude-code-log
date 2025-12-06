@@ -4,6 +4,7 @@
 import json
 import re
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Dict, Any, cast, TYPE_CHECKING
 
@@ -2075,6 +2076,316 @@ def _process_regular_message(
     return css_class, content_html, message_type, message_title
 
 
+def _process_system_message(
+    message: SystemTranscriptEntry,
+) -> Optional[TemplateMessage]:
+    """Process a system message and return a TemplateMessage, or None if it should be skipped.
+
+    Handles:
+    - Hook summaries (subtype="stop_hook_summary")
+    - Command name messages
+    - Command output messages
+    - Other system messages with level-specific styling
+    """
+    session_id = getattr(message, "sessionId", "unknown")
+    timestamp = getattr(message, "timestamp", "")
+    formatted_timestamp = format_timestamp(timestamp) if timestamp else ""
+
+    # Handle hook summaries (subtype="stop_hook_summary")
+    if message.subtype == "stop_hook_summary":
+        # Skip silent hook successes (no output, no errors)
+        if not message.hasOutput and not message.hookErrors:
+            return None
+        # Render hook summary with collapsible details
+        content_html = _render_hook_summary(message)
+        level_css = "system system-hook"
+        level = "hook"
+    elif not message.content:
+        # Skip system messages without content (shouldn't happen normally)
+        return None
+    else:
+        # Extract command name if present
+        command_name_match = re.search(
+            r"<command-name>(.*?)</command-name>", message.content, re.DOTALL
+        )
+        # Also check for command output (child of user command)
+        command_output_match = re.search(
+            r"<local-command-stdout>(.*?)</local-command-stdout>",
+            message.content,
+            re.DOTALL,
+        )
+
+        # Create level-specific styling and icons
+        level = getattr(message, "level", "info")
+        level_icon = {"warning": "⚠️", "error": "❌", "info": "ℹ️"}.get(level, "ℹ️")
+
+        # Determine CSS class:
+        # - Command name (user-initiated): "system" only
+        # - Command output (assistant response): "system system-{level}"
+        # - Other system messages: "system system-{level}"
+        if command_name_match:
+            # User-initiated command
+            level_css = "system"
+        else:
+            # Command output or other system message
+            level_css = f"system system-{level}"
+
+        # Process content: extract command name or command output, or use full content
+        if command_name_match:
+            # Show just the command name
+            command_name = command_name_match.group(1).strip()
+            html_content = f"<code>{html.escape(command_name)}</code>"
+            content_html = f"<strong>{level_icon}</strong> {html_content}"
+        elif command_output_match:
+            # Extract and process command output
+            output = command_output_match.group(1).strip()
+            html_content = convert_ansi_to_html(output)
+            content_html = f"<strong>{level_icon}</strong> {html_content}"
+        else:
+            # Process ANSI codes in system messages (they may contain command output)
+            html_content = convert_ansi_to_html(message.content)
+            content_html = f"<strong>{level_icon}</strong> {html_content}"
+
+    # Store parent UUID for hierarchy rebuild (handled by _build_message_hierarchy)
+    parent_uuid = getattr(message, "parentUuid", None)
+
+    return TemplateMessage(
+        message_type="system",
+        content_html=content_html,
+        formatted_timestamp=formatted_timestamp,
+        css_class=level_css,
+        raw_timestamp=timestamp,
+        session_id=session_id,
+        message_title=f"System {level.title()}",
+        message_id=None,  # Will be assigned by _build_message_hierarchy
+        ancestry=[],  # Will be assigned by _build_message_hierarchy
+        uuid=message.uuid,
+        parent_uuid=parent_uuid,
+    )
+
+
+@dataclass
+class ToolItemResult:
+    """Result of processing a single tool/thinking/image item."""
+
+    message_type: str
+    content_html: str
+    css_class: str
+    message_title: str
+    tool_use_id: Optional[str] = None
+    title_hint: Optional[str] = None
+    pending_dedup: Optional[str] = None  # For Task result deduplication
+
+
+def _process_tool_use_item(
+    tool_item: ContentItem,
+    tool_use_context: Dict[str, ToolUseContent],
+) -> Optional[ToolItemResult]:
+    """Process a tool_use content item.
+
+    Args:
+        tool_item: The tool use content item
+        tool_use_context: Dict to populate with tool_use_id -> ToolUseContent mapping
+
+    Returns:
+        ToolItemResult with processed content, or None if item should be skipped
+    """
+    # Convert Anthropic type to our format if necessary
+    if not isinstance(tool_item, ToolUseContent):
+        tool_use = ToolUseContent(
+            type="tool_use",
+            id=getattr(tool_item, "id", ""),
+            name=getattr(tool_item, "name", ""),
+            input=getattr(tool_item, "input", {}),
+        )
+    else:
+        tool_use = tool_item
+
+    tool_content_html = format_tool_use_content(tool_use)
+    escaped_name = escape_html(tool_use.name)
+    escaped_id = escape_html(tool_use.id)
+    item_tool_use_id = tool_use.id
+    tool_title_hint = f"ID: {escaped_id}"
+
+    # Populate tool_use_context for later use when processing tool results
+    tool_use_context[item_tool_use_id] = tool_use
+
+    # Get summary for header (description or filepath)
+    summary = get_tool_summary(tool_use)
+
+    # Set message_type (for CSS/logic) and message_title (for display)
+    if tool_use.name == "TodoWrite":
+        tool_message_title = "📝 Todo List"
+    elif tool_use.name == "Task":
+        # Special handling for Task tool: show subagent_type and description
+        subagent_type = tool_use.input.get("subagent_type", "")
+        description = tool_use.input.get("description", "")
+        escaped_subagent = escape_html(subagent_type) if subagent_type else ""
+
+        if description and subagent_type:
+            escaped_desc = escape_html(description)
+            tool_message_title = f"🔧 {escaped_name} <span class='tool-summary'>{escaped_desc}</span> <span class='tool-subagent'>({escaped_subagent})</span>"
+        elif description:
+            escaped_desc = escape_html(description)
+            tool_message_title = (
+                f"🔧 {escaped_name} <span class='tool-summary'>{escaped_desc}</span>"
+            )
+        elif subagent_type:
+            tool_message_title = f"🔧 {escaped_name} <span class='tool-subagent'>({escaped_subagent})</span>"
+        else:
+            tool_message_title = f"🔧 {escaped_name}"
+    elif tool_use.name in ("Edit", "Write"):
+        # Use 📝 icon for Edit/Write
+        if summary:
+            escaped_summary = escape_html(summary)
+            tool_message_title = (
+                f"📝 {escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
+            )
+        else:
+            tool_message_title = f"📝 {escaped_name}"
+    elif tool_use.name == "Read":
+        # Use 📄 icon for Read
+        if summary:
+            escaped_summary = escape_html(summary)
+            tool_message_title = (
+                f"📄 {escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
+            )
+        else:
+            tool_message_title = f"📄 {escaped_name}"
+    elif summary:
+        # For other tools (like Bash), append summary
+        escaped_summary = escape_html(summary)
+        tool_message_title = (
+            f"{escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
+        )
+    else:
+        tool_message_title = escaped_name
+
+    return ToolItemResult(
+        message_type="tool_use",
+        content_html=tool_content_html,
+        css_class="tool_use",
+        message_title=tool_message_title,
+        tool_use_id=item_tool_use_id,
+        title_hint=tool_title_hint,
+    )
+
+
+def _process_tool_result_item(
+    tool_item: ContentItem,
+    tool_use_context: Dict[str, ToolUseContent],
+) -> Optional[ToolItemResult]:
+    """Process a tool_result content item.
+
+    Args:
+        tool_item: The tool result content item
+        tool_use_context: Dict with tool_use_id -> ToolUseContent mapping
+
+    Returns:
+        ToolItemResult with processed content, or None if item should be skipped
+    """
+    # Convert Anthropic type to our format if necessary
+    if not isinstance(tool_item, ToolResultContent):
+        tool_result = ToolResultContent(
+            type="tool_result",
+            tool_use_id=getattr(tool_item, "tool_use_id", ""),
+            content=getattr(tool_item, "content", ""),
+            is_error=getattr(tool_item, "is_error", False),
+        )
+    else:
+        tool_result = tool_item
+
+    # Get file_path and tool_name from tool_use context for specialized rendering
+    result_file_path: Optional[str] = None
+    result_tool_name: Optional[str] = None
+    if tool_result.tool_use_id in tool_use_context:
+        tool_use_from_ctx = tool_use_context[tool_result.tool_use_id]
+        result_tool_name = tool_use_from_ctx.name
+        if (
+            result_tool_name in ("Read", "Edit", "Write")
+            and "file_path" in tool_use_from_ctx.input
+        ):
+            result_file_path = tool_use_from_ctx.input["file_path"]
+
+    tool_content_html = format_tool_result_content(
+        tool_result, result_file_path, result_tool_name
+    )
+
+    # Retroactive deduplication: if Task result, extract content for later matching
+    pending_dedup: Optional[str] = None
+    if result_tool_name == "Task":
+        # Extract text content from tool result
+        # Note: tool_result.content can be str or List[Dict[str, Any]]
+        if isinstance(tool_result.content, str):
+            task_result_content = tool_result.content.strip()
+        else:
+            # Handle list of dicts (tool result format)
+            content_parts: list[str] = []
+            for item in tool_result.content:
+                text_val = item.get("text", "")
+                if isinstance(text_val, str):
+                    content_parts.append(text_val)
+            task_result_content = "\n".join(content_parts).strip()
+        pending_dedup = task_result_content if task_result_content else None
+
+    escaped_id = escape_html(tool_result.tool_use_id)
+    tool_title_hint = f"ID: {escaped_id}"
+    tool_message_title = "Error" if tool_result.is_error else ""
+    tool_css_class = "tool_result error" if tool_result.is_error else "tool_result"
+
+    return ToolItemResult(
+        message_type="tool_result",
+        content_html=tool_content_html,
+        css_class=tool_css_class,
+        message_title=tool_message_title,
+        tool_use_id=tool_result.tool_use_id,
+        title_hint=tool_title_hint,
+        pending_dedup=pending_dedup,
+    )
+
+
+def _process_thinking_item(tool_item: ContentItem) -> Optional[ToolItemResult]:
+    """Process a thinking content item.
+
+    Returns:
+        ToolItemResult with processed content
+    """
+    # Convert Anthropic type to our format if necessary
+    if not isinstance(tool_item, ThinkingContent):
+        thinking = ThinkingContent(
+            type="thinking",
+            thinking=getattr(tool_item, "thinking", str(tool_item)),
+        )
+    else:
+        thinking = tool_item
+
+    return ToolItemResult(
+        message_type="thinking",
+        content_html=format_thinking_content(thinking),
+        css_class="thinking",
+        message_title="Thinking",
+    )
+
+
+def _process_image_item(tool_item: ContentItem) -> Optional[ToolItemResult]:
+    """Process an image content item.
+
+    Returns:
+        ToolItemResult with processed content, or None if item should be skipped
+    """
+    # Convert Anthropic type to our format if necessary
+    if not isinstance(tool_item, ImageContent):
+        # For now, skip Anthropic image types - we'll handle when we encounter them
+        return None
+
+    return ToolItemResult(
+        message_type="image",
+        content_html=format_image_content(tool_item),
+        css_class="image",
+        message_title="Image",
+    )
+
+
 def _get_combined_transcript_link(cache_manager: "CacheManager") -> Optional[str]:
     """Get link to combined transcript if available."""
     try:
@@ -3044,84 +3355,9 @@ def _process_messages_loop(
 
         # Handle system messages separately
         if isinstance(message, SystemTranscriptEntry):
-            session_id = getattr(message, "sessionId", "unknown")
-            timestamp = getattr(message, "timestamp", "")
-            formatted_timestamp = format_timestamp(timestamp) if timestamp else ""
-
-            # Handle hook summaries (subtype="stop_hook_summary")
-            if message.subtype == "stop_hook_summary":
-                # Skip silent hook successes (no output, no errors)
-                if not message.hasOutput and not message.hookErrors:
-                    continue
-                # Render hook summary with collapsible details
-                content_html = _render_hook_summary(message)
-                level_css = "system system-hook"
-                level = "hook"
-            elif not message.content:
-                # Skip system messages without content (shouldn't happen normally)
-                continue
-            else:
-                # Extract command name if present
-                command_name_match = re.search(
-                    r"<command-name>(.*?)</command-name>", message.content, re.DOTALL
-                )
-                # Also check for command output (child of user command)
-                command_output_match = re.search(
-                    r"<local-command-stdout>(.*?)</local-command-stdout>",
-                    message.content,
-                    re.DOTALL,
-                )
-
-                # Create level-specific styling and icons
-                level = getattr(message, "level", "info")
-                level_icon = {"warning": "⚠️", "error": "❌", "info": "ℹ️"}.get(
-                    level, "ℹ️"
-                )
-
-                # Determine CSS class:
-                # - Command name (user-initiated): "system" only
-                # - Command output (assistant response): "system system-{level}"
-                # - Other system messages: "system system-{level}"
-                if command_name_match:
-                    # User-initiated command
-                    level_css = "system"
-                else:
-                    # Command output or other system message
-                    level_css = f"system system-{level}"
-
-                # Process content: extract command name or command output, or use full content
-                if command_name_match:
-                    # Show just the command name
-                    command_name = command_name_match.group(1).strip()
-                    html_content = f"<code>{html.escape(command_name)}</code>"
-                    content_html = f"<strong>{level_icon}</strong> {html_content}"
-                elif command_output_match:
-                    # Extract and process command output
-                    output = command_output_match.group(1).strip()
-                    html_content = convert_ansi_to_html(output)
-                    content_html = f"<strong>{level_icon}</strong> {html_content}"
-                else:
-                    # Process ANSI codes in system messages (they may contain command output)
-                    html_content = convert_ansi_to_html(message.content)
-                    content_html = f"<strong>{level_icon}</strong> {html_content}"
-
-            # Store parent UUID for hierarchy rebuild (handled by _build_message_hierarchy)
-            parent_uuid = getattr(message, "parentUuid", None)
-
-            system_template_message = TemplateMessage(
-                message_type="system",
-                content_html=content_html,
-                formatted_timestamp=formatted_timestamp,
-                css_class=level_css,
-                raw_timestamp=timestamp,
-                session_id=session_id,
-                message_title=f"System {level.title()}",
-                message_id=None,  # Will be assigned by _build_message_hierarchy
-                ancestry=[],  # Will be assigned by _build_message_hierarchy
-                uuid=message.uuid,
-                parent_uuid=parent_uuid,
-            )
-            template_messages.append(system_template_message)
+            system_template_message = _process_system_message(message)
+            if system_template_message:
+                template_messages.append(system_template_message)
             continue
 
         # Handle queue-operation 'remove' messages as user messages
@@ -3417,182 +3653,32 @@ def _process_messages_loop(
 
             # Handle both custom types and Anthropic types
             item_type = getattr(tool_item, "type", None)
-            item_tool_use_id: Optional[str] = None
-            tool_title_hint: Optional[str] = None
-            pending_dedup: Optional[str] = (
-                None  # Holds task result content for deduplication
-            )
 
+            # Dispatch to appropriate handler based on item type
+            tool_result: Optional[ToolItemResult] = None
             if isinstance(tool_item, ToolUseContent) or item_type == "tool_use":
-                # Convert Anthropic type to our format if necessary
-                if not isinstance(tool_item, ToolUseContent):
-                    tool_use = ToolUseContent(
-                        type="tool_use",
-                        id=getattr(tool_item, "id", ""),
-                        name=getattr(tool_item, "name", ""),
-                        input=getattr(tool_item, "input", {}),
-                    )
-                else:
-                    tool_use = tool_item
-
-                tool_content_html = format_tool_use_content(tool_use)
-                escaped_name = escape_html(tool_use.name)
-                escaped_id = escape_html(tool_use.id)
-                item_tool_use_id = tool_use.id
-                tool_title_hint = f"ID: {escaped_id}"
-
-                # Populate tool_use_context for later use when processing tool results
-                tool_use_context[item_tool_use_id] = tool_use
-
-                # Get summary for header (description or filepath)
-                summary = get_tool_summary(tool_use)
-
-                # Set message_type (for CSS/logic) and message_title (for display)
-                tool_message_type = "tool_use"
-                if tool_use.name == "TodoWrite":
-                    tool_message_title = "📝 Todo List"
-                elif tool_use.name == "Task":
-                    # Special handling for Task tool: show subagent_type and description
-                    subagent_type = tool_use.input.get("subagent_type", "")
-                    description = tool_use.input.get("description", "")
-                    escaped_subagent = (
-                        escape_html(subagent_type) if subagent_type else ""
-                    )
-
-                    if description and subagent_type:
-                        escaped_desc = escape_html(description)
-                        tool_message_title = f"🔧 {escaped_name} <span class='tool-summary'>{escaped_desc}</span> <span class='tool-subagent'>({escaped_subagent})</span>"
-                    elif description:
-                        escaped_desc = escape_html(description)
-                        tool_message_title = f"🔧 {escaped_name} <span class='tool-summary'>{escaped_desc}</span>"
-                    elif subagent_type:
-                        tool_message_title = f"🔧 {escaped_name} <span class='tool-subagent'>({escaped_subagent})</span>"
-                    else:
-                        tool_message_title = f"🔧 {escaped_name}"
-                elif tool_use.name in ("Edit", "Write"):
-                    # Use 📝 icon for Edit/Write
-                    if summary:
-                        escaped_summary = escape_html(summary)
-                        tool_message_title = f"📝 {escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
-                    else:
-                        tool_message_title = f"📝 {escaped_name}"
-                elif tool_use.name == "Read":
-                    # Use 📄 icon for Read
-                    if summary:
-                        escaped_summary = escape_html(summary)
-                        tool_message_title = f"📄 {escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
-                    else:
-                        tool_message_title = f"📄 {escaped_name}"
-                elif summary:
-                    # For other tools (like Bash), append summary
-                    escaped_summary = escape_html(summary)
-                    tool_message_title = f"{escaped_name} <span class='tool-summary'>{escaped_summary}</span>"
-                else:
-                    tool_message_title = escaped_name
-                tool_css_class = "tool_use"
+                tool_result = _process_tool_use_item(tool_item, tool_use_context)
             elif isinstance(tool_item, ToolResultContent) or item_type == "tool_result":
-                # Convert Anthropic type to our format if necessary
-                if not isinstance(tool_item, ToolResultContent):
-                    tool_result_converted = ToolResultContent(
-                        type="tool_result",
-                        tool_use_id=getattr(tool_item, "tool_use_id", ""),
-                        content=getattr(tool_item, "content", ""),
-                        is_error=getattr(tool_item, "is_error", False),
-                    )
-                else:
-                    tool_result_converted = tool_item
-
-                # Get file_path and tool_name from tool_use context for specialized rendering
-                result_file_path: Optional[str] = None
-                result_tool_name: Optional[str] = None
-                if tool_result_converted.tool_use_id in tool_use_context:
-                    tool_use_from_ctx = tool_use_context[
-                        tool_result_converted.tool_use_id
-                    ]
-                    result_tool_name = tool_use_from_ctx.name
-                    if (
-                        result_tool_name
-                        in (
-                            "Read",
-                            "Edit",
-                            "Write",
-                        )
-                        and "file_path" in tool_use_from_ctx.input
-                    ):
-                        result_file_path = tool_use_from_ctx.input["file_path"]
-
-                tool_content_html = format_tool_result_content(
-                    tool_result_converted,
-                    result_file_path,
-                    result_tool_name,
-                )
-
-                # Retroactive deduplication: if Task result matches a sidechain assistant, replace that assistant with a forward link
-                if result_tool_name == "Task":
-                    # Extract text content from tool result
-                    # Note: tool_result.content can be str or List[Dict[str, Any]] (not List[ContentItem])
-                    if isinstance(tool_result_converted.content, str):
-                        task_result_content = tool_result_converted.content.strip()
-                    else:
-                        # Handle list of dicts (tool result format)
-                        content_parts: list[str] = []
-                        for item in tool_result_converted.content:
-                            # tool_result_converted.content is List[Dict[str, Any]]
-                            text_val = item.get("text", "")
-                            if isinstance(text_val, str):
-                                content_parts.append(text_val)
-                        task_result_content = "\n".join(content_parts).strip()
-
-                    # Store for deduplication - we'll check/update after we have the message_id
-                    pending_dedup = task_result_content if task_result_content else None
-                else:
-                    pending_dedup = None
-
-                escaped_id = escape_html(tool_result_converted.tool_use_id)
-                item_tool_use_id = tool_result_converted.tool_use_id
-                tool_title_hint = f"ID: {escaped_id}"
-                # Simplified: no "Tool Result" heading, icon is set by template
-                tool_message_type = "tool_result"
-                tool_message_title = "Error" if tool_result_converted.is_error else ""
-                tool_css_class = (
-                    "tool_result error"
-                    if tool_result_converted.is_error
-                    else "tool_result"
-                )
+                tool_result = _process_tool_result_item(tool_item, tool_use_context)
             elif isinstance(tool_item, ThinkingContent) or item_type == "thinking":
-                # Convert Anthropic type to our format if necessary
-                if not isinstance(tool_item, ThinkingContent):
-                    thinking_converted = ThinkingContent(
-                        type="thinking",
-                        thinking=getattr(tool_item, "thinking", str(tool_item)),
-                    )
-                else:
-                    thinking_converted = tool_item
-
-                tool_content_html = format_thinking_content(thinking_converted)
-                tool_message_type = "thinking"
-                tool_message_title = "Thinking"
-                tool_css_class = "thinking"
+                tool_result = _process_thinking_item(tool_item)
             elif isinstance(tool_item, ImageContent) or item_type == "image":
-                # Convert Anthropic type to our format if necessary
-                if not isinstance(tool_item, ImageContent):
-                    # For now, skip Anthropic image types - we'll handle when we encounter them
-                    continue
-                else:
-                    tool_content_html = format_image_content(tool_item)
-                tool_message_type = "image"
-                tool_message_title = "Image"
-                tool_css_class = "image"
+                tool_result = _process_image_item(tool_item)
             else:
                 # Handle unknown content types
-                tool_content_html = (
-                    f"<p>Unknown content type: {escape_html(str(type(tool_item)))}</p>"
+                tool_result = ToolItemResult(
+                    message_type="unknown",
+                    content_html=f"<p>Unknown content type: {escape_html(str(type(tool_item)))}</p>",
+                    css_class="unknown",
+                    message_title="Unknown Content",
                 )
-                tool_message_type = "unknown"
-                tool_message_title = "Unknown Content"
-                tool_css_class = "unknown"
+
+            # Skip if handler returned None (e.g., unsupported image types)
+            if tool_result is None:
+                continue
 
             # Preserve sidechain context for tool/thinking/image content within sidechain messages
+            tool_css_class = tool_result.css_class
             tool_is_sidechain = getattr(message, "isSidechain", False)
             if tool_is_sidechain:
                 tool_css_class += " sidechain"
@@ -3600,22 +3686,22 @@ def _process_messages_loop(
             # Generate unique UUID for this tool message
             # Use tool_use_id if available, otherwise fall back to message UUID + index
             tool_uuid = (
-                item_tool_use_id
-                if item_tool_use_id
+                tool_result.tool_use_id
+                if tool_result.tool_use_id
                 else f"{msg_uuid}-tool-{len(template_messages)}"
             )
 
             tool_template_message = TemplateMessage(
-                message_type=tool_message_type,
-                content_html=tool_content_html,
+                message_type=tool_result.message_type,
+                content_html=tool_result.content_html,
                 formatted_timestamp=tool_formatted_timestamp,
                 css_class=tool_css_class,
                 raw_timestamp=tool_timestamp,
                 session_summary=session_summary,
                 session_id=session_id,
-                tool_use_id=item_tool_use_id,
-                title_hint=tool_title_hint,
-                message_title=tool_message_title,
+                tool_use_id=tool_result.tool_use_id,
+                title_hint=tool_result.title_hint,
+                message_title=tool_result.message_title,
                 message_id=None,  # Will be assigned by _build_message_hierarchy
                 ancestry=[],  # Will be assigned by _build_message_hierarchy
                 agent_id=getattr(message, "agentId", None),
@@ -3624,9 +3710,8 @@ def _process_messages_loop(
 
             # Store raw text for Task result deduplication
             # (handled later in _reorder_sidechain_template_messages)
-            if pending_dedup is not None:
-                tool_template_message.raw_text_content = pending_dedup
-                pending_dedup = None
+            if tool_result.pending_dedup is not None:
+                tool_template_message.raw_text_content = tool_result.pending_dedup
 
             template_messages.append(tool_template_message)
 
