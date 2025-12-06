@@ -56,10 +56,15 @@
       --answer-accent: #4caf50;
       --answer-bg: #f0fff4;
   
+      /* Priority palette (purple intensity - darker = more urgent) */
+      --priority-600: #7c3aed;
+      --priority-400: #a78bfa;
+      --priority-300: #c4b5fd;
+  
       /* Priority colors for todos */
-      --priority-high: #dc3545;
-      --priority-medium: #ffc107;
-      --priority-low: #28a745;
+      --priority-high: var(--priority-600);
+      --priority-medium: var(--priority-400);
+      --priority-low: var(--priority-300);
   
       /* Status colors */
       --status-in-progress: #fff3cd;
@@ -1901,10 +1906,15 @@
       --answer-accent: #4caf50;
       --answer-bg: #f0fff4;
   
+      /* Priority palette (purple intensity - darker = more urgent) */
+      --priority-600: #7c3aed;
+      --priority-400: #a78bfa;
+      --priority-300: #c4b5fd;
+  
       /* Priority colors for todos */
-      --priority-high: #dc3545;
-      --priority-medium: #ffc107;
-      --priority-low: #28a745;
+      --priority-high: var(--priority-600);
+      --priority-medium: var(--priority-400);
+      --priority-low: var(--priority-300);
   
       /* Status colors */
       --status-in-progress: #fff3cd;
@@ -2263,7 +2273,8 @@
   .user:not(.compacted),
   .system,
   .bash-input,
-  .bash-output {
+  .bash-output,
+  .system:not(.system-info):not(.system-warning):not(.system-error) {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -2289,17 +2300,11 @@
       margin-right: 6em;
   }
   
-  /* System warnings/info (assistant-initiated) */
+  /* System warnings/info at tool level (e.g., hook notifications) */
   .system-warning,
   .system-info {
-      margin-left: 0;
-      margin-right: 10em;
-  }
-  
-  /* Exception: paired system-info messages align right (like user commands) */
-  .system.system-info.paired-message {
-      margin-left: 33%;
-      margin-right: 0;
+      margin-left: 2em;
+      margin-right: 6em;
   }
   
   /* Sidechain messages (sub-assistant hierarchy) */
@@ -2422,6 +2427,10 @@
   .system-info {
       border-left-color: var(--info-dimmed);
       background-color: var(--highlight-dimmed);
+  }
+  
+  .system-info .header,
+  .system-info .content {
       font-size: 80%;
   }
   
@@ -3308,18 +3317,14 @@
       background-color: var(--bg-hover);
   }
   
-  .todo-item.completed {
-      opacity: 0.7;
-  }
-  
   .todo-item.completed .todo-content {
       text-decoration: line-through;
       color: var(--text-muted);
+      opacity: 0.7;
   }
   
-  .todo-item input[type="checkbox"] {
-      margin: 0;
-      cursor: default;
+  .todo-item.pending .todo-content {
+      font-weight: normal;
   }
   
   .todo-status {
@@ -6632,10 +6637,15 @@
       --answer-accent: #4caf50;
       --answer-bg: #f0fff4;
   
+      /* Priority palette (purple intensity - darker = more urgent) */
+      --priority-600: #7c3aed;
+      --priority-400: #a78bfa;
+      --priority-300: #c4b5fd;
+  
       /* Priority colors for todos */
-      --priority-high: #dc3545;
-      --priority-medium: #ffc107;
-      --priority-low: #28a745;
+      --priority-high: var(--priority-600);
+      --priority-medium: var(--priority-400);
+      --priority-low: var(--priority-300);
   
       /* Status colors */
       --status-in-progress: #fff3cd;
@@ -6994,7 +7004,8 @@
   .user:not(.compacted),
   .system,
   .bash-input,
-  .bash-output {
+  .bash-output,
+  .system:not(.system-info):not(.system-warning):not(.system-error) {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -7020,17 +7031,11 @@
       margin-right: 6em;
   }
   
-  /* System warnings/info (assistant-initiated) */
+  /* System warnings/info at tool level (e.g., hook notifications) */
   .system-warning,
   .system-info {
-      margin-left: 0;
-      margin-right: 10em;
-  }
-  
-  /* Exception: paired system-info messages align right (like user commands) */
-  .system.system-info.paired-message {
-      margin-left: 33%;
-      margin-right: 0;
+      margin-left: 2em;
+      margin-right: 6em;
   }
   
   /* Sidechain messages (sub-assistant hierarchy) */
@@ -7153,6 +7158,10 @@
   .system-info {
       border-left-color: var(--info-dimmed);
       background-color: var(--highlight-dimmed);
+  }
+  
+  .system-info .header,
+  .system-info .content {
       font-size: 80%;
   }
   
@@ -8039,18 +8048,14 @@
       background-color: var(--bg-hover);
   }
   
-  .todo-item.completed {
-      opacity: 0.7;
-  }
-  
   .todo-item.completed .todo-content {
       text-decoration: line-through;
       color: var(--text-muted);
+      opacity: 0.7;
   }
   
-  .todo-item input[type="checkbox"] {
-      margin: 0;
-      cursor: default;
+  .todo-item.pending .todo-content {
+      font-weight: normal;
   }
   
   .todo-status {
@@ -9905,34 +9910,29 @@
       <div class="todo-list">
           
                   <div class="todo-item pending medium">
-                      <input type="checkbox" readonly>
                       <span class="todo-status">⏳</span>
                       <span class="todo-content">broken_todo</span>
                   </div>
               
                   <div class="todo-item in_progress high">
-                      <input type="checkbox"   readonly>
                       <span class="todo-status">🔄</span>
                       <span class="todo-content">Implement core functionality</span>
                       <span class="todo-id">#2</span>
                   </div>
               
                   <div class="todo-item pending medium">
-                      <input type="checkbox"   readonly>
                       <span class="todo-status">⏳</span>
                       <span class="todo-content">Add comprehensive tests</span>
                       <span class="todo-id">#3</span>
                   </div>
               
                   <div class="todo-item pending low">
-                      <input type="checkbox"   readonly>
                       <span class="todo-status">⏳</span>
                       <span class="todo-content">Write user documentation</span>
                       <span class="todo-id">#4</span>
                   </div>
               
                   <div class="todo-item pending medium">
-                      <input type="checkbox"   readonly>
                       <span class="todo-status">⏳</span>
                       <span class="todo-content">Perform code review</span>
                       <span class="todo-id">#5</span>
@@ -11470,10 +11470,15 @@
       --answer-accent: #4caf50;
       --answer-bg: #f0fff4;
   
+      /* Priority palette (purple intensity - darker = more urgent) */
+      --priority-600: #7c3aed;
+      --priority-400: #a78bfa;
+      --priority-300: #c4b5fd;
+  
       /* Priority colors for todos */
-      --priority-high: #dc3545;
-      --priority-medium: #ffc107;
-      --priority-low: #28a745;
+      --priority-high: var(--priority-600);
+      --priority-medium: var(--priority-400);
+      --priority-low: var(--priority-300);
   
       /* Status colors */
       --status-in-progress: #fff3cd;
@@ -11832,7 +11837,8 @@
   .user:not(.compacted),
   .system,
   .bash-input,
-  .bash-output {
+  .bash-output,
+  .system:not(.system-info):not(.system-warning):not(.system-error) {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -11858,17 +11864,11 @@
       margin-right: 6em;
   }
   
-  /* System warnings/info (assistant-initiated) */
+  /* System warnings/info at tool level (e.g., hook notifications) */
   .system-warning,
   .system-info {
-      margin-left: 0;
-      margin-right: 10em;
-  }
-  
-  /* Exception: paired system-info messages align right (like user commands) */
-  .system.system-info.paired-message {
-      margin-left: 33%;
-      margin-right: 0;
+      margin-left: 2em;
+      margin-right: 6em;
   }
   
   /* Sidechain messages (sub-assistant hierarchy) */
@@ -11991,6 +11991,10 @@
   .system-info {
       border-left-color: var(--info-dimmed);
       background-color: var(--highlight-dimmed);
+  }
+  
+  .system-info .header,
+  .system-info .content {
       font-size: 80%;
   }
   
@@ -12877,18 +12881,14 @@
       background-color: var(--bg-hover);
   }
   
-  .todo-item.completed {
-      opacity: 0.7;
-  }
-  
   .todo-item.completed .todo-content {
       text-decoration: line-through;
       color: var(--text-muted);
+      opacity: 0.7;
   }
   
-  .todo-item input[type="checkbox"] {
-      margin: 0;
-      cursor: default;
+  .todo-item.pending .todo-content {
+      font-weight: normal;
   }
   
   .todo-status {
@@ -16339,10 +16339,15 @@
       --answer-accent: #4caf50;
       --answer-bg: #f0fff4;
   
+      /* Priority palette (purple intensity - darker = more urgent) */
+      --priority-600: #7c3aed;
+      --priority-400: #a78bfa;
+      --priority-300: #c4b5fd;
+  
       /* Priority colors for todos */
-      --priority-high: #dc3545;
-      --priority-medium: #ffc107;
-      --priority-low: #28a745;
+      --priority-high: var(--priority-600);
+      --priority-medium: var(--priority-400);
+      --priority-low: var(--priority-300);
   
       /* Status colors */
       --status-in-progress: #fff3cd;
@@ -16701,7 +16706,8 @@
   .user:not(.compacted),
   .system,
   .bash-input,
-  .bash-output {
+  .bash-output,
+  .system:not(.system-info):not(.system-warning):not(.system-error) {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -16727,17 +16733,11 @@
       margin-right: 6em;
   }
   
-  /* System warnings/info (assistant-initiated) */
+  /* System warnings/info at tool level (e.g., hook notifications) */
   .system-warning,
   .system-info {
-      margin-left: 0;
-      margin-right: 10em;
-  }
-  
-  /* Exception: paired system-info messages align right (like user commands) */
-  .system.system-info.paired-message {
-      margin-left: 33%;
-      margin-right: 0;
+      margin-left: 2em;
+      margin-right: 6em;
   }
   
   /* Sidechain messages (sub-assistant hierarchy) */
@@ -16860,6 +16860,10 @@
   .system-info {
       border-left-color: var(--info-dimmed);
       background-color: var(--highlight-dimmed);
+  }
+  
+  .system-info .header,
+  .system-info .content {
       font-size: 80%;
   }
   
@@ -17746,18 +17750,14 @@
       background-color: var(--bg-hover);
   }
   
-  .todo-item.completed {
-      opacity: 0.7;
-  }
-  
   .todo-item.completed .todo-content {
       text-decoration: line-through;
       color: var(--text-muted);
+      opacity: 0.7;
   }
   
-  .todo-item input[type="checkbox"] {
-      margin: 0;
-      cursor: default;
+  .todo-item.pending .todo-content {
+      font-weight: normal;
   }
   
   .todo-status {

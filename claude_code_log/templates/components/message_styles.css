@@ -181,7 +181,8 @@
 .user:not(.compacted),
 .system,
 .bash-input,
-.bash-output {
+.bash-output,
+.system:not(.system-info):not(.system-warning):not(.system-error) {
     margin-left: 33%;
     margin-right: 0;
 }
@@ -334,6 +335,10 @@
 .system-info {
     border-left-color: var(--info-dimmed);
     background-color: var(--highlight-dimmed);
+}
+
+.system-info .header,
+.system-info .content {
     font-size: 80%;
 }
 
