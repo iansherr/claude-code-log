@@ -183,7 +183,7 @@ test/test_data/*.html
 
 # Local configuration files
 .claude/settings.local.json
-.vscode/settings.json
+.local.code-workspace
 local.ps1
 
 # Generated documentation examples (uploaded to GitHub releases instead)
