@@ -2,7 +2,6 @@
 """Render Claude transcript data to HTML format."""
 
 import json
-import os
 import re
 import time
 from pathlib import Path
@@ -14,10 +13,6 @@ from datetime import datetime
 import html
 import mistune
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from pygments import highlight  # type: ignore[reportUnknownVariableType]
-from pygments.lexers import TextLexer  # type: ignore[reportUnknownVariableType]
-from pygments.formatters import HtmlFormatter  # type: ignore[reportUnknownVariableType]
-from pygments.util import ClassNotFound  # type: ignore[reportUnknownVariableType]
 
 from .models import (
     TranscriptEntry,
@@ -51,6 +46,12 @@ from .renderer_timings import (
     log_timing,
 )
 from .cache import get_library_version
+from .ansi_colors import convert_ansi_to_html
+from .renderer_code import (
+    highlight_code_with_pygments,
+    truncate_highlighted_preview,
+    render_single_diff,
+)
 
 
 def starts_with_emoji(text: str) -> bool:
@@ -341,7 +342,7 @@ def render_file_content_collapsible(
         HTML string with highlighted code, collapsible if >line_threshold lines
     """
     # Highlight code with Pygments (single call)
-    highlighted_html = _highlight_code_with_pygments(
+    highlighted_html = highlight_code_with_pygments(
         code_content, file_path, linenostart=linenostart
     )
 
@@ -350,7 +351,7 @@ def render_file_content_collapsible(
     lines = code_content.split("\n")
     if len(lines) > line_threshold:
         # Extract preview from already-highlighted HTML (avoids double highlighting)
-        preview_html = _truncate_highlighted_preview(
+        preview_html = truncate_highlighted_preview(
             highlighted_html, preview_line_count
         )
         html_parts.append(
@@ -618,143 +619,6 @@ def format_todowrite_content(tool_use: ToolUseContent) -> str:
     """
 
 
-def _highlight_code_with_pygments(
-    code: str, file_path: str, show_linenos: bool = True, linenostart: int = 1
-) -> str:
-    """Highlight code using Pygments with appropriate lexer based on file path.
-
-    Args:
-        code: The source code to highlight
-        file_path: Path to determine the appropriate lexer
-        show_linenos: Whether to show line numbers (default: True)
-        linenostart: Starting line number for display (default: 1)
-
-    Returns:
-        HTML string with syntax-highlighted code
-    """
-    # PERFORMANCE FIX: Use Pygments' public API to build filename pattern mapping, avoiding filesystem I/O
-    # get_lexer_for_filename performs I/O operations (file existence checks, reading bytes)
-    # which causes severe slowdowns, especially on Windows with antivirus scanning
-    # Solution: Build a reverse mapping from filename patterns to lexer aliases using get_all_lexers() (done once)
-    import fnmatch
-    from pygments.lexers import get_lexer_by_name, get_all_lexers  # type: ignore[reportUnknownVariableType]
-
-    # Build pattern->alias mapping on first call (cached as function attribute)
-    # OPTIMIZATION: Create both direct extension lookup and full pattern cache
-    if not hasattr(_highlight_code_with_pygments, "_pattern_cache"):
-        pattern_cache: dict[str, str] = {}
-        extension_cache: dict[str, str] = {}  # Fast lookup for simple *.ext patterns
-
-        # Use public API: get_all_lexers() returns (name, aliases, patterns, mimetypes) tuples
-        for name, aliases, patterns, mimetypes in get_all_lexers():  # type: ignore[reportUnknownVariableType]
-            if aliases and patterns:
-                # Use first alias as the lexer name
-                lexer_alias = aliases[0]
-                # Map each filename pattern to this lexer alias
-                for pattern in patterns:
-                    pattern_lower = pattern.lower()
-                    pattern_cache[pattern_lower] = lexer_alias
-                    # Extract simple extension patterns (*.ext) for fast lookup
-                    if (
-                        pattern_lower.startswith("*.")
-                        and "*" not in pattern_lower[2:]
-                        and "?" not in pattern_lower[2:]
-                    ):
-                        ext = pattern_lower[2:]  # Remove "*."
-                        # Prefer first match for each extension
-                        if ext not in extension_cache:
-                            extension_cache[ext] = lexer_alias
-
-        _highlight_code_with_pygments._pattern_cache = pattern_cache  # type: ignore[attr-defined]
-        _highlight_code_with_pygments._extension_cache = extension_cache  # type: ignore[attr-defined]
-
-    # Get basename for matching (patterns are like "*.py")
-    basename = os.path.basename(file_path).lower()
-
-    try:
-        # Get caches
-        pattern_cache = _highlight_code_with_pygments._pattern_cache  # type: ignore[attr-defined]
-        extension_cache = _highlight_code_with_pygments._extension_cache  # type: ignore[attr-defined]
-
-        # OPTIMIZATION: Try fast extension lookup first (O(1) dict lookup)
-        lexer_alias = None
-        if "." in basename:
-            ext = basename.split(".")[-1]  # Get last extension (handles .tar.gz, etc.)
-            lexer_alias = extension_cache.get(ext)
-
-        # Fall back to pattern matching only if extension lookup failed
-        if lexer_alias is None:
-            for pattern, lex_alias in pattern_cache.items():
-                if fnmatch.fnmatch(basename, pattern):
-                    lexer_alias = lex_alias
-                    break
-
-        # Get lexer or use TextLexer as fallback
-        # Note: stripall=False preserves leading whitespace (important for code indentation)
-        if lexer_alias:
-            lexer = get_lexer_by_name(lexer_alias, stripall=False)  # type: ignore[reportUnknownVariableType]
-        else:
-            lexer = TextLexer()  # type: ignore[reportUnknownVariableType]
-    except ClassNotFound:
-        # Fall back to plain text lexer
-        lexer = TextLexer()  # type: ignore[reportUnknownVariableType]
-
-    # Create formatter with line numbers in table format
-    formatter = HtmlFormatter(  # type: ignore[reportUnknownVariableType]
-        linenos="table" if show_linenos else False,
-        cssclass="highlight",
-        wrapcode=True,
-        linenostart=linenostart,
-    )
-
-    # Highlight the code with timing if enabled
-    with timing_stat("_pygments_timings"):
-        return str(highlight(code, lexer, formatter))  # type: ignore[reportUnknownArgumentType]
-
-
-def _truncate_highlighted_preview(highlighted_html: str, max_lines: int) -> str:
-    """Truncate Pygments highlighted HTML to first N lines.
-
-    HtmlFormatter(linenos="table") produces a single <tr> with two <td>s:
-      <td class="linenos"><div class="linenodiv"><pre>LINE_NUMS</pre></div></td>
-      <td class="code"><div><pre>CODE</pre></div></td>
-
-    We truncate content within each <pre> tag to the first max_lines lines.
-
-    Args:
-        highlighted_html: Full Pygments-highlighted HTML
-        max_lines: Maximum number of lines to include in preview
-
-    Returns:
-        Truncated HTML with same structure but fewer lines
-    """
-
-    def truncate_pre_content(match: re.Match[str]) -> str:
-        """Truncate content inside a <pre> tag to max_lines."""
-        prefix, content, suffix = match.groups()
-        lines = content.split("\n")
-        truncated = "\n".join(lines[:max_lines])
-        return prefix + truncated + suffix
-
-    # Truncate linenos <pre> content (line numbers separated by newlines)
-    result = re.sub(
-        r'(<div class="linenodiv"><pre>)(.*?)(</pre></div>)',
-        truncate_pre_content,
-        highlighted_html,
-        flags=re.DOTALL,
-    )
-
-    # Truncate code <pre> content
-    result = re.sub(
-        r'(<td class="code"><div><pre[^>]*>)(.*?)(</pre></div></td>)',
-        truncate_pre_content,
-        result,
-        flags=re.DOTALL,
-    )
-
-    return result
-
-
 def format_read_tool_content(tool_use: ToolUseContent) -> str:  # noqa: ARG001
     """Format Read tool use content showing file path.
 
@@ -858,104 +722,6 @@ def render_params_table(params: Dict[str, Any]) -> str:
     return "".join(html_parts)
 
 
-def _render_single_diff(old_string: str, new_string: str) -> str:
-    """Render a single diff between old_string and new_string.
-
-    Returns HTML for the diff view with intra-line highlighting.
-    """
-    import difflib
-
-    # Split into lines for diff
-    old_lines = old_string.splitlines(keepends=True)
-    new_lines = new_string.splitlines(keepends=True)
-
-    # Generate unified diff to identify changed lines
-    differ = difflib.Differ()
-    diff: list[str] = list(differ.compare(old_lines, new_lines))
-
-    html_parts = ["<div class='edit-diff'>"]
-
-    i = 0
-    while i < len(diff):
-        line = diff[i]
-        prefix = line[0:2]
-        content = line[2:]
-
-        if prefix == "- ":
-            # Removed line - look ahead for corresponding addition
-            removed_lines: list[str] = [content]
-            j = i + 1
-
-            # Collect consecutive removed lines
-            while j < len(diff) and diff[j].startswith("- "):
-                removed_lines.append(diff[j][2:])
-                j += 1
-
-            # Skip '? ' hint lines
-            while j < len(diff) and diff[j].startswith("? "):
-                j += 1
-
-            # Collect consecutive added lines
-            added_lines: list[str] = []
-            while j < len(diff) and diff[j].startswith("+ "):
-                added_lines.append(diff[j][2:])
-                j += 1
-
-            # Skip '? ' hint lines
-            while j < len(diff) and diff[j].startswith("? "):
-                j += 1
-
-            # Generate character-level diff for paired lines
-            if added_lines:
-                for old_line, new_line in zip(removed_lines, added_lines):
-                    html_parts.append(_render_line_diff(old_line, new_line))
-
-                # Handle any unpaired lines
-                for old_line in removed_lines[len(added_lines) :]:
-                    escaped = escape_html(old_line.rstrip("\n"))
-                    html_parts.append(
-                        f"<div class='diff-line diff-removed'><span class='diff-marker'>-</span>{escaped}</div>"
-                    )
-
-                for new_line in added_lines[len(removed_lines) :]:
-                    escaped = escape_html(new_line.rstrip("\n"))
-                    html_parts.append(
-                        f"<div class='diff-line diff-added'><span class='diff-marker'>+</span>{escaped}</div>"
-                    )
-            else:
-                # No corresponding addition - just removed
-                for old_line in removed_lines:
-                    escaped = escape_html(old_line.rstrip("\n"))
-                    html_parts.append(
-                        f"<div class='diff-line diff-removed'><span class='diff-marker'>-</span>{escaped}</div>"
-                    )
-
-            i = j
-
-        elif prefix == "+ ":
-            # Added line without corresponding removal
-            escaped = escape_html(content.rstrip("\n"))
-            html_parts.append(
-                f"<div class='diff-line diff-added'><span class='diff-marker'>+</span>{escaped}</div>"
-            )
-            i += 1
-
-        elif prefix == "? ":
-            # Skip hint lines (already processed)
-            i += 1
-
-        else:
-            # Unchanged line - show for context
-            escaped = escape_html(content.rstrip("\n"))
-            html_parts.append(
-                f"<div class='diff-line diff-context'><span class='diff-marker'> </span>{escaped}</div>"
-            )
-            i += 1
-
-    html_parts.append("</div>")
-    return "".join(html_parts)
-
-
 def format_multiedit_tool_content(tool_use: ToolUseContent) -> str:
     """Format Multiedit tool use content showing multiple diffs."""
     file_path = tool_use.input.get("file_path", "")
@@ -977,7 +743,7 @@ def format_multiedit_tool_content(tool_use: ToolUseContent) -> str:
         html_parts.append(
             f"<div class='multiedit-item'><div class='multiedit-item-header'>Edit #{idx}</div>"
         )
-        html_parts.append(_render_single_diff(old_string, new_string))
+        html_parts.append(render_single_diff(old_string, new_string))
         html_parts.append("</div>")
 
     html_parts.append("</div>")
@@ -1003,50 +769,10 @@ def format_edit_tool_content(tool_use: ToolUseContent) -> str:
         )
 
     # Use shared diff rendering helper
-    html_parts.append(_render_single_diff(old_string, new_string))
+    html_parts.append(render_single_diff(old_string, new_string))
     html_parts.append("</div>")
 
     return "".join(html_parts)
-
-
-def _render_line_diff(old_line: str, new_line: str) -> str:
-    """Render a pair of changed lines with character-level highlighting."""
-    import difflib
-
-    # Use SequenceMatcher for character-level diff
-    sm = difflib.SequenceMatcher(None, old_line.rstrip("\n"), new_line.rstrip("\n"))
-
-    # Build old line with highlighting
-    old_parts: list[str] = []
-    old_parts.append(
-        "<div class='diff-line diff-removed'><span class='diff-marker'>-</span>"
-    )
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        chunk = old_line[i1:i2]
-        if tag == "equal":
-            old_parts.append(escape_html(chunk))
-        elif tag in ("delete", "replace"):
-            old_parts.append(
-                f"<mark class='diff-char-removed'>{escape_html(chunk)}</mark>"
-            )
-    old_parts.append("</div>")
-
-    # Build new line with highlighting
-    new_parts: list[str] = []
-    new_parts.append(
-        "<div class='diff-line diff-added'><span class='diff-marker'>+</span>"
-    )
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        chunk = new_line[j1:j2]
-        if tag == "equal":
-            new_parts.append(escape_html(chunk))
-        elif tag in ("insert", "replace"):
-            new_parts.append(
-                f"<mark class='diff-char-added'>{escape_html(chunk)}</mark>"
-            )
-    new_parts.append("</div>")
-
-    return "".join(old_parts) + "".join(new_parts)
 
 
 def format_task_tool_content(tool_use: ToolUseContent) -> str:
@@ -1370,7 +1096,7 @@ def format_tool_result_content(
     # Check if this looks like Bash tool output and process ANSI codes
     # Bash tool results often contain ANSI escape sequences and terminal output
     if _looks_like_bash_output(raw_content):
-        escaped_content = _convert_ansi_to_html(raw_content)
+        escaped_content = convert_ansi_to_html(raw_content)
     else:
         escaped_content = escape_html(raw_content)
 
@@ -2080,7 +1806,7 @@ def _render_hook_summary(message: "SystemTranscriptEntry") -> str:
         error_html = '<div class="hook-errors">'
         for err in message.hookErrors:
             # Convert ANSI codes in error output
-            formatted_err = _convert_ansi_to_html(err)
+            formatted_err = convert_ansi_to_html(err)
             error_html += f'<pre class="hook-error">{formatted_err}</pre>'
         error_html += "</div>"
 
@@ -2091,249 +1817,6 @@ def _render_hook_summary(message: "SystemTranscriptEntry") -> str:
 {error_html}
 </div>
 </details>"""
-
-
-def _convert_ansi_to_html(text: str) -> str:
-    """Convert ANSI escape codes to HTML spans with CSS classes.
-
-    Supports:
-    - Colors (30-37, 90-97 for foreground; 40-47, 100-107 for background)
-    - RGB colors (38;2;r;g;b for foreground; 48;2;r;g;b for background)
-    - Bold (1), Dim (2), Italic (3), Underline (4)
-    - Reset (0, 39, 49, 22, 23, 24)
-    - Strips cursor movement and screen manipulation codes
-    """
-    import re
-
-    # First, strip cursor movement and screen manipulation codes
-    # Common patterns: [1A (cursor up), [2K (erase line), [?25l (hide cursor), etc.
-    cursor_patterns = [
-        r"\x1b\[[0-9]*[ABCD]",  # Cursor movement (up, down, forward, back)
-        r"\x1b\[[0-9]*[EF]",  # Cursor next/previous line
-        r"\x1b\[[0-9]*[GH]",  # Cursor horizontal/home position
-        r"\x1b\[[0-9;]*[Hf]",  # Cursor position
-        r"\x1b\[[0-9]*[JK]",  # Erase display/line
-        r"\x1b\[[0-9]*[ST]",  # Scroll up/down
-        r"\x1b\[\?[0-9]*[hl]",  # Private mode set/reset (show/hide cursor, etc.)
-        r"\x1b\[[0-9]*[PXYZ@]",  # Insert/delete operations
-        r"\x1b\[=[0-9]*[A-Za-z]",  # Alternate character set
-        r"\x1b\][0-9];[^\x07]*\x07",  # Operating System Command (OSC)
-        r"\x1b\][0-9];[^\x1b]*\x1b\\",  # OSC with string terminator
-    ]
-
-    # Strip all cursor movement and screen manipulation codes
-    for pattern in cursor_patterns:
-        text = re.sub(pattern, "", text)
-
-    # Also strip any remaining unhandled escape sequences that aren't color codes
-    # This catches any we might have missed, but preserves \x1b[...m color codes
-    text = re.sub(r"\x1b\[(?![0-9;]*m)[0-9;]*[A-Za-z]", "", text)
-
-    result: List[str] = []
-    segments: List[Dict[str, Any]] = []
-
-    # First pass: split text into segments with their styles
-    last_end = 0
-    current_fg = None
-    current_bg = None
-    current_bold = False
-    current_dim = False
-    current_italic = False
-    current_underline = False
-    current_rgb_fg = None
-    current_rgb_bg = None
-
-    for match in re.finditer(r"\x1b\[([0-9;]+)m", text):
-        # Add text before this escape code
-        if match.start() > last_end:
-            segments.append(
-                {
-                    "text": text[last_end : match.start()],
-                    "fg": current_fg,
-                    "bg": current_bg,
-                    "bold": current_bold,
-                    "dim": current_dim,
-                    "italic": current_italic,
-                    "underline": current_underline,
-                    "rgb_fg": current_rgb_fg,
-                    "rgb_bg": current_rgb_bg,
-                }
-            )
-
-        # Process escape codes
-        codes = match.group(1).split(";")
-        i = 0
-        while i < len(codes):
-            code = codes[i]
-
-            # Reset codes
-            if code == "0":
-                current_fg = None
-                current_bg = None
-                current_bold = False
-                current_dim = False
-                current_italic = False
-                current_underline = False
-                current_rgb_fg = None
-                current_rgb_bg = None
-            elif code == "39":
-                current_fg = None
-                current_rgb_fg = None
-            elif code == "49":
-                current_bg = None
-                current_rgb_bg = None
-            elif code == "22":
-                current_bold = False
-                current_dim = False
-            elif code == "23":
-                current_italic = False
-            elif code == "24":
-                current_underline = False
-
-            # Style codes
-            elif code == "1":
-                current_bold = True
-            elif code == "2":
-                current_dim = True
-            elif code == "3":
-                current_italic = True
-            elif code == "4":
-                current_underline = True
-
-            # Standard foreground colors
-            elif code in ["30", "31", "32", "33", "34", "35", "36", "37"]:
-                color_map = {
-                    "30": "black",
-                    "31": "red",
-                    "32": "green",
-                    "33": "yellow",
-                    "34": "blue",
-                    "35": "magenta",
-                    "36": "cyan",
-                    "37": "white",
-                }
-                current_fg = f"ansi-{color_map[code]}"
-                current_rgb_fg = None
-
-            # Standard background colors
-            elif code in ["40", "41", "42", "43", "44", "45", "46", "47"]:
-                color_map = {
-                    "40": "black",
-                    "41": "red",
-                    "42": "green",
-                    "43": "yellow",
-                    "44": "blue",
-                    "45": "magenta",
-                    "46": "cyan",
-                    "47": "white",
-                }
-                current_bg = f"ansi-bg-{color_map[code]}"
-                current_rgb_bg = None
-
-            # Bright foreground colors
-            elif code in ["90", "91", "92", "93", "94", "95", "96", "97"]:
-                color_map = {
-                    "90": "bright-black",
-                    "91": "bright-red",
-                    "92": "bright-green",
-                    "93": "bright-yellow",
-                    "94": "bright-blue",
-                    "95": "bright-magenta",
-                    "96": "bright-cyan",
-                    "97": "bright-white",
-                }
-                current_fg = f"ansi-{color_map[code]}"
-                current_rgb_fg = None
-
-            # Bright background colors
-            elif code in ["100", "101", "102", "103", "104", "105", "106", "107"]:
-                color_map = {
-                    "100": "bright-black",
-                    "101": "bright-red",
-                    "102": "bright-green",
-                    "103": "bright-yellow",
-                    "104": "bright-blue",
-                    "105": "bright-magenta",
-                    "106": "bright-cyan",
-                    "107": "bright-white",
-                }
-                current_bg = f"ansi-bg-{color_map[code]}"
-                current_rgb_bg = None
-
-            # RGB foreground color
-            elif code == "38" and i + 1 < len(codes) and codes[i + 1] == "2":
-                if i + 4 < len(codes):
-                    r, g, b = codes[i + 2], codes[i + 3], codes[i + 4]
-                    current_rgb_fg = f"color: rgb({r}, {g}, {b})"
-                    current_fg = None
-                    i += 4
-
-            # RGB background color
-            elif code == "48" and i + 1 < len(codes) and codes[i + 1] == "2":
-                if i + 4 < len(codes):
-                    r, g, b = codes[i + 2], codes[i + 3], codes[i + 4]
-                    current_rgb_bg = f"background-color: rgb({r}, {g}, {b})"
-                    current_bg = None
-                    i += 4
-
-            i += 1
-
-        last_end = match.end()
-
-    # Add remaining text
-    if last_end < len(text):
-        segments.append(
-            {
-                "text": text[last_end:],
-                "fg": current_fg,
-                "bg": current_bg,
-                "bold": current_bold,
-                "dim": current_dim,
-                "italic": current_italic,
-                "underline": current_underline,
-                "rgb_fg": current_rgb_fg,
-                "rgb_bg": current_rgb_bg,
-            }
-        )
-
-    # Second pass: build HTML
-    for segment in segments:
-        if not segment["text"]:
-            continue
-
-        classes: List[str] = []
-        styles: List[str] = []
-
-        if segment["fg"]:
-            classes.append(segment["fg"])
-        if segment["bg"]:
-            classes.append(segment["bg"])
-        if segment["bold"]:
-            classes.append("ansi-bold")
-        if segment["dim"]:
-            classes.append("ansi-dim")
-        if segment["italic"]:
-            classes.append("ansi-italic")
-        if segment["underline"]:
-            classes.append("ansi-underline")
-        if segment["rgb_fg"]:
-            styles.append(segment["rgb_fg"])
-        if segment["rgb_bg"]:
-            styles.append(segment["rgb_bg"])
-
-        escaped_text = escape_html(segment["text"])
-
-        if classes or styles:
-            attrs: List[str] = []
-            if classes:
-                attrs.append(f'class="{" ".join(classes)}"')
-            if styles:
-                attrs.append(f'style="{"; ".join(styles)}"')
-            result.append(f"<span {' '.join(attrs)}>{escaped_text}</span>")
-        else:
-            result.append(escaped_text)
-
-    return "".join(result)
 
 
 # def _process_summary_message(message: SummaryTranscriptEntry) -> tuple[str, str, str]:
@@ -2412,7 +1895,7 @@ def _process_local_command_output(text_content: str) -> tuple[str, str, str, str
             )
         else:
             # Convert ANSI codes to HTML for colored display
-            html_content = _convert_ansi_to_html(stdout_content)
+            html_content = convert_ansi_to_html(stdout_content)
             # Use <pre> to preserve formatting and line breaks
             content_html = (
                 f"<strong>Command Output:</strong><br>"
@@ -2476,7 +1959,7 @@ def _process_bash_output(text_content: str) -> tuple[str, str, str, str]:
     if stdout_match:
         stdout_content = stdout_match.group(1).strip()
         if stdout_content:
-            escaped_stdout = _convert_ansi_to_html(stdout_content)
+            escaped_stdout = convert_ansi_to_html(stdout_content)
             stdout_lines = stdout_content.count("\n") + 1
             total_lines += stdout_lines
             output_parts.append(
@@ -2486,7 +1969,7 @@ def _process_bash_output(text_content: str) -> tuple[str, str, str, str]:
     if stderr_match:
         stderr_content = stderr_match.group(1).strip()
         if stderr_content:
-            escaped_stderr = _convert_ansi_to_html(stderr_content)
+            escaped_stderr = convert_ansi_to_html(stderr_content)
             stderr_lines = stderr_content.count("\n") + 1
             total_lines += stderr_lines
             output_parts.append(
@@ -3615,11 +3098,11 @@ def _process_messages_loop(
                 elif command_output_match:
                     # Extract and process command output
                     output = command_output_match.group(1).strip()
-                    html_content = _convert_ansi_to_html(output)
+                    html_content = convert_ansi_to_html(output)
                     content_html = f"<strong>{level_icon}</strong> {html_content}"
                 else:
                     # Process ANSI codes in system messages (they may contain command output)
-                    html_content = _convert_ansi_to_html(message.content)
+                    html_content = convert_ansi_to_html(message.content)
                     content_html = f"<strong>{level_icon}</strong> {html_content}"
 
             # Store parent UUID for hierarchy rebuild (handled by _build_message_hierarchy)

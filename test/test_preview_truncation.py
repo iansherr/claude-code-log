@@ -8,10 +8,10 @@ but HtmlFormatter(linenos="table") produces a single <tr> with two <td>s.
 from pathlib import Path
 
 from claude_code_log.parser import load_transcript
-from claude_code_log.renderer import (
-    generate_html,
-    _truncate_highlighted_preview,
-    _highlight_code_with_pygments,
+from claude_code_log.renderer import generate_html
+from claude_code_log.renderer_code import (
+    truncate_highlighted_preview,
+    highlight_code_with_pygments,
 )
 
 
@@ -19,7 +19,7 @@ class TestPreviewTruncation:
     """Tests for preview truncation in collapsible code blocks."""
 
     def test_truncate_highlighted_preview_function(self):
-        """Test the _truncate_highlighted_preview helper directly."""
+        """Test the truncate_highlighted_preview helper directly."""
         # Simulate Pygments output with 10 lines
         html = """<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -43,7 +43,7 @@ line 10
 </pre></div></td></tr></table></div>"""
 
         # Truncate to 5 lines
-        result = _truncate_highlighted_preview(html, 5)
+        result = truncate_highlighted_preview(html, 5)
 
         # Should have lines 1-5 in linenos
         assert '<span class="normal"> 1</span>' in result
@@ -148,7 +148,7 @@ class TestPygmentsWhitespace:
         code = "   240→        if path.is_dir():\n   241→            return True\n"
 
         # Get highlighted HTML
-        html = _highlight_code_with_pygments(
+        html = highlight_code_with_pygments(
             code,
             file_path="test.py",
             show_linenos=True,
@@ -169,7 +169,7 @@ class TestPygmentsWhitespace:
         """Test that Python indentation is preserved."""
         code = "def foo():\n    pass\n"
 
-        html = _highlight_code_with_pygments(
+        html = highlight_code_with_pygments(
             code,
             file_path="test.py",
             show_linenos=False,
