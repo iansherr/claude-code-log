@@ -166,26 +166,26 @@ Adds text/markdown/chat output formats via new `content_extractor.py` module.
 
 **Note**: File size increased slightly (3730 → 3814 lines) due to new helper functions, but the main loop is now much more maintainable with focused, testable helper functions. Further decomposition (session tracking, token usage extraction) could reduce it to ~200 lines but would require more complex parameter passing.
 
-## Planned Future Phases
-
-### Phase 6: Message Pairing Simplification
+### Phase 6: Message Pairing Simplification ✅ COMPLETE
 
 **Goal**: Simplify the complex pairing logic in `_identify_message_pairs()`
 
-**Current Complexity** (227 lines):
-- Multiple pairing strategies (tool use/result, command/output, system/slash)
-- Nested conditionals for edge cases
-- Magic string matching for message content
+**Changes**:
+- ✅ Created `PairingIndices` dataclass to hold all lookup indices in one place
+- ✅ Extracted `_build_pairing_indices()` function (~35 lines) - builds all indices in single pass
+- ✅ Extracted `_mark_pair()` utility (~8 lines) - marks first/last message pairing
+- ✅ Extracted `_try_pair_adjacent()` function (~25 lines) - handles adjacent message pairs
+- ✅ Extracted `_try_pair_by_index()` function (~30 lines) - handles index-based pairing
+- ✅ Simplified `_identify_message_pairs()` from ~120 lines to ~37 lines (69% smaller)
 
-**Proposed Changes**:
-1. Create explicit `PairingStrategy` classes:
-   - `ToolUsePairingStrategy` - tool_use_id matching
-   - `ParentUuidPairingStrategy` - parentUuid linking
-   - `ContentMatchPairingStrategy` - content-based matching (command output)
-2. Apply strategies in sequence
-3. Better documentation of pairing rules
+**Result**: Pairing logic decomposed into focused helpers with clear responsibilities:
+- `_build_pairing_indices()`: O(n) index building for tool_use, tool_result, uuid, slash_command lookups
+- `_try_pair_adjacent()`: Handles system+slash, command+output, tool_use+result adjacent pairs
+- `_try_pair_by_index()`: Handles index-based pairing for non-adjacent messages
 
-**Alternative**: If pairing logic is stable, leave as-is and focus on other phases first.
+**Note**: File size increased slightly (3814 → 3853 lines) due to new helper functions, but the main pairing function is now much cleaner and each helper is independently testable.
+
+## Planned Future Phases
 
 ### Phase 7: Hierarchy System Documentation
 
@@ -225,11 +225,11 @@ Adds text/markdown/chat output formats via new `content_extractor.py` module.
 
 For maximum impact with minimum risk:
 
-1. **Phase 3 (ANSI)** - Low risk, self-contained, immediate ~250 line reduction
-2. **Phase 4 (Tools)** - Medium risk, large reduction (~600 lines), clear boundaries
-3. **Phase 7 (Docs)** - No code changes, improves understanding for Phase 5-6
-4. **Phase 5 (Processing)** - High impact, requires careful testing
-5. **Phase 6 (Pairing)** - Only if pairing bugs persist; otherwise skip
+1. ✅ **Phase 3 (ANSI)** - Low risk, self-contained, immediate ~250 line reduction
+2. ✅ **Phase 4 (Code rendering)** - Medium risk, ~274 line reduction, clear boundaries
+3. ✅ **Phase 5 (Processing)** - High impact, main loop 33% smaller
+4. ✅ **Phase 6 (Pairing)** - Pairing function 69% smaller, clear helpers
+5. **Phase 7 (Docs)** - No code changes, improves understanding
 6. **Phase 8 (Testing)** - Ongoing, add tests as modules are extracted
 
 **Tree Refactoring Integration:**
@@ -244,14 +244,15 @@ For maximum impact with minimum risk:
 
 ## Metrics to Track
 
-| Metric | Baseline (v0.9) | Current (Phase 5 done) | Target |
+| Metric | Baseline (v0.9) | Current (Phase 6 done) | Target |
 |--------|-----------------|------------------------|--------|
-| renderer.py lines | 4246 | 3814 | <3000 |
+| renderer.py lines | 4246 | 3853 | <3000 |
 | Largest function | ~687 lines | ~460 lines | <100 lines |
+| `_identify_message_pairs()` | ~120 lines | ~37 lines | - |
 | Module count | 3 (renderer, timings, models) | 5 (+ansi_colors, +renderer_code) | 6-7 |
 | Test coverage | ~78% | ~78% | >85% |
 
-**Progress**: Main loop reduced by 33% (687 → 460 lines). File grew slightly due to new helper functions, but code is now more modular and testable.
+**Progress**: Main loop reduced by 33% (687 → 460 lines). Pairing function reduced by 69% (120 → 37 lines). File grew slightly due to new helper functions, but code is now more modular and testable.
 
 ## Quality Gates
 
@@ -272,7 +273,7 @@ Before merging any phase:
 
 ## References
 
-- [renderer.py](../claude_code_log/renderer.py) - Main rendering module (3730 lines)
+- [renderer.py](../claude_code_log/renderer.py) - Main rendering module (3853 lines)
 - [ansi_colors.py](../claude_code_log/ansi_colors.py) - ANSI color conversion (261 lines) - Phase 3
 - [renderer_code.py](../claude_code_log/renderer_code.py) - Code highlighting & diffs (330 lines) - Phase 4
 - [renderer_timings.py](../claude_code_log/renderer_timings.py) - Timing utilities

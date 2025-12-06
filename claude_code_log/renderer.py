@@ -2397,45 +2397,144 @@ def _get_combined_transcript_link(cache_manager: "CacheManager") -> Optional[str
         return None
 
 
-def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
-    """Identify and mark paired messages (e.g., command + output, tool use + result).
+@dataclass
+class PairingIndices:
+    """Indices for efficient message pairing lookups.
 
-    Modifies messages in-place by setting is_paired and pair_role fields.
-
-    Uses a two-pass algorithm:
-    1. First pass: Build index of (session_id, tool_use_id) -> message index for tool_use
-                   and tool_result. Session ID is included to prevent cross-session pairing
-                   when sessions are resumed (same tool_use_id can appear in multiple sessions).
-                   Build index of uuid -> message index for parent-child system messages
-                   Build index of parent_uuid -> message index for slash-command messages
-    2. Second pass: Sequential scan for adjacent pairs (system+output, bash, thinking+assistant)
-                   and match tool_use/tool_result and uuid-based pairs using the index
+    All indices are built in a single pass for efficiency.
     """
-    # Pass 1: Build index of tool_use messages and tool_result messages
-    # Key is (session_id, tool_use_id) to prevent cross-session pairing on resume
-    tool_use_index: Dict[
-        tuple[str, str], int
-    ] = {}  # (session_id, tool_use_id) -> index
-    tool_result_index: Dict[
-        tuple[str, str], int
-    ] = {}  # (session_id, tool_use_id) -> index
-    uuid_index: Dict[str, int] = {}  # uuid -> message index for parent-child pairing
-    # Index slash-command messages by their parent_uuid for pairing with system commands
-    slash_command_by_parent: Dict[str, int] = {}  # parent_uuid -> message index
+
+    # (session_id, tool_use_id) -> message index for tool_use messages
+    tool_use: Dict[tuple[str, str], int]
+    # (session_id, tool_use_id) -> message index for tool_result messages
+    tool_result: Dict[tuple[str, str], int]
+    # uuid -> message index for system messages (parent-child pairing)
+    uuid: Dict[str, int]
+    # parent_uuid -> message index for slash-command messages
+    slash_command_by_parent: Dict[str, int]
+
+
+def _build_pairing_indices(messages: List[TemplateMessage]) -> PairingIndices:
+    """Build indices for efficient message pairing lookups.
+
+    Single pass through messages to build all indices needed for pairing.
+    """
+    tool_use_index: Dict[tuple[str, str], int] = {}
+    tool_result_index: Dict[tuple[str, str], int] = {}
+    uuid_index: Dict[str, int] = {}
+    slash_command_by_parent: Dict[str, int] = {}
 
     for i, msg in enumerate(messages):
+        # Index tool_use and tool_result by (session_id, tool_use_id)
         if msg.tool_use_id and msg.session_id:
             key = (msg.session_id, msg.tool_use_id)
             if "tool_use" in msg.css_class:
                 tool_use_index[key] = i
             elif "tool_result" in msg.css_class:
                 tool_result_index[key] = i
-        # Build UUID index for system messages (both parent and child)
+
+        # Index system messages by UUID for parent-child pairing
         if msg.uuid and "system" in msg.css_class:
             uuid_index[msg.uuid] = i
+
         # Index slash-command user messages by parent_uuid
         if msg.parent_uuid and "slash-command" in msg.css_class:
             slash_command_by_parent[msg.parent_uuid] = i
+
+    return PairingIndices(
+        tool_use=tool_use_index,
+        tool_result=tool_result_index,
+        uuid=uuid_index,
+        slash_command_by_parent=slash_command_by_parent,
+    )
+
+
+def _mark_pair(first: TemplateMessage, last: TemplateMessage) -> None:
+    """Mark two messages as a pair."""
+    first.is_paired = True
+    first.pair_role = "pair_first"
+    last.is_paired = True
+    last.pair_role = "pair_last"
+
+
+def _try_pair_adjacent(
+    current: TemplateMessage,
+    next_msg: TemplateMessage,
+) -> bool:
+    """Try to pair adjacent messages based on their types.
+
+    Returns True if messages were paired, False otherwise.
+
+    Adjacent pairing rules:
+    - system + command-output
+    - bash-input + bash-output
+    - thinking + assistant
+    """
+    # System command + command output
+    if current.css_class == "system" and "command-output" in next_msg.css_class:
+        _mark_pair(current, next_msg)
+        return True
+
+    # Bash input + bash output
+    if current.css_class == "bash-input" and next_msg.css_class == "bash-output":
+        _mark_pair(current, next_msg)
+        return True
+
+    # Thinking + assistant
+    if "thinking" in current.css_class and "assistant" in next_msg.css_class:
+        _mark_pair(current, next_msg)
+        return True
+
+    return False
+
+
+def _try_pair_by_index(
+    current: TemplateMessage,
+    messages: List[TemplateMessage],
+    indices: PairingIndices,
+) -> None:
+    """Try to pair current message with another using index lookups.
+
+    Index-based pairing rules (can be any distance apart):
+    - tool_use + tool_result (by tool_use_id within same session)
+    - system parent + system child (by uuid/parent_uuid)
+    - system + slash-command (by uuid -> parent_uuid)
+    """
+    # Tool use + tool result (by tool_use_id within same session)
+    if "tool_use" in current.css_class and current.tool_use_id and current.session_id:
+        key = (current.session_id, current.tool_use_id)
+        if key in indices.tool_result:
+            result_msg = messages[indices.tool_result[key]]
+            _mark_pair(current, result_msg)
+
+    # System child message finding its parent (by parent_uuid)
+    if "system" in current.css_class and current.parent_uuid:
+        if current.parent_uuid in indices.uuid:
+            parent_msg = messages[indices.uuid[current.parent_uuid]]
+            _mark_pair(parent_msg, current)
+
+    # System command finding its slash-command child (by uuid -> parent_uuid)
+    if "system" in current.css_class and current.uuid:
+        if current.uuid in indices.slash_command_by_parent:
+            slash_msg = messages[indices.slash_command_by_parent[current.uuid]]
+            _mark_pair(current, slash_msg)
+
+
+def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
+    """Identify and mark paired messages (e.g., command + output, tool use + result).
+
+    Modifies messages in-place by setting is_paired and pair_role fields.
+
+    Uses a two-pass algorithm:
+    1. First pass: Build indices for efficient lookups (tool_use_id, uuid, parent_uuid)
+    2. Second pass: Sequential scan for adjacent pairs and index-based pairs
+
+    Pairing types:
+    - Adjacent: system+output, bash-input+output, thinking+assistant
+    - Indexed: tool_use+result (by ID), system parent+child (by UUID)
+    """
+    # Pass 1: Build all indices for efficient lookups
+    indices = _build_pairing_indices(messages)
 
     # Pass 2: Sequential scan to identify pairs
     i = 0
@@ -2447,75 +2546,15 @@ def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
             i += 1
             continue
 
-        # Check for system command + command output pair (adjacent only)
-        if current.css_class == "system" and i + 1 < len(messages):
+        # Try adjacent pairing first (can skip next message if paired)
+        if i + 1 < len(messages):
             next_msg = messages[i + 1]
-            if "command-output" in next_msg.css_class:
-                current.is_paired = True
-                current.pair_role = "pair_first"
-                next_msg.is_paired = True
-                next_msg.pair_role = "pair_last"
+            if _try_pair_adjacent(current, next_msg):
                 i += 2
                 continue
 
-        # Check for tool_use + tool_result pair using index (no distance limit)
-        # Key includes session_id to prevent cross-session pairing on resume
-        if (
-            "tool_use" in current.css_class
-            and current.tool_use_id
-            and current.session_id
-        ):
-            key = (current.session_id, current.tool_use_id)
-            if key in tool_result_index:
-                result_idx = tool_result_index[key]
-                result_msg = messages[result_idx]
-                current.is_paired = True
-                current.pair_role = "pair_first"
-                result_msg.is_paired = True
-                result_msg.pair_role = "pair_last"
-
-        # Check for UUID-based parent-child system message pair (no distance limit)
-        if "system" in current.css_class and current.parent_uuid:
-            if current.parent_uuid in uuid_index:
-                parent_idx = uuid_index[current.parent_uuid]
-                parent_msg = messages[parent_idx]
-                parent_msg.is_paired = True
-                parent_msg.pair_role = "pair_first"
-                current.is_paired = True
-                current.pair_role = "pair_last"
-
-        # Check for system command + user slash-command pair (via parent_uuid)
-        # The slash-command message's parent_uuid points to the system command's uuid
-        if "system" in current.css_class and current.uuid:
-            if current.uuid in slash_command_by_parent:
-                slash_idx = slash_command_by_parent[current.uuid]
-                slash_msg = messages[slash_idx]
-                current.is_paired = True
-                current.pair_role = "pair_first"
-                slash_msg.is_paired = True
-                slash_msg.pair_role = "pair_last"
-
-        # Check for bash-input + bash-output pair (adjacent only)
-        if current.css_class == "bash-input" and i + 1 < len(messages):
-            next_msg = messages[i + 1]
-            if next_msg.css_class == "bash-output":
-                current.is_paired = True
-                current.pair_role = "pair_first"
-                next_msg.is_paired = True
-                next_msg.pair_role = "pair_last"
-                i += 2
-                continue
-
-        # Check for thinking + assistant pair (adjacent only)
-        if "thinking" in current.css_class and i + 1 < len(messages):
-            next_msg = messages[i + 1]
-            if "assistant" in next_msg.css_class:
-                current.is_paired = True
-                current.pair_role = "pair_first"
-                next_msg.is_paired = True
-                next_msg.pair_role = "pair_last"
-                i += 2
-                continue
+        # Try index-based pairing (doesn't skip, continues to next message)
+        _try_pair_by_index(current, messages, indices)
 
         i += 1
 
