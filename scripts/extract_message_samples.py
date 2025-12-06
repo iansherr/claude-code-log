@@ -6,7 +6,6 @@ real session data and creates abbreviated JSON files for documentation.
 """
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -122,7 +121,9 @@ def abbreviate_content_item(item: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def find_samples(data_dirs: list[Path]) -> dict[str, list[dict]]:
+def find_samples(
+    data_dirs: list[Path],
+) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
     """Find sample messages of each type."""
     samples: dict[str, list[dict]] = {
         "user_text": [],

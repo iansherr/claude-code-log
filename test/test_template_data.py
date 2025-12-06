@@ -379,7 +379,7 @@ class TestTemplateMessageTree:
     """Test TemplateMessage tree building and flatten functionality."""
 
     def _create_message(
-        self, msg_type: str, msg_id: str = None, ancestry: list = None
+        self, msg_type: str, msg_id: str | None = None, ancestry: list | None = None
     ) -> TemplateMessage:
         """Helper to create a minimal TemplateMessage for testing."""
         msg = TemplateMessage(
