@@ -2532,18 +2532,32 @@ def _process_regular_message(
     # Handle user-specific preprocessing
     if message_type == "user":
         # Note: sidechain user messages are skipped before reaching this function
-        content_html, is_compacted, is_memory_input = render_user_message_content(
-            text_only_content
-        )
-        if is_compacted:
-            css_class = f"{message_type} compacted"
-            message_title = "User (compacted conversation)"
-        elif is_meta:
-            # Slash command expanded prompts - LLM-generated content
+        if is_meta:
+            # Slash command expanded prompts - render as collapsible markdown
+            # These contain LLM-generated instruction text (markdown formatted)
             css_class = f"{message_type} slash-command"
             message_title = "User (slash command)"
-        elif is_memory_input:
-            message_title = "Memory"
+            # Combine all text content (items may be TextContent, dicts, or SDK objects)
+            all_text = "\n\n".join(
+                getattr(item, "text", "")
+                for item in text_only_content
+                if hasattr(item, "text")
+            )
+            content_html = render_markdown_collapsible(
+                all_text,
+                "slash-command-content",
+                line_threshold=20,
+                preview_line_count=5,
+            )
+        else:
+            content_html, is_compacted, is_memory_input = render_user_message_content(
+                text_only_content
+            )
+            if is_compacted:
+                css_class = f"{message_type} compacted"
+                message_title = "User (compacted conversation)"
+            elif is_memory_input:
+                message_title = "Memory"
     else:
         # Non-user messages: render directly
         content_html = render_message_content(text_only_content, message_type)
