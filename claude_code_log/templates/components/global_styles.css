@@ -44,10 +44,15 @@
     --answer-accent: #4caf50;
     --answer-bg: #f0fff4;
 
+    /* Priority palette (purple intensity - darker = more urgent) */
+    --priority-600: #7c3aed;
+    --priority-400: #a78bfa;
+    --priority-300: #c4b5fd;
+
     /* Priority colors for todos */
-    --priority-high: #dc3545;
-    --priority-medium: #ffc107;
-    --priority-low: #28a745;
+    --priority-high: var(--priority-600);
+    --priority-medium: var(--priority-400);
+    --priority-low: var(--priority-300);
 
     /* Status colors */
     --status-in-progress: #fff3cd;

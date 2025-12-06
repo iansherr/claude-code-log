@@ -60,11 +60,6 @@ class TestTodoWriteRendering:
         assert "🔄" in html  # in_progress
         assert "⏳" in html  # pending
 
-        # Check checkboxes
-        assert 'type="checkbox"' in html
-        assert "checked" in html  # for completed item
-        assert "disabled" in html  # for completed item
-
         # Check CSS classes
         assert "todo-item completed high" in html
         assert "todo-item in_progress medium" in html

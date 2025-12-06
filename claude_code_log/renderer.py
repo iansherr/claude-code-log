@@ -567,7 +567,7 @@ def format_exitplanmode_result(content: str) -> str:
 
 
 def format_todowrite_content(tool_use: ToolUseContent) -> str:
-    """Format TodoWrite tool use content as an actual todo list with checkboxes."""
+    """Format TodoWrite tool use content as a todo list."""
     # Parse todos from input
     todos_data = tool_use.input.get("todos", [])
     if not todos_data:
@@ -590,16 +590,11 @@ def format_todowrite_content(tool_use: ToolUseContent) -> str:
             priority = todo.get("priority", "medium")
             status_emoji = status_emojis.get(status, "⏳")
 
-            # Determine checkbox state
-            checked = "checked" if status == "completed" else ""
-            disabled = "disabled" if status == "completed" else ""
-
             # CSS class for styling
             item_class = f"todo-item {status} {priority}"
 
             todo_items.append(f"""
                 <div class="{item_class}">
-                    <input type="checkbox" {checked} {disabled} readonly>
                     <span class="todo-status">{status_emoji}</span>
                     <span class="todo-content">{content}</span>
                     <span class="todo-id">#{todo_id}</span>
@@ -608,7 +603,6 @@ def format_todowrite_content(tool_use: ToolUseContent) -> str:
         except AttributeError:
             todo_items.append(f"""
                 <div class="todo-item pending medium">
-                    <input type="checkbox" readonly>
                     <span class="todo-status">⏳</span>
                     <span class="todo-content">{str(todo)}</span>
                 </div>

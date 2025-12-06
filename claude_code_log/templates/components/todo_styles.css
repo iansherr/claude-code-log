@@ -40,18 +40,14 @@
     background-color: var(--bg-hover);
 }
 
-.todo-item.completed {
-    opacity: 0.7;
-}
-
 .todo-item.completed .todo-content {
     text-decoration: line-through;
     color: var(--text-muted);
+    opacity: 0.7;
 }
 
-.todo-item input[type="checkbox"] {
-    margin: 0;
-    cursor: default;
+.todo-item.pending .todo-content {
+    font-weight: normal;
 }
 
 .todo-status {
