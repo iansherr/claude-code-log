@@ -503,8 +503,17 @@
 
                 if (isFolded) {
                     // Unfold: show immediate children
+                    // Track pair_first messages we've shown so we can show their pair_last partners
+                    const shownPairFirstIds = [];
+
                     immediateChildren.forEach(msg => {
                         msg.style.display = '';
+
+                        // Track pair_first messages for later pair_last matching
+                        if (msg.classList.contains('pair_first')) {
+                            const msgId = msg.getAttribute('data-message-id');
+                            if (msgId) shownPairFirstIds.push(msgId);
+                        }
 
                         // Set newly revealed children to folded state
                         const foldBar = msg.querySelector('.fold-bar');
@@ -524,6 +533,16 @@
                             }
                         }
                     });
+
+                    // Show pair_last messages whose pair_first partner is shown
+                    // This keeps paired messages (like command + output) together
+                    shownPairFirstIds.forEach(pairFirstId => {
+                        const pairLastMessages = document.querySelectorAll(`.message.pair_last.${pairFirstId}`);
+                        pairLastMessages.forEach(pairLast => {
+                            pairLast.style.display = '';
+                        });
+                    });
+
                     sectionElement.classList.remove('folded');
                     sectionElement.querySelector('.fold-icon').textContent = '▼';
                     updateTooltip(sectionElement);
@@ -592,6 +611,9 @@
                     }
                 } else {
                     // Fold: show first level only, hide deeper descendants (State C → State B)
+                    // Track pair_first messages we've shown so we can show their pair_last partners
+                    const shownPairFirstIds = [];
+
                     descendants.forEach(msg => {
                         const classList = Array.from(msg.classList);
                         const ancestorIds = classList.filter(cls => cls.startsWith('d-') || cls.startsWith('session-'));
@@ -600,6 +622,12 @@
                         // Show immediate children, hide non-immediate children
                         if (lastAncestor === targetId) {
                             msg.style.display = '';  // Show immediate child
+
+                            // Track pair_first messages for later pair_last matching
+                            if (msg.classList.contains('pair_first')) {
+                                const msgId = msg.getAttribute('data-message-id');
+                                if (msgId) shownPairFirstIds.push(msgId);
+                            }
 
                             // Set immediate children to folded state
                             const foldBar = msg.querySelector('.fold-bar');
@@ -621,6 +649,15 @@
                         } else {
                             msg.style.display = 'none';  // Hide deeper descendants
                         }
+                    });
+
+                    // Show pair_last messages whose pair_first partner is shown
+                    // This keeps paired messages (like command + output) together
+                    shownPairFirstIds.forEach(pairFirstId => {
+                        const pairLastMessages = document.querySelectorAll(`.message.pair_last.${pairFirstId}`);
+                        pairLastMessages.forEach(pairLast => {
+                            pairLast.style.display = '';
+                        });
                     });
                     sectionElement.classList.add('folded');
                     sectionElement.querySelector('.fold-icon').textContent = '▶▶';
