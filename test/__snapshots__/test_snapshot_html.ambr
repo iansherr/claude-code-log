@@ -2233,11 +2233,11 @@
   }
   
   .fold-bar[data-border-color="bash-input"] .fold-bar-section {
-      border-bottom-color: var(--tool-use-color);
+      border-bottom-color: var(--user-color);
   }
   
   .fold-bar[data-border-color="bash-output"] .fold-bar-section {
-      border-bottom-color: var(--success-dimmed);
+      border-bottom-color: var(--user-dimmed);
   }
   
   .fold-bar[data-border-color="session-header"] .fold-bar-section {
@@ -2261,7 +2261,9 @@
   
   /* Right-aligned messages (user-initiated, right margin 0, left margin 33%) */
   .user:not(.compacted),
-  .system {
+  .system,
+  .bash-input,
+  .bash-output {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -2506,14 +2508,14 @@
       padding: 0 1em;
   }
   
-  /* Bash command styling */
+  /* Bash command styling (user-initiated, right-aligned) */
   .bash-input {
-      background-color: #1e1e1e08;
-      border-left-color: var(--tool-use-color);
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-color);
   }
   
   .bash-prompt {
-      color: var(--tool-use-color);
+      color: var(--user-color);
       font-weight: bold;
       font-size: 1.1em;
       margin-right: 8px;
@@ -2528,10 +2530,10 @@
       border-radius: 3px;
   }
   
-  /* Bash output styling */
+  /* Bash output styling (user-initiated, right-aligned) */
   .bash-output {
-      background-color: var(--neutral-dimmed);
-      border-left-color: #607d8b;
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-dimmed);
   }
   
   .bash-stdout {
@@ -6965,11 +6967,11 @@
   }
   
   .fold-bar[data-border-color="bash-input"] .fold-bar-section {
-      border-bottom-color: var(--tool-use-color);
+      border-bottom-color: var(--user-color);
   }
   
   .fold-bar[data-border-color="bash-output"] .fold-bar-section {
-      border-bottom-color: var(--success-dimmed);
+      border-bottom-color: var(--user-dimmed);
   }
   
   .fold-bar[data-border-color="session-header"] .fold-bar-section {
@@ -6993,7 +6995,9 @@
   
   /* Right-aligned messages (user-initiated, right margin 0, left margin 33%) */
   .user:not(.compacted),
-  .system {
+  .system,
+  .bash-input,
+  .bash-output {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -7238,14 +7242,14 @@
       padding: 0 1em;
   }
   
-  /* Bash command styling */
+  /* Bash command styling (user-initiated, right-aligned) */
   .bash-input {
-      background-color: #1e1e1e08;
-      border-left-color: var(--tool-use-color);
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-color);
   }
   
   .bash-prompt {
-      color: var(--tool-use-color);
+      color: var(--user-color);
       font-weight: bold;
       font-size: 1.1em;
       margin-right: 8px;
@@ -7260,10 +7264,10 @@
       border-radius: 3px;
   }
   
-  /* Bash output styling */
+  /* Bash output styling (user-initiated, right-aligned) */
   .bash-output {
-      background-color: var(--neutral-dimmed);
-      border-left-color: #607d8b;
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-dimmed);
   }
   
   .bash-stdout {
@@ -11804,11 +11808,11 @@
   }
   
   .fold-bar[data-border-color="bash-input"] .fold-bar-section {
-      border-bottom-color: var(--tool-use-color);
+      border-bottom-color: var(--user-color);
   }
   
   .fold-bar[data-border-color="bash-output"] .fold-bar-section {
-      border-bottom-color: var(--success-dimmed);
+      border-bottom-color: var(--user-dimmed);
   }
   
   .fold-bar[data-border-color="session-header"] .fold-bar-section {
@@ -11832,7 +11836,9 @@
   
   /* Right-aligned messages (user-initiated, right margin 0, left margin 33%) */
   .user:not(.compacted),
-  .system {
+  .system,
+  .bash-input,
+  .bash-output {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -12077,14 +12083,14 @@
       padding: 0 1em;
   }
   
-  /* Bash command styling */
+  /* Bash command styling (user-initiated, right-aligned) */
   .bash-input {
-      background-color: #1e1e1e08;
-      border-left-color: var(--tool-use-color);
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-color);
   }
   
   .bash-prompt {
-      color: var(--tool-use-color);
+      color: var(--user-color);
       font-weight: bold;
       font-size: 1.1em;
       margin-right: 8px;
@@ -12099,10 +12105,10 @@
       border-radius: 3px;
   }
   
-  /* Bash output styling */
+  /* Bash output styling (user-initiated, right-aligned) */
   .bash-output {
-      background-color: var(--neutral-dimmed);
-      border-left-color: #607d8b;
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-dimmed);
   }
   
   .bash-stdout {
@@ -16674,11 +16680,11 @@
   }
   
   .fold-bar[data-border-color="bash-input"] .fold-bar-section {
-      border-bottom-color: var(--tool-use-color);
+      border-bottom-color: var(--user-color);
   }
   
   .fold-bar[data-border-color="bash-output"] .fold-bar-section {
-      border-bottom-color: var(--success-dimmed);
+      border-bottom-color: var(--user-dimmed);
   }
   
   .fold-bar[data-border-color="session-header"] .fold-bar-section {
@@ -16702,7 +16708,9 @@
   
   /* Right-aligned messages (user-initiated, right margin 0, left margin 33%) */
   .user:not(.compacted),
-  .system {
+  .system,
+  .bash-input,
+  .bash-output {
       margin-left: 33%;
       margin-right: 0;
   }
@@ -16947,14 +16955,14 @@
       padding: 0 1em;
   }
   
-  /* Bash command styling */
+  /* Bash command styling (user-initiated, right-aligned) */
   .bash-input {
-      background-color: #1e1e1e08;
-      border-left-color: var(--tool-use-color);
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-color);
   }
   
   .bash-prompt {
-      color: var(--tool-use-color);
+      color: var(--user-color);
       font-weight: bold;
       font-size: 1.1em;
       margin-right: 8px;
@@ -16969,10 +16977,10 @@
       border-radius: 3px;
   }
   
-  /* Bash output styling */
+  /* Bash output styling (user-initiated, right-aligned) */
   .bash-output {
-      background-color: var(--neutral-dimmed);
-      border-left-color: #607d8b;
+      background-color: var(--highlight-light);
+      border-left-color: var(--user-dimmed);
   }
   
   .bash-stdout {
