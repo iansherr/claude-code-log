@@ -2592,6 +2592,7 @@ def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
                    and tool_result. Session ID is included to prevent cross-session pairing
                    when sessions are resumed (same tool_use_id can appear in multiple sessions).
                    Build index of uuid -> message index for parent-child system messages
+                   Build index of parent_uuid -> message index for slash-command messages
     2. Second pass: Sequential scan for adjacent pairs (system+output, bash, thinking+assistant)
                    and match tool_use/tool_result and uuid-based pairs using the index
     """
@@ -2604,6 +2605,8 @@ def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
         tuple[str, str], int
     ] = {}  # (session_id, tool_use_id) -> index
     uuid_index: Dict[str, int] = {}  # uuid -> message index for parent-child pairing
+    # Index slash-command messages by their parent_uuid for pairing with system commands
+    slash_command_by_parent: Dict[str, int] = {}  # parent_uuid -> message index
 
     for i, msg in enumerate(messages):
         if msg.tool_use_id and msg.session_id:
@@ -2615,6 +2618,9 @@ def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
         # Build UUID index for system messages (both parent and child)
         if msg.uuid and "system" in msg.css_class:
             uuid_index[msg.uuid] = i
+        # Index slash-command user messages by parent_uuid
+        if msg.parent_uuid and "slash-command" in msg.css_class:
+            slash_command_by_parent[msg.parent_uuid] = i
 
     # Pass 2: Sequential scan to identify pairs
     i = 0
@@ -2663,6 +2669,17 @@ def _identify_message_pairs(messages: List[TemplateMessage]) -> None:
                 current.is_paired = True
                 current.pair_role = "pair_last"
 
+        # Check for system command + user slash-command pair (via parent_uuid)
+        # The slash-command message's parent_uuid points to the system command's uuid
+        if "system" in current.css_class and current.uuid:
+            if current.uuid in slash_command_by_parent:
+                slash_idx = slash_command_by_parent[current.uuid]
+                slash_msg = messages[slash_idx]
+                current.is_paired = True
+                current.pair_role = "pair_first"
+                slash_msg.is_paired = True
+                slash_msg.pair_role = "pair_last"
+
         # Check for bash-input + bash-output pair (adjacent only)
         if current.css_class == "bash-input" and i + 1 < len(messages):
             next_msg = messages[i + 1]
@@ -2697,7 +2714,8 @@ def _reorder_paired_messages(messages: List[TemplateMessage]) -> List[TemplateMe
 
     Uses dictionary-based approach to find pairs efficiently:
     1. Build index of all pair_last messages by tool_use_id
-    2. Single pass through messages, inserting pair_last immediately after pair_first
+    2. Build index of slash-command pair_last messages by parent_uuid
+    3. Single pass through messages, inserting pair_last immediately after pair_first
     """
     from datetime import datetime
 
@@ -2706,6 +2724,8 @@ def _reorder_paired_messages(messages: List[TemplateMessage]) -> List[TemplateMe
     pair_last_index: Dict[
         tuple[str, str], int
     ] = {}  # (session_id, tool_use_id) -> message index
+    # Index slash-command pair_last messages by parent_uuid
+    slash_command_pair_index: Dict[str, int] = {}  # parent_uuid -> message index
 
     for i, msg in enumerate(messages):
         if (
@@ -2716,6 +2736,14 @@ def _reorder_paired_messages(messages: List[TemplateMessage]) -> List[TemplateMe
         ):
             key = (msg.session_id, msg.tool_use_id)
             pair_last_index[key] = i
+        # Index slash-command messages by parent_uuid
+        if (
+            msg.is_paired
+            and msg.pair_role == "pair_last"
+            and msg.parent_uuid
+            and "slash-command" in msg.css_class
+        ):
+            slash_command_pair_index[msg.parent_uuid] = i
 
     # Create reordered list
     reordered: List[TemplateMessage] = []
@@ -2729,16 +2757,23 @@ def _reorder_paired_messages(messages: List[TemplateMessage]) -> List[TemplateMe
 
         # If this is the first message in a pair, immediately add its pair_last
         # Key includes session_id to prevent cross-session pairing on resume
-        if (
-            msg.is_paired
-            and msg.pair_role == "pair_first"
-            and msg.tool_use_id
-            and msg.session_id
-        ):
-            key = (msg.session_id, msg.tool_use_id)
-            if key in pair_last_index:
-                last_idx = pair_last_index[key]
+        if msg.is_paired and msg.pair_role == "pair_first":
+            pair_last = None
+            last_idx = None
+
+            # Check for tool_use_id based pairs
+            if msg.tool_use_id and msg.session_id:
+                key = (msg.session_id, msg.tool_use_id)
+                if key in pair_last_index:
+                    last_idx = pair_last_index[key]
+                    pair_last = messages[last_idx]
+
+            # Check for system + slash-command pairs (via uuid -> parent_uuid)
+            if pair_last is None and msg.uuid and msg.uuid in slash_command_pair_index:
+                last_idx = slash_command_pair_index[msg.uuid]
                 pair_last = messages[last_idx]
+
+            if pair_last is not None and last_idx is not None:
                 reordered.append(pair_last)
                 skip_indices.add(last_idx)
 
@@ -2879,7 +2914,12 @@ def _build_message_hierarchy(messages: List[TemplateMessage]) -> None:
         # Session headers are level 0
         if message.is_session_header:
             current_level = 0
-        elif message.parent_uuid and message.parent_uuid in uuid_to_info:
+        elif (
+            message.parent_uuid
+            and message.parent_uuid in uuid_to_info
+            and "system"
+            in message.css_class  # Only system messages nest via parent_uuid
+        ):
             # System message with known parent - nest under parent
             _, parent_level = uuid_to_info[message.parent_uuid]
             current_level = parent_level + 1
@@ -3813,6 +3853,7 @@ def _process_messages_loop(
                 ancestry=[],  # Will be assigned by _build_message_hierarchy
                 agent_id=getattr(message, "agentId", None),
                 uuid=getattr(message, "uuid", None),
+                parent_uuid=getattr(message, "parentUuid", None),
             )
 
             # Store raw text content for potential future use (e.g., deduplication,
