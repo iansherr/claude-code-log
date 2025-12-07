@@ -282,40 +282,42 @@ elif isinstance(item, (ThinkingContent, ThinkingBlock)):
 **Testing Evidence**: All 431 tests pass with simplified version
 **Risk**: Low - maintains same behavior, fully tested
 
-### Phase 11: Tool Model Enhancement
+### Phase 11: Tool Model Enhancement ✅ COMPLETE
 
 **Goal**: Add typed models for tool inputs (currently all generic `Dict[str, Any]`)
 
-**Current State** (from /tmp/models_analysis.md):
-- **16 tools** with samples in dev-docs/messages/tools/
-- **ALL tools** use generic `ToolUseContent.input: Dict[str, Any]`
-- Only **4 tools** have specialized result models:
-  - Read → `FileReadResult`
-  - Bash → `CommandResult`
-  - Edit → `EditResult`
-  - TodoWrite → `TodoResult`
+**Completed Work**:
+- ✅ Added 9 typed input models to `models.py`:
+  - `BashInput`, `ReadInput`, `WriteInput`, `EditInput`, `MultiEditInput`
+  - `GlobInput`, `GrepInput`, `TaskInput`, `TodoWriteInput`
+- ✅ Created `ToolInput` union type for type-safe tool input handling
+- ✅ Added `TOOL_INPUT_MODELS` mapping for tool name → model class lookup
+- ✅ Added `parse_tool_input()` helper function with fallback to raw dict
 
-**Proposed Typed Input Models**:
+**Typed Input Models Added**:
 ```python
-class ReadInput(BaseModel):
-    file_path: str
-    limit: Optional[int] = None
-    offset: Optional[int] = None
-
 class BashInput(BaseModel):
     command: str
     description: Optional[str] = None
     timeout: Optional[int] = None
+    run_in_background: Optional[bool] = None
+    dangerouslyDisableSandbox: Optional[bool] = None
+
+class ReadInput(BaseModel):
+    file_path: str
+    offset: Optional[int] = None
+    limit: Optional[int] = None
 
 class EditInput(BaseModel):
     file_path: str
     old_string: str
     new_string: str
-    replace_all: bool = False
+    replace_all: Optional[bool] = None
 ```
 
-**Risk**: Medium - requires careful migration
-**Priority**: Low - current generic approach works
+**Note**: The `ToolUseContent.input` field remains `Dict[str, Any]` for backward compatibility.
+The new typed models are available for optional use via `parse_tool_input()`. Existing
+code continues to work unchanged with dictionary access.
 
 ### Phase 12: Renderer Decomposition - Format Neutral
 
@@ -377,7 +379,7 @@ For maximum impact with minimum risk:
 
 ### Next Steps
 8. ✅ **Phase 10 (Parser)** - Simplified extract_text_content() with isinstance checks
-9. **Phase 11 (Tool Models)** - Lower priority, current approach works
+9. ✅ **Phase 11 (Tool Models)** - Added typed input models for 9 common tools
 10. **Phase 12 (Format Neutral)** - Long-term goal, enables multi-format output
 
 **Tree Refactoring Integration:**
@@ -392,16 +394,17 @@ For maximum impact with minimum risk:
 
 ## Metrics to Track
 
-| Metric | Baseline (v0.9) | Current (Phase 10 done) | Target |
+| Metric | Baseline (v0.9) | Current (Phase 11 done) | Target |
 |--------|-----------------|-------------------------|--------|
 | renderer.py lines | 4246 | 3853 | <3000 |
 | Largest function | ~687 lines | ~460 lines | <100 lines |
 | `_identify_message_pairs()` | ~120 lines | ~37 lines | - |
 | `extract_text_content()` | ~17 lines | ~13 lines | - |
+| Typed tool input models | 0 | 9 | - |
 | Module count | 3 (renderer, timings, models) | 5 (+ansi_colors, +renderer_code) | 6-7 |
 | Test coverage | ~78% | ~78% | >85% |
 
-**Progress**: Main loop reduced by 33% (687 → 460 lines). Pairing function reduced by 69% (120 → 37 lines). MessageType enum and type guards added. Parser simplified with isinstance checks (Phase 10).
+**Progress**: Main loop reduced by 33% (687 → 460 lines). Pairing function reduced by 69% (120 → 37 lines). MessageType enum and type guards added. Parser simplified with isinstance checks (Phase 10). 9 typed tool input models added (Phase 11).
 
 ## Quality Gates
 

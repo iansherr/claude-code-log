@@ -58,6 +58,159 @@ class TodoItem(BaseModel):
     priority: Literal["high", "medium", "low"]
 
 
+# =============================================================================
+# Tool Input Models
+# =============================================================================
+# Typed models for tool inputs (Phase 11 of MESSAGE_REFACTORING.md)
+# These provide type safety and IDE autocompletion for tool parameters.
+
+
+class BashInput(BaseModel):
+    """Input parameters for the Bash tool."""
+
+    command: str
+    description: Optional[str] = None
+    timeout: Optional[int] = None
+    run_in_background: Optional[bool] = None
+    dangerouslyDisableSandbox: Optional[bool] = None
+
+
+class ReadInput(BaseModel):
+    """Input parameters for the Read tool."""
+
+    file_path: str
+    offset: Optional[int] = None
+    limit: Optional[int] = None
+
+
+class WriteInput(BaseModel):
+    """Input parameters for the Write tool."""
+
+    file_path: str
+    content: str
+
+
+class EditInput(BaseModel):
+    """Input parameters for the Edit tool."""
+
+    file_path: str
+    old_string: str
+    new_string: str
+    replace_all: Optional[bool] = None
+
+
+class EditItem(BaseModel):
+    """Single edit item for MultiEdit tool."""
+
+    old_string: str
+    new_string: str
+
+
+class MultiEditInput(BaseModel):
+    """Input parameters for the MultiEdit tool."""
+
+    file_path: str
+    edits: List[EditItem]
+
+
+class GlobInput(BaseModel):
+    """Input parameters for the Glob tool."""
+
+    pattern: str
+    path: Optional[str] = None
+
+
+class GrepInput(BaseModel):
+    """Input parameters for the Grep tool.
+
+    Note: Extra fields like -A, -B, -C are allowed for flexibility.
+    """
+
+    pattern: str
+    path: Optional[str] = None
+    glob: Optional[str] = None
+    type: Optional[str] = None
+    output_mode: Optional[Literal["content", "files_with_matches", "count"]] = None
+    multiline: Optional[bool] = None
+    head_limit: Optional[int] = None
+    offset: Optional[int] = None
+
+    model_config = {"extra": "allow"}  # Allow -A, -B, -C, -i, -n fields
+
+
+class TaskInput(BaseModel):
+    """Input parameters for the Task tool."""
+
+    prompt: str
+    subagent_type: str
+    description: str
+    model: Optional[Literal["sonnet", "opus", "haiku"]] = None
+    run_in_background: Optional[bool] = None
+    resume: Optional[str] = None
+
+
+class TodoWriteItem(BaseModel):
+    """Single todo item for TodoWrite tool (input format)."""
+
+    content: str
+    status: Literal["pending", "in_progress", "completed"]
+    activeForm: str
+
+
+class TodoWriteInput(BaseModel):
+    """Input parameters for the TodoWrite tool."""
+
+    todos: List[TodoWriteItem]
+
+
+# Union of all typed tool inputs
+ToolInput = Union[
+    BashInput,
+    ReadInput,
+    WriteInput,
+    EditInput,
+    MultiEditInput,
+    GlobInput,
+    GrepInput,
+    TaskInput,
+    TodoWriteInput,
+    Dict[str, Any],  # Fallback for unknown tools
+]
+
+# Mapping of tool names to their typed input models
+TOOL_INPUT_MODELS: Dict[str, type[BaseModel]] = {
+    "Bash": BashInput,
+    "Read": ReadInput,
+    "Write": WriteInput,
+    "Edit": EditInput,
+    "MultiEdit": MultiEditInput,
+    "Glob": GlobInput,
+    "Grep": GrepInput,
+    "Task": TaskInput,
+    "TodoWrite": TodoWriteInput,
+}
+
+
+def parse_tool_input(tool_name: str, input_data: Dict[str, Any]) -> ToolInput:
+    """Parse tool input dictionary into a typed model if available.
+
+    Args:
+        tool_name: The name of the tool (e.g., "Bash", "Read")
+        input_data: The raw input dictionary from the tool_use content
+
+    Returns:
+        A typed input model if available, otherwise the original dictionary
+    """
+    model_class = TOOL_INPUT_MODELS.get(tool_name)
+    if model_class is not None:
+        try:
+            return cast(ToolInput, model_class.model_validate(input_data))
+        except Exception:
+            # Fall back to raw dict if validation fails
+            return input_data
+    return input_data
+
+
 class UsageInfo(BaseModel):
     """Token usage information that extends Anthropic's Usage type to handle optional fields."""
 
