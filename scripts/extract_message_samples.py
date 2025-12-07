@@ -1,13 +1,45 @@
 #!/usr/bin/env python3
-"""Extract abbreviated sample messages for documentation.
+"""Extract sample messages for documentation.
 
 This script finds examples of each message type and content type from
-real session data and creates abbreviated JSON files for documentation.
+real session data and creates:
+1. Abbreviated JSON files (readable, for documentation)
+2. Full JSONL lines (complete data, for reference)
+
+The output message categories map input JSONL types to rendered HTML:
+
+INPUT (JSONL)              -> OUTPUT (HTML css_class)
+---------------------------------------------------------
+user + text content        -> "user"
+user + text (compacted)    -> "user compacted"
+user + text (slash-command)-> "user slash-command"
+user + text (sidechain)    -> "user sidechain" (skipped in main)
+user + tool_result         -> "tool_result" (separate message)
+user + tool_result error   -> "tool_result error"
+user + image               -> "image"
+assistant + text           -> "assistant"
+assistant + text (sidechain)-> "assistant sidechain"
+assistant + thinking       -> "thinking"
+assistant + tool_use       -> "tool_use"
+system (command-name)      -> "system"
+system (command-output)    -> "system command-output"
+system (level=info)        -> "system system-info"
+system (level=warning)     -> "system system-warning"
+system (level=error)       -> "system system-error"
+system (hook summary)      -> "system system-hook"
+session header             -> "session-header"
+summary                    -> (not rendered as message)
+queue-operation            -> (not rendered as message)
+file-history-snapshot      -> (not rendered as message)
 """
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
+
+# Add project root to path to import from claude_code_log
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Smallest valid base64 PNG (8x8 transparent)
 TINY_BASE64_IMAGE = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII"
@@ -30,9 +62,23 @@ def abbreviate_message(msg: dict[str, Any]) -> dict[str, Any]:
     result = {}
 
     # Keep essential fields
-    for key in ["type", "sessionId", "timestamp", "uuid", "parentUuid", "isSidechain"]:
+    for key in [
+        "type",
+        "sessionId",
+        "timestamp",
+        "uuid",
+        "parentUuid",
+        "isSidechain",
+        "isMeta",
+        "level",
+        "subtype",
+        "content",
+    ]:
         if key in msg:
-            result[key] = msg[key]
+            if key == "content" and isinstance(msg[key], str):
+                result[key] = truncate_text(msg[key])
+            else:
+                result[key] = msg[key]
 
     # Abbreviate message content
     if "message" in msg:
@@ -72,6 +118,12 @@ def abbreviate_message(msg: dict[str, Any]) -> dict[str, Any]:
                 "filePath": tur["file"].get("filePath", ""),
                 "content": truncate_text(tur["file"].get("content", "")),
             }
+
+    # Abbreviate summary
+    if "summary" in msg:
+        result["summary"] = truncate_text(msg["summary"])
+    if "leafUuid" in msg:
+        result["leafUuid"] = msg["leafUuid"]
 
     return result
 
@@ -121,24 +173,245 @@ def abbreviate_content_item(item: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def find_samples(
-    data_dirs: list[Path],
-) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
-    """Find sample messages of each type."""
-    samples: dict[str, list[dict]] = {
-        "user_text": [],
-        "user_tool_result": [],
-        "user_image": [],
-        "assistant_text": [],
-        "assistant_tool_use": [],
-        "assistant_thinking": [],
-        "system": [],
-        "summary": [],
-        "queue_operation": [],
-        "file_history_snapshot": [],
-    }
+# Output message categories - maps to CSS classes
+# Each category specifies the subdirectory where samples are written
+OUTPUT_CATEGORIES = {
+    # User message variants -> user/
+    "user": {
+        "css_class": "user",
+        "description": "Regular user prompt",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (
+            m.get("type") == "user"
+            and not m.get("isSidechain")
+            and not m.get("isMeta")
+            and _has_text_content(m)
+            and not _is_compacted(m)
+        ),
+    },
+    "user_compacted": {
+        "css_class": "user compacted",
+        "description": "Compacted conversation summary",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (
+            m.get("type") == "user" and not m.get("isSidechain") and _is_compacted(m)
+        ),
+    },
+    "user_slash_command": {
+        "css_class": "user slash-command",
+        "description": "Expanded slash command prompt (isMeta=true)",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (m.get("type") == "user" and m.get("isMeta")),
+    },
+    "user_sidechain": {
+        "css_class": "user sidechain",
+        "description": "Sub-agent user prompt (usually skipped)",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (
+            m.get("type") == "user"
+            and m.get("isSidechain")
+            and _has_text_content(m)
+            and not m.get("isMeta")
+        ),
+    },
+    "image": {
+        "css_class": "image",
+        "description": "User-attached image",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (m.get("type") == "user" and _has_image(m)),
+    },
+    # Assistant message variants -> assistant/
+    "assistant": {
+        "css_class": "assistant",
+        "description": "Assistant text response",
+        "input_type": "assistant",
+        "subdir": "assistant",
+        "filter": lambda m: (
+            m.get("type") == "assistant"
+            and not m.get("isSidechain")
+            and _has_text_content(m)
+        ),
+    },
+    "assistant_sidechain": {
+        "css_class": "assistant sidechain",
+        "description": "Sub-agent assistant response",
+        "input_type": "assistant",
+        "subdir": "assistant",
+        "filter": lambda m: (
+            m.get("type") == "assistant"
+            and m.get("isSidechain")
+            and _has_text_content(m)
+        ),
+    },
+    "thinking": {
+        "css_class": "thinking",
+        "description": "Extended thinking content",
+        "input_type": "assistant",
+        "subdir": "assistant",
+        "filter": lambda m: (m.get("type") == "assistant" and _has_thinking(m)),
+    },
+    # System message variants -> system/
+    "system_command": {
+        "css_class": "system",
+        "description": "User-initiated command (e.g., /context)",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (
+            m.get("type") == "system" and _has_command_name(m.get("content", ""))
+        ),
+    },
+    "system_command_output": {
+        "css_class": "system command-output",
+        "description": "Command output (e.g., from /context)",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (
+            m.get("type") == "system" and _has_command_output(m.get("content", ""))
+        ),
+    },
+    "system_info": {
+        "css_class": "system system-info",
+        "description": "System info message",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (
+            m.get("type") == "system"
+            and m.get("level") == "info"
+            and not _has_command_name(m.get("content", ""))
+            and not _has_command_output(m.get("content", ""))
+        ),
+    },
+    "system_warning": {
+        "css_class": "system system-warning",
+        "description": "System warning message",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (m.get("type") == "system" and m.get("level") == "warning"),
+    },
+    "system_error": {
+        "css_class": "system system-error",
+        "description": "System error message",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (m.get("type") == "system" and m.get("level") == "error"),
+    },
+    "system_hook": {
+        "css_class": "system system-hook",
+        "description": "Hook execution summary",
+        "input_type": "system",
+        "subdir": "system",
+        "filter": lambda m: (
+            m.get("type") == "system" and m.get("subtype") == "stop_hook_summary"
+        ),
+    },
+    # Non-rendered types -> system/
+    "summary": {
+        "css_class": None,
+        "description": "Session summary (not rendered as message)",
+        "input_type": "summary",
+        "subdir": "system",
+        "filter": lambda m: m.get("type") == "summary",
+    },
+    "queue_operation": {
+        "css_class": None,
+        "description": "Queue operation (not rendered as message)",
+        "input_type": "queue-operation",
+        "subdir": "system",
+        "filter": lambda m: m.get("type") == "queue-operation",
+    },
+    "file_history_snapshot": {
+        "css_class": None,
+        "description": "File history snapshot (not rendered as message)",
+        "input_type": "file-history-snapshot",
+        "subdir": "system",
+        "filter": lambda m: m.get("type") == "file-history-snapshot",
+    },
+}
 
-    tool_samples: dict[str, list[dict]] = {}
+
+def _has_text_content(msg: dict) -> bool:
+    """Check if message has text content."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, str):
+        return True
+    if isinstance(content, list):
+        return any(item.get("type") == "text" for item in content)
+    return False
+
+
+def _has_tool_result(msg: dict) -> bool:
+    """Check if message has tool_result content."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        return any(item.get("type") == "tool_result" for item in content)
+    return False
+
+
+def _has_tool_result_error(msg: dict) -> bool:
+    """Check if message has tool_result with is_error=True."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        return any(
+            item.get("type") == "tool_result" and item.get("is_error")
+            for item in content
+        )
+    return False
+
+
+def _has_image(msg: dict) -> bool:
+    """Check if message has image content."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        return any(item.get("type") == "image" for item in content)
+    return False
+
+
+def _has_thinking(msg: dict) -> bool:
+    """Check if message has thinking content."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        return any(item.get("type") == "thinking" for item in content)
+    return False
+
+
+def _has_tool_use(msg: dict) -> bool:
+    """Check if message has tool_use content."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        return any(item.get("type") == "tool_use" for item in content)
+    return False
+
+
+def _is_compacted(msg: dict) -> bool:
+    """Check if message is a compacted conversation."""
+    content = msg.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        for item in content:
+            if item.get("type") == "text":
+                text = item.get("text", "")
+                if "(compacted conversation)" in text:
+                    return True
+    return False
+
+
+def _has_command_name(content: str) -> bool:
+    """Check if system message has command-name tag."""
+    return "<command-name>" in content
+
+
+def _has_command_output(content: str) -> bool:
+    """Check if system message has command output tag."""
+    return "<local-command-stdout>" in content
+
+
+def find_samples(data_dirs: list[Path]) -> dict[str, list[dict]]:
+    """Find sample messages for each output category."""
+    samples: dict[str, list[dict]] = {cat: [] for cat in OUTPUT_CATEGORIES}
 
     for data_dir in data_dirs:
         for jsonl_file in data_dir.rglob("*.jsonl"):
@@ -153,118 +426,144 @@ def find_samples(
                         except json.JSONDecodeError:
                             continue
 
-                        msg_type = msg.get("type", "")
-
-                        if msg_type == "user":
-                            content = msg.get("message", {}).get("content", [])
-                            if isinstance(content, str):
-                                if len(samples["user_text"]) < 2:
-                                    samples["user_text"].append(msg)
-                            elif isinstance(content, list):
-                                for item in content:
-                                    item_type = item.get("type", "")
-                                    if (
-                                        item_type == "text"
-                                        and len(samples["user_text"]) < 2
-                                    ):
-                                        samples["user_text"].append(msg)
-                                    elif item_type == "tool_result":
-                                        if len(samples["user_tool_result"]) < 2:
-                                            samples["user_tool_result"].append(msg)
-                                    elif (
-                                        item_type == "image"
-                                        and len(samples["user_image"]) < 2
-                                    ):
-                                        samples["user_image"].append(msg)
-
-                        elif msg_type == "assistant":
-                            content = msg.get("message", {}).get("content", [])
-                            if isinstance(content, list):
-                                has_text = has_thinking = has_tool = False
-                                for item in content:
-                                    item_type = item.get("type", "")
-                                    if item_type == "text":
-                                        has_text = True
-                                    elif item_type == "thinking":
-                                        has_thinking = True
-                                    elif item_type == "tool_use":
-                                        has_tool = True
-                                        tool_name = item.get("name", "")
-                                        if tool_name and tool_name not in tool_samples:
-                                            tool_samples[tool_name] = []
-                                        if (
-                                            tool_name
-                                            and len(tool_samples[tool_name]) < 1
-                                        ):
-                                            tool_samples[tool_name].append(msg)
-
-                                if has_text and len(samples["assistant_text"]) < 2:
-                                    samples["assistant_text"].append(msg)
-                                if (
-                                    has_thinking
-                                    and len(samples["assistant_thinking"]) < 2
-                                ):
-                                    samples["assistant_thinking"].append(msg)
-                                if has_tool and len(samples["assistant_tool_use"]) < 2:
-                                    samples["assistant_tool_use"].append(msg)
-
-                        elif msg_type == "system":
-                            if len(samples["system"]) < 2:
-                                samples["system"].append(msg)
-
-                        elif msg_type == "summary":
-                            if len(samples["summary"]) < 2:
-                                samples["summary"].append(msg)
-
-                        elif msg_type == "queue-operation":
-                            if len(samples["queue_operation"]) < 2:
-                                samples["queue_operation"].append(msg)
-
-                        elif msg_type == "file-history-snapshot":
-                            if len(samples["file_history_snapshot"]) < 1:
-                                samples["file_history_snapshot"].append(msg)
+                        # Check each category
+                        for cat_name, cat_def in OUTPUT_CATEGORIES.items():
+                            if len(samples[cat_name]) < 2:
+                                try:
+                                    if cat_def["filter"](msg):
+                                        samples[cat_name].append(msg)
+                                except Exception:
+                                    pass
 
             except Exception as e:
                 print(f"Error processing {jsonl_file}: {e}")
 
-    return samples, tool_samples
+    return samples
+
+
+def find_tool_samples(
+    data_dirs: list[Path],
+) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
+    """Find sample messages for each tool type.
+
+    Returns:
+        Tuple of (tool_use_samples, tool_result_samples)
+        - tool_use_samples: assistant messages with tool_use content
+        - tool_result_samples: user messages with tool_result content
+    """
+    tool_use_samples: dict[str, list[dict]] = {}
+    tool_result_samples: dict[str, list[dict]] = {}
+
+    # Track tool_use_id -> tool_name mapping
+    tool_id_to_name: dict[str, str] = {}
+
+    for data_dir in data_dirs:
+        for jsonl_file in data_dir.rglob("*.jsonl"):
+            try:
+                with open(jsonl_file) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            msg = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+
+                        # Collect tool_use samples from assistant messages
+                        if msg.get("type") == "assistant":
+                            content = msg.get("message", {}).get("content", [])
+                            if isinstance(content, list):
+                                for item in content:
+                                    if item.get("type") == "tool_use":
+                                        tool_name = item.get("name", "")
+                                        tool_id = item.get("id", "")
+                                        if tool_name:
+                                            tool_id_to_name[tool_id] = tool_name
+                                            if tool_name not in tool_use_samples:
+                                                tool_use_samples[tool_name] = []
+                                            if len(tool_use_samples[tool_name]) < 1:
+                                                tool_use_samples[tool_name].append(msg)
+
+                        # Collect tool_result samples from user messages
+                        if msg.get("type") == "user":
+                            content = msg.get("message", {}).get("content", [])
+                            if isinstance(content, list):
+                                for item in content:
+                                    if item.get("type") == "tool_result":
+                                        tool_id = item.get("tool_use_id", "")
+                                        tool_name = tool_id_to_name.get(tool_id, "")
+                                        if tool_name:
+                                            if tool_name not in tool_result_samples:
+                                                tool_result_samples[tool_name] = []
+                                            if len(tool_result_samples[tool_name]) < 1:
+                                                tool_result_samples[tool_name].append(
+                                                    msg
+                                                )
+
+            except Exception as e:
+                print(f"Error processing {jsonl_file}: {e}")
+
+    return tool_use_samples, tool_result_samples
+
+
+def write_sample(output_dir: Path, name: str, msg: dict) -> None:
+    """Write a sample message as both .json and .jsonl files."""
+    out_json = output_dir / f"{name}.json"
+    abbreviated = abbreviate_message(msg)
+    with open(out_json, "w") as f:
+        json.dump(abbreviated, f, indent=2)
+
+    out_jsonl = output_dir / f"{name}.jsonl"
+    with open(out_jsonl, "w") as f:
+        f.write(json.dumps(msg) + "\n")
 
 
 def main():
     test_data = Path(__file__).parent.parent / "test" / "test_data"
     data_dirs = [
-        test_data / "sessions",
-        test_data / "real_projects",
+        test_data / "real_projects",  # Only use real_projects as instructed
     ]
 
     output_dir = Path(__file__).parent.parent / "dev-docs" / "messages"
-    output_dir.mkdir(parents=True, exist_ok=True)
 
-    samples, tool_samples = find_samples(data_dirs)
+    # Create subdirectories
+    for subdir in ["user", "assistant", "system", "tools"]:
+        (output_dir / subdir).mkdir(parents=True, exist_ok=True)
 
-    # Write samples
-    for sample_type, messages in samples.items():
+    print("Finding samples from real_projects...")
+    samples = find_samples(data_dirs)
+    tool_use_samples, tool_result_samples = find_tool_samples(data_dirs)
+
+    # Write samples for each category to appropriate subdirectory
+    for cat_name, messages in samples.items():
         if not messages:
+            print(f"  {cat_name}: NO SAMPLES FOUND")
             continue
-        out_file = output_dir / f"{sample_type}.json"
-        abbreviated = [abbreviate_message(m) for m in messages[:1]]
-        with open(out_file, "w") as f:
-            json.dump(
-                abbreviated[0] if len(abbreviated) == 1 else abbreviated, f, indent=2
-            )
-        print(f"Wrote {out_file}")
 
-    # Write tool samples
+        cat_def = OUTPUT_CATEGORIES[cat_name]
+        subdir = cat_def["subdir"]
+        target_dir = output_dir / subdir
+
+        write_sample(target_dir, cat_name, messages[0])
+        print(f"  {subdir}/{cat_name}: wrote .json, .jsonl")
+
+    # Write tool_use samples (assistant messages) -> tools/ToolName-tool_use
     tools_dir = output_dir / "tools"
-    tools_dir.mkdir(exist_ok=True)
-    for tool_name, messages in sorted(tool_samples.items()):
+    for tool_name, messages in sorted(tool_use_samples.items()):
         if not messages:
             continue
-        out_file = tools_dir / f"{tool_name.lower()}.json"
-        abbreviated = abbreviate_message(messages[0])
-        with open(out_file, "w") as f:
-            json.dump(abbreviated, f, indent=2)
-        print(f"Wrote {out_file}")
+        write_sample(tools_dir, f"{tool_name}-tool_use", messages[0])
+        print(f"  tools/{tool_name}-tool_use: wrote .json, .jsonl")
+
+    # Write tool_result samples (user messages) -> tools/ToolName-tool_result
+    for tool_name, messages in sorted(tool_result_samples.items()):
+        if not messages:
+            continue
+        write_sample(tools_dir, f"{tool_name}-tool_result", messages[0])
+        print(f"  tools/{tool_name}-tool_result: wrote .json, .jsonl")
+
+    print(f"\nWrote samples to {output_dir}")
 
 
 if __name__ == "__main__":
