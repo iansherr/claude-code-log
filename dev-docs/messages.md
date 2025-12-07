@@ -285,7 +285,23 @@ Tool results are contained within `user` messages as `tool_result` content items
 
 - **Input**: `user` with `tool_result` content, `is_error: true`
 - **Intermediate**: `message_type: "tool_result"`, `is_error: true`, `css_class: "tool_result error"`
-- **Files**: *(No sample in real_projects)*
+- **Files**: [Bash-tool_result_error.json](messages/tools/Bash-tool_result_error.json) | [Bash-tool_result_error.jsonl](messages/tools/Bash-tool_result_error.jsonl)
+
+```json
+{
+  "type": "user",
+  "message": {
+    "role": "user",
+    "content": [{
+      "type": "tool_result",
+      "content": "Exit code 127\n/bin/bash: line 1: pytest: command not found",
+      "is_error": true,
+      "tool_use_id": "toolu_xxx"
+    }]
+  },
+  "toolUseResult": "Error: Exit code 127\n/bin/bash: line 1: pytest: command not found"
+}
+```
 
 ---
 
