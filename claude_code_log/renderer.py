@@ -586,8 +586,8 @@ def format_todowrite_content(tool_use: ToolUseContent) -> str:
         try:
             todo_id = escape_html(str(todo.get("id", "")))
             content = escape_html(str(todo.get("content", "")))
-            status = todo.get("status", "pending")
-            priority = todo.get("priority", "medium")
+            status = str(todo.get("status", "pending")).lower()
+            priority = str(todo.get("priority", "medium")).lower()
             status_emoji = status_emojis.get(status, "⏳")
 
             # CSS class for styling
@@ -601,10 +601,11 @@ def format_todowrite_content(tool_use: ToolUseContent) -> str:
                 </div>
             """)
         except AttributeError:
+            escaped_fallback = escape_html(str(todo))
             todo_items.append(f"""
                 <div class="todo-item pending medium">
                     <span class="todo-status">⏳</span>
-                    <span class="todo-content">{str(todo)}</span>
+                    <span class="todo-content">{escaped_fallback}</span>
                 </div>
             """)
 
