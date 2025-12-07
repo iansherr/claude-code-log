@@ -319,6 +319,12 @@ class EditInput(BaseModel):
 The new typed models are available for optional use via `parse_tool_input()`. Existing
 code continues to work unchanged with dictionary access.
 
+**Independence from Phase 12**: Phase 11 and Phase 12 are independent improvements.
+Phase 12 focuses on architectural decomposition (splitting renderer.py into format-neutral
+and format-specific modules), while Phase 11 provides typed tool input models as an
+optional type-safety enhancement. The typed models can be adopted incrementally by any
+code that wants to use them, independent of the format-neutral refactoring.
+
 ### Phase 12: Renderer Decomposition - Format Neutral
 
 **Goal**: Separate format-neutral logic from HTML-specific generation

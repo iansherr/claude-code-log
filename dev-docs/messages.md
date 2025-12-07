@@ -590,23 +590,23 @@ Tools are invoked via `tool_use` content items in assistant messages, with resul
 | Tool | Category | Use | Result | Input Model | Result Model |
 |------|----------|-----|--------|-------------|--------------|
 | AskUserQuestion | Agent | [tool_use](messages/tools/AskUserQuestion-tool_use.json) | [tool_result](messages/tools/AskUserQuestion-tool_result.json) | Generic | `str` |
-| Bash | Shell | [tool_use](messages/tools/Bash-tool_use.json) | [tool_result](messages/tools/Bash-tool_result.json) | Generic | `CommandResult` |
+| Bash | Shell | [tool_use](messages/tools/Bash-tool_use.json) | [tool_result](messages/tools/Bash-tool_result.json) | *`BashInput`* | `CommandResult` |
 | BashOutput | Shell | [tool_use](messages/tools/BashOutput-tool_use.json) | [tool_result](messages/tools/BashOutput-tool_result.json) | Generic | `str` |
-| Edit | File | [tool_use](messages/tools/Edit-tool_use.json) | [tool_result](messages/tools/Edit-tool_result.json) | Generic | `EditResult` |
+| Edit | File | [tool_use](messages/tools/Edit-tool_use.json) | [tool_result](messages/tools/Edit-tool_result.json) | *`EditInput`* | `EditResult` |
 | ExitPlanMode | Agent | [tool_use](messages/tools/ExitPlanMode-tool_use.json) | [tool_result](messages/tools/ExitPlanMode-tool_result.json) | Generic | `str` |
-| Glob | File | [tool_use](messages/tools/Glob-tool_use.json) | [tool_result](messages/tools/Glob-tool_result.json) | Generic | `str` |
-| Grep | File | [tool_use](messages/tools/Grep-tool_use.json) | [tool_result](messages/tools/Grep-tool_result.json) | Generic | `str` |
+| Glob | File | [tool_use](messages/tools/Glob-tool_use.json) | [tool_result](messages/tools/Glob-tool_result.json) | *`GlobInput`* | `str` |
+| Grep | File | [tool_use](messages/tools/Grep-tool_use.json) | [tool_result](messages/tools/Grep-tool_result.json) | *`GrepInput`* | `str` |
 | KillShell | Shell | [tool_use](messages/tools/KillShell-tool_use.json) | [tool_result](messages/tools/KillShell-tool_result.json) | Generic | `str` |
 | LS | File | [tool_use](messages/tools/LS-tool_use.json) | [tool_result](messages/tools/LS-tool_result.json) | Generic | `str` |
-| MultiEdit | File | [tool_use](messages/tools/MultiEdit-tool_use.json) | [tool_result](messages/tools/MultiEdit-tool_result.json) | Generic | `str` |
-| Read | File | [tool_use](messages/tools/Read-tool_use.json) | [tool_result](messages/tools/Read-tool_result.json) | Generic | `FileReadResult` |
-| Task | Agent | [tool_use](messages/tools/Task-tool_use.json) | [tool_result](messages/tools/Task-tool_result.json) | Generic | `str` |
-| TodoWrite | Agent | [tool_use](messages/tools/TodoWrite-tool_use.json) | [tool_result](messages/tools/TodoWrite-tool_result.json) | Generic | `TodoResult` |
+| MultiEdit | File | [tool_use](messages/tools/MultiEdit-tool_use.json) | [tool_result](messages/tools/MultiEdit-tool_result.json) | *`MultiEditInput`* | `str` |
+| Read | File | [tool_use](messages/tools/Read-tool_use.json) | [tool_result](messages/tools/Read-tool_result.json) | *`ReadInput`* | `FileReadResult` |
+| Task | Agent | [tool_use](messages/tools/Task-tool_use.json) | [tool_result](messages/tools/Task-tool_result.json) | *`TaskInput`* | `str` |
+| TodoWrite | Agent | [tool_use](messages/tools/TodoWrite-tool_use.json) | [tool_result](messages/tools/TodoWrite-tool_result.json) | *`TodoWriteInput`* | `TodoResult` |
 | WebFetch | Web | [tool_use](messages/tools/WebFetch-tool_use.json) | [tool_result](messages/tools/WebFetch-tool_result.json) | Generic | `str` |
 | WebSearch | Web | [tool_use](messages/tools/WebSearch-tool_use.json) | [tool_result](messages/tools/WebSearch-tool_result.json) | Generic | `str` |
-| Write | File | [tool_use](messages/tools/Write-tool_use.json) | [tool_result](messages/tools/Write-tool_result.json) | Generic | `str` |
+| Write | File | [tool_use](messages/tools/Write-tool_use.json) | [tool_result](messages/tools/Write-tool_result.json) | *`WriteInput`* | `str` |
 
-**Note**: All tools use generic `ToolUseContent` with `Dict[str, Any]` for input. Only 4 tools have specialized result models in `models.py`: `FileReadResult` (Read), `CommandResult` (Bash), `EditResult` (Edit), `TodoResult` (TodoWrite). See [models.py](../claude_code_log/models.py) for model definitions.
+**Note**: `ToolUseContent.input` remains `Dict[str, Any]` for backward compatibility. Input models shown in *italics* are available via `parse_tool_input()` but not yet used in the renderer. Only 4 tools have specialized result models: `FileReadResult` (Read), `CommandResult` (Bash), `EditResult` (Edit), `TodoResult` (TodoWrite). See [models.py](../claude_code_log/models.py) for model definitions.
 
 ---
 
