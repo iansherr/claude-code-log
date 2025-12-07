@@ -7,8 +7,9 @@ The virtual parent/child structure of a conversation determines how folding work
 ```
 Session (level 0)
 └── User message (level 1)
-      ├── System: Info (level 2)
+      ├── System: command/error (level 2)
       └── Assistant response (level 2)
+            ├── System: info/warning (level 3)
             ├── Tool: Read ─────────────┐ (level 3)
             │   └── Tool result ────────┘ paired, fold together
             └── Tool: Task ─────────────┐ (level 3)
@@ -128,3 +129,150 @@ Fold buttons display context-aware tooltips showing what will happen on click (n
 - **Performance**: Descendant counting is O(n) using cached hierarchy lookups
 - **Paired messages**: Pairs are counted as single units in child/descendant counts
 - **Labels**: Fold bars show type-aware labels like "3 assistant, 4 tools" or "2 tool pairs"
+
+---
+
+## Hierarchy System Architecture
+
+The hierarchy system in `renderer.py` determines message nesting for the fold/unfold UI.
+It consists of three main functions:
+
+### `_get_message_hierarchy_level(css_class, is_sidechain) -> int`
+
+Determines the hierarchy level for a message based on its CSS class and sidechain status.
+
+**Level Definitions:**
+
+| Level | Message Types | Description |
+|-------|---------------|-------------|
+| 0 | `session-header` | Session dividers |
+| 1 | `user` | User messages (top-level conversation) |
+| 2 | `assistant`, `thinking`, `system` (commands/errors) | Direct responses to user |
+| 3 | `tool_use`, `tool_result`, `system-info`, `system-warning` | Nested under assistant |
+| 4 | `assistant sidechain`, `thinking sidechain` | Sub-agent responses (from Task tool) |
+| 5 | `tool_use sidechain`, `tool_result sidechain` | Sub-agent tools |
+
+**Decision Logic:**
+
+```
+css_class contains?    is_sidechain?    Result
+────────────────────   ──────────────   ──────
+"user"                 false            Level 1
+"system-info/warning"  false            Level 3
+"system"               false            Level 2
+"assistant/thinking"   true             Level 4
+"tool"                 true             Level 5
+"assistant/thinking"   false            Level 2
+"tool"                 false            Level 3
+(default)              -                Level 1
+```
+
+**Edge Cases:**
+- Sidechain user messages are skipped entirely (they duplicate Task tool input)
+- `system-info` and `system-warning` are at level 3 (tool-related notifications)
+- `system` (commands/errors) without info/warning are at level 2
+
+### `_build_message_hierarchy(messages) -> None`
+
+Builds `message_id` and `ancestry` for all messages using a stack-based approach.
+
+**Algorithm:**
+
+1. Maintain a stack of `(level, message_id)` tuples
+2. For each message:
+   - Determine level via `_get_message_hierarchy_level()`
+   - Pop stack until finding appropriate parent (level < current)
+   - Build ancestry from remaining stack entries
+   - Push current message onto stack
+3. Session headers use `session-{uuid}` format for navigation
+4. Other messages use `d-{counter}` format
+
+**Ancestry Example:**
+
+```
+Session (session-abc)           ancestry: []
+└── User (d-0)                  ancestry: ["session-abc"]
+    └── Assistant (d-1)         ancestry: ["session-abc", "d-0"]
+        └── Tool use (d-2)      ancestry: ["session-abc", "d-0", "d-1"]
+            └── Tool result (d-3) ancestry: ["session-abc", "d-0", "d-1", "d-2"]
+```
+
+**Important:** This function must be called after all reordering operations (pair reordering,
+sidechain reordering) to ensure hierarchy reflects final display order.
+
+### `_mark_messages_with_children(messages) -> None`
+
+Calculates descendant counts for fold bar labels.
+
+**Computed Fields:**
+
+| Field | Description |
+|-------|-------------|
+| `has_children` | True if message has any children |
+| `immediate_children_count` | Count of direct children only |
+| `total_descendants_count` | Count of all descendants recursively |
+| `immediate_children_by_type` | Dict mapping css_class to count |
+| `total_descendants_by_type` | Dict mapping css_class to count |
+
+**Algorithm:**
+
+1. Build O(1) lookup index of messages by ID
+2. For each message with ancestry:
+   - Skip `pair_last` messages (pairs count as one unit)
+   - Increment immediate parent's `immediate_children_count`
+   - Increment all ancestors' `total_descendants_count`
+   - Track counts by message type for detailed labels
+
+**Time Complexity:** O(n) where n is message count
+
+### JavaScript Fold Controls Interaction
+
+The JavaScript in `templates/components/fold_bar.html` uses these computed values:
+
+1. **Ancestry classes**: Each message has `d-{n}` classes from ancestry for CSS targeting
+2. **Child counts**: Displayed in fold bar buttons ("▶ 3 messages")
+3. **Descendant counts**: Displayed in fold-all button ("▶▶ 125 total")
+4. **Type counts**: Used for descriptive labels ("2 assistant, 4 tools")
+
+**Visibility Control:**
+
+```javascript
+// Toggle immediate children visibility
+document.querySelectorAll(`.d-${messageId}`).forEach(child => {
+    child.classList.toggle('filtered-hidden');
+});
+
+// Toggle all descendants visibility
+ancestry.forEach(ancestorId => {
+    document.querySelectorAll(`.d-${ancestorId}`).forEach(child => {
+        child.classList.toggle('filtered-hidden');
+    });
+});
+```
+
+### Sidechain (Sub-agent) Handling
+
+Messages from Task tool sub-agents are handled specially:
+
+1. **Identification**: `isSidechain: true` in JSONL → `sidechain` in css_class
+2. **Level assignment**: Sidechain assistant/thinking at level 4, tools at level 5
+3. **Reordering**: Sidechain messages appear under their Task tool result
+4. **Skipping**: Sidechain user messages are skipped (duplicate Task input)
+5. **Deduplication**: Identical sidechain results are replaced with links
+
+### Paired Message Handling
+
+Paired messages (tool_use + tool_result, thinking + assistant) are handled as units:
+
+1. **Pairing**: `_identify_message_pairs()` links messages via `tool_use_id`
+2. **Counting**: Only `pair_first` messages count toward parent's children
+3. **Folding**: Both messages fold/unfold together
+4. **Display**: Pair duration shown on `pair_last` message
+
+---
+
+## References
+
+- [renderer.py](../claude_code_log/renderer.py) - Hierarchy functions (lines 2698-2850)
+- [templates/components/fold_bar.html](../claude_code_log/templates/components/fold_bar.html) - JavaScript controls
+- [css-classes.md](css-classes.md) - CSS class documentation
