@@ -14,9 +14,11 @@ HTML-specific output.
 """
 
 import html
+from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
 
 import mistune
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .renderer_code import highlight_code_with_pygments, truncate_highlighted_preview
 from .renderer_timings import timing_stat
@@ -297,3 +299,54 @@ def render_file_content_collapsible(
 
     html_parts.append("</div>")
     return "".join(html_parts)
+
+
+# -- Template Environment -----------------------------------------------------
+
+
+def starts_with_emoji(text: str) -> bool:
+    """Check if a string starts with an emoji character.
+
+    Checks common emoji Unicode ranges:
+    - Emoticons: U+1F600 - U+1F64F
+    - Misc Symbols and Pictographs: U+1F300 - U+1F5FF
+    - Transport and Map Symbols: U+1F680 - U+1F6FF
+    - Supplemental Symbols: U+1F900 - U+1F9FF
+    - Misc Symbols: U+2600 - U+26FF
+    - Dingbats: U+2700 - U+27BF
+    """
+    if not text:
+        return False
+
+    first_char = text[0]
+    code_point = ord(first_char)
+
+    return (
+        0x1F600 <= code_point <= 0x1F64F  # Emoticons
+        or 0x1F300 <= code_point <= 0x1F5FF  # Misc Symbols and Pictographs
+        or 0x1F680 <= code_point <= 0x1F6FF  # Transport and Map Symbols
+        or 0x1F900 <= code_point <= 0x1F9FF  # Supplemental Symbols
+        or 0x2600 <= code_point <= 0x26FF  # Misc Symbols
+        or 0x2700 <= code_point <= 0x27BF  # Dingbats
+    )
+
+
+def get_template_environment() -> Environment:
+    """Get Jinja2 template environment for HTML rendering.
+
+    Creates a Jinja2 environment configured with:
+    - Template loading from the templates directory
+    - HTML auto-escaping
+    - Custom template filters/functions (starts_with_emoji)
+
+    Returns:
+        Configured Jinja2 Environment
+    """
+    templates_dir = Path(__file__).parent / "templates"
+    env = Environment(
+        loader=FileSystemLoader(templates_dir),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
+    # Add custom filters/functions
+    env.globals["starts_with_emoji"] = starts_with_emoji  # type: ignore[index]
+    return env

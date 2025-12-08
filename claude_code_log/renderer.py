@@ -12,8 +12,6 @@ if TYPE_CHECKING:
     from .cache import CacheManager
 from datetime import datetime
 import html
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
 from .models import (
     MessageModifiers,
     MessageType,
@@ -56,34 +54,8 @@ from .html_renderer import (
     render_collapsible_code,
     render_markdown_collapsible,
     render_file_content_collapsible,
+    get_template_environment,
 )
-
-
-def starts_with_emoji(text: str) -> bool:
-    """Check if a string starts with an emoji character.
-
-    Checks common emoji Unicode ranges:
-    - Emoticons: U+1F600 - U+1F64F
-    - Misc Symbols and Pictographs: U+1F300 - U+1F5FF
-    - Transport and Map Symbols: U+1F680 - U+1F6FF
-    - Supplemental Symbols: U+1F900 - U+1F9FF
-    - Misc Symbols: U+2600 - U+26FF
-    - Dingbats: U+2700 - U+27BF
-    """
-    if not text:
-        return False
-
-    first_char = text[0]
-    code_point = ord(first_char)
-
-    return (
-        0x1F600 <= code_point <= 0x1F64F  # Emoticons
-        or 0x1F300 <= code_point <= 0x1F5FF  # Misc Symbols and Pictographs
-        or 0x1F680 <= code_point <= 0x1F6FF  # Transport and Map Symbols
-        or 0x1F900 <= code_point <= 0x1F9FF  # Supplemental Symbols
-        or 0x2600 <= code_point <= 0x26FF  # Misc Symbols
-        or 0x2700 <= code_point <= 0x27BF  # Dingbats
-    )
 
 
 def get_project_display_name(
@@ -1249,18 +1221,6 @@ def render_message_content(content: List[ContentItem], message_type: str) -> str
             rendered_parts.append(format_image_content(item))  # type: ignore
 
     return "\n".join(rendered_parts)
-
-
-def _get_template_environment() -> Environment:
-    """Get Jinja2 template environment."""
-    templates_dir = Path(__file__).parent / "templates"
-    env = Environment(
-        loader=FileSystemLoader(templates_dir),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-    # Add custom filters/functions
-    env.globals["starts_with_emoji"] = starts_with_emoji  # type: ignore[index]
-    return env
 
 
 def _format_type_counts(type_counts: dict[str, int]) -> str:
@@ -2924,7 +2884,7 @@ def generate_html(
 
     # Render template
     with log_timing("Template environment setup", t_start):
-        env = _get_template_environment()
+        env = get_template_environment()
         template = env.get_template("transcript.html")
 
     with log_timing(lambda: f"Template rendering ({len(html_output)} chars)", t_start):
@@ -3640,7 +3600,7 @@ def generate_projects_index_html(
     template_summary = TemplateSummary(project_summaries)
 
     # Render template
-    env = _get_template_environment()
+    env = get_template_environment()
     template = env.get_template("index.html")
     return str(
         template.render(
