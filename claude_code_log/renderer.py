@@ -1531,23 +1531,6 @@ def _format_type_counts(type_counts: dict[str, int]) -> str:
         return f"{parts[0]}, {parts[1]}, {remaining} more"
 
 
-def _modifiers_from_css_class(css_class: str) -> MessageModifiers:
-    """Parse CSS class string into MessageModifiers.
-
-    This is a temporary bridge function during migration from css_class to modifiers.
-    It parses the space-separated CSS class string back into structured modifiers.
-    """
-    classes = css_class.split()
-    return MessageModifiers(
-        is_sidechain="sidechain" in classes,
-        is_slash_command="slash-command" in classes,
-        is_command_output="command-output" in classes,
-        is_compacted="compacted" in classes,
-        is_error="error" in classes,
-        is_steering="steering" in classes,
-    )
-
-
 class TemplateMessage:
     """Structured message data for template rendering."""
 
@@ -1847,13 +1830,15 @@ def _render_hook_summary(message: "SystemTranscriptEntry") -> str:
 #     return css_class, content_html, message_type
 
 
-def _process_command_message(text_content: str) -> tuple[str, str, str, str]:
-    """Process a slash command message and return (css_class, content_html, message_type, message_title).
+def _process_command_message(
+    text_content: str,
+) -> tuple[MessageModifiers, str, str, str]:
+    """Process a slash command message and return (modifiers, content_html, message_type, message_title).
 
     These are user messages containing slash command invocations (e.g., /context, /model).
     The JSONL type is "user", not "system".
     """
-    css_class = "user slash-command"
+    modifiers = MessageModifiers(is_slash_command=True)
     command_name, command_args, command_contents = extract_command_info(text_content)
     escaped_command_name = escape_html(command_name)
     escaped_command_args = escape_html(command_args)
@@ -1888,18 +1873,20 @@ def _process_command_message(text_content: str) -> tuple[str, str, str, str]:
     content_html = "<br>".join(content_parts)
     message_type = "user"
     message_title = "Slash Command"
-    return css_class, content_html, message_type, message_title
+    return modifiers, content_html, message_type, message_title
 
 
-def _process_local_command_output(text_content: str) -> tuple[str, str, str, str]:
-    """Process slash command output and return (css_class, content_html, message_type, message_title).
+def _process_local_command_output(
+    text_content: str,
+) -> tuple[MessageModifiers, str, str, str]:
+    """Process slash command output and return (modifiers, content_html, message_type, message_title).
 
     These are user messages containing the output from slash commands (e.g., /context, /model).
     The JSONL type is "user", not "system".
     """
     import re
 
-    css_class = "user command-output"
+    modifiers = MessageModifiers(is_command_output=True)
 
     stdout_match = re.search(
         r"<local-command-stdout>(.*?)</local-command-stdout>",
@@ -1928,14 +1915,14 @@ def _process_local_command_output(text_content: str) -> tuple[str, str, str, str
 
     message_type = "user"
     message_title = "Command Output"
-    return css_class, content_html, message_type, message_title
+    return modifiers, content_html, message_type, message_title
 
 
-def _process_bash_input(text_content: str) -> tuple[str, str, str, str]:
-    """Process bash input command and return (css_class, content_html, message_type, message_title)."""
+def _process_bash_input(text_content: str) -> tuple[MessageModifiers, str, str, str]:
+    """Process bash input command and return (modifiers, content_html, message_type, message_title)."""
     import re
 
-    css_class = "bash-input"
+    modifiers = MessageModifiers()  # bash-input is a message type, not a modifier
 
     bash_match = re.search(
         r"<bash-input>(.*?)</bash-input>",
@@ -1952,16 +1939,16 @@ def _process_bash_input(text_content: str) -> tuple[str, str, str, str]:
     else:
         content_html = escape_html(text_content)
 
-    message_type = "bash"
+    message_type = "bash-input"
     message_title = "Bash"
-    return css_class, content_html, message_type, message_title
+    return modifiers, content_html, message_type, message_title
 
 
-def _process_bash_output(text_content: str) -> tuple[str, str, str, str]:
-    """Process bash output and return (css_class, content_html, message_type, message_title)."""
+def _process_bash_output(text_content: str) -> tuple[MessageModifiers, str, str, str]:
+    """Process bash output and return (modifiers, content_html, message_type, message_title)."""
     import re
 
-    css_class = "bash-output"
+    modifiers = MessageModifiers()  # bash-output is a message type, not a modifier
     COLLAPSE_THRESHOLD = 10  # Collapse if more than this many lines
 
     stdout_match = re.search(
@@ -2034,7 +2021,7 @@ def _process_bash_output(text_content: str) -> tuple[str, str, str, str]:
 
     message_type = "bash"
     message_title = "Bash"
-    return css_class, content_html, message_type, message_title
+    return modifiers, content_html, message_type, message_title
 
 
 def _process_regular_message(
@@ -2042,8 +2029,8 @@ def _process_regular_message(
     message_type: str,
     is_sidechain: bool,
     is_meta: bool = False,
-) -> tuple[str, str, str, str]:
-    """Process regular message and return (css_class, content_html, message_type, message_title).
+) -> tuple[MessageModifiers, str, str, str]:
+    """Process regular message and return (modifiers, content_html, message_type, message_title).
 
     Note: Sidechain user messages (Sub-assistant prompts) are now skipped entirely
     in the main processing loop since they duplicate the Task tool input prompt.
@@ -2051,9 +2038,10 @@ def _process_regular_message(
     Args:
         is_meta: True for slash command expanded prompts (isMeta=True in JSONL)
     """
-    css_class = f"{message_type}"
     message_title = message_type.title()  # Default title
     is_compacted = False
+    is_slash_command = False
+    is_memory_input = False
 
     # Handle user-specific preprocessing
     if message_type == MessageType.USER:
@@ -2061,7 +2049,7 @@ def _process_regular_message(
         if is_meta:
             # Slash command expanded prompts - render as collapsible markdown
             # These contain LLM-generated instruction text (markdown formatted)
-            css_class = f"{message_type} slash-command"
+            is_slash_command = True
             message_title = "User (slash command)"
             # Combine all text content (items may be TextContent, dicts, or SDK objects)
             all_text = "\n\n".join(
@@ -2080,7 +2068,6 @@ def _process_regular_message(
                 text_only_content
             )
             if is_compacted:
-                css_class = f"{message_type} compacted"
                 message_title = "User (compacted conversation)"
             elif is_memory_input:
                 message_title = "Memory"
@@ -2089,12 +2076,17 @@ def _process_regular_message(
         content_html = render_message_content(text_only_content, message_type)
 
     if is_sidechain:
-        css_class = f"{css_class} sidechain"
         # Update message title for display (only non-user types reach here)
         if not is_compacted:
             message_title = "🔗 Sub-assistant"
 
-    return css_class, content_html, message_type, message_title
+    modifiers = MessageModifiers(
+        is_sidechain=is_sidechain,
+        is_slash_command=is_slash_command,
+        is_compacted=is_compacted,
+    )
+
+    return modifiers, content_html, message_type, message_title
 
 
 def _process_system_message(
@@ -3615,21 +3607,21 @@ def _process_messages_loop(
                     token_parts.append(f"Cache Read: {usage.cache_read_input_tokens}")
                 token_usage_str = " | ".join(token_parts)
 
-        # Determine CSS class and content based on message type and duplicate status
+        # Determine modifiers and content based on message type and duplicate status
         if is_command:
-            css_class, content_html, message_type, message_title = (
+            modifiers, content_html, message_type, message_title = (
                 _process_command_message(text_content)
             )
         elif is_local_output:
-            css_class, content_html, message_type, message_title = (
+            modifiers, content_html, message_type, message_title = (
                 _process_local_command_output(text_content)
             )
         elif is_bash_cmd:
-            css_class, content_html, message_type, message_title = _process_bash_input(
+            modifiers, content_html, message_type, message_title = _process_bash_input(
                 text_content
             )
         elif is_bash_result:
-            css_class, content_html, message_type, message_title = _process_bash_output(
+            modifiers, content_html, message_type, message_title = _process_bash_output(
                 text_content
             )
         else:
@@ -3639,7 +3631,7 @@ def _process_messages_loop(
             else:
                 effective_type = message_type
 
-            css_class, content_html, message_type_result, message_title = (
+            modifiers, content_html, message_type_result, message_title = (
                 _process_regular_message(
                     text_only_content,
                     effective_type,
@@ -3649,12 +3641,17 @@ def _process_messages_loop(
             )
             message_type = message_type_result  # Update message_type with result
 
-            # Add 'steering' CSS class for queue-operation 'remove' messages
+            # Add 'steering' modifier for queue-operation 'remove' messages
             if (
                 isinstance(message, QueueOperationTranscriptEntry)
                 and message.operation == "remove"
             ):
-                css_class = f"{css_class} steering"
+                modifiers = MessageModifiers(
+                    is_sidechain=modifiers.is_sidechain,
+                    is_slash_command=modifiers.is_slash_command,
+                    is_compacted=modifiers.is_compacted,
+                    is_steering=True,
+                )
                 message_title = "User (steering)"
 
         # Only create main message if it has text content
@@ -3675,7 +3672,7 @@ def _process_messages_loop(
                 agent_id=getattr(message, "agentId", None),
                 uuid=getattr(message, "uuid", None),
                 parent_uuid=getattr(message, "parentUuid", None),
-                modifiers=_modifiers_from_css_class(css_class),
+                modifiers=modifiers,
             )
 
             # Store raw text content for potential future use (e.g., deduplication,
