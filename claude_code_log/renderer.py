@@ -4,7 +4,7 @@
 import json
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import List, Optional, Dict, Any, cast, TYPE_CHECKING
 
@@ -3644,12 +3644,7 @@ def _process_messages_loop(
                 isinstance(message, QueueOperationTranscriptEntry)
                 and message.operation == "remove"
             ):
-                modifiers = MessageModifiers(
-                    is_sidechain=modifiers.is_sidechain,
-                    is_slash_command=modifiers.is_slash_command,
-                    is_compacted=modifiers.is_compacted,
-                    is_steering=True,
-                )
+                modifiers = replace(modifiers, is_steering=True)
                 message_title = "User (steering)"
 
         # Only create main message if it has text content
