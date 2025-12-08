@@ -329,7 +329,7 @@ code that wants to use them, independent of the format-neutral refactoring.
 
 **Goal**: Separate format-neutral logic from HTML-specific generation
 
-**Current Architecture**:
+**Current Architecture** (before Phase 12):
 ```
 renderer.py (3853 lines)
 ├── Message processing (format-neutral)
@@ -346,29 +346,54 @@ renderer.py (3853 lines)
 
 **Target Architecture**:
 ```
-message_processor.py (format-neutral)
-├── MessageProcessor class
-├── Pairing logic
-├── Hierarchy building
+renderer.py (format-neutral orchestration)
+├── Message processing
+├── Pairing & hierarchy logic
 └── Token aggregation
 
-html_renderer.py (HTML-specific)
+html_renderer.py (HTML utilities)
 ├── CSS class computation
-├── Template rendering
-└── Tool HTML formatters
+├── Markdown rendering
+├── Collapsible content
+└── Template environment
+
+html_tool_renderers.py (tool HTML formatters)
+├── Tool use formatters
+└── Tool result formatters
 
 text_renderer.py (future - golergka's work)
 ├── Text/markdown output
 └── Chat format
 ```
 
+**Implementation Steps** (Phase 13 plan):
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Organize html_renderer.py with thematic sections | ✅ Complete |
+| 2 | Move pure HTML utilities (escape_html, render_markdown, _create_pygments_plugin) | ✅ Complete |
+| 3 | Move collapsible rendering functions | ✅ Complete |
+| 4 | Move template environment (get_template_environment, starts_with_emoji) | ✅ Complete |
+| 5 | Create html_tool_renderers.py with tool formatters | ✅ Complete |
+| 6 | Split tool formatters (two-stage: parse + render) | Pending |
+| 7 | Split message content renderers | Pending |
+| 8 | Split _process_* message functions | Pending |
+| 9 | Move generate_projects_index_html | Pending |
+| 10 | Reorganize renderer.py with thematic sections | Pending |
+| 11 | Finalize html_renderer.py structure | Pending |
+
+**Completed Changes**:
+- `html_renderer.py`: CSS class computation, markdown rendering, collapsible content, template env
+- `html_tool_renderers.py`: 13 tool formatters moved from renderer.py (~420 lines)
+- `renderer.py`: Reduced from 3853 to ~3400 lines, imports from new modules
+
 **Dependencies**:
-- Requires Phase 9 (type safety) for clean interfaces
-- Benefits from Phase 10 (parser simplification)
+- Requires Phase 9 (type safety) for clean interfaces ✅
+- Benefits from Phase 10 (parser simplification) ✅
 - Enables golergka's multi-format integration
 
 **Risk**: High - requires careful refactoring
-**Priority**: Medium-term goal
+**Priority**: In progress
 
 ## Recommended Execution Order
 
@@ -386,7 +411,7 @@ For maximum impact with minimum risk:
 ### Next Steps
 8. ✅ **Phase 10 (Parser)** - Simplified extract_text_content() with isinstance checks
 9. ✅ **Phase 11 (Tool Models)** - Added typed input models for 9 common tools
-10. **Phase 12 (Format Neutral)** - Long-term goal, enables multi-format output
+10. 🔄 **Phase 12 (Format Neutral)** - In progress (Steps 1-5 complete, 6-11 pending)
 
 **Tree Refactoring Integration:**
 - Tree building (TEMPLATE_MESSAGE_CHILDREN.md Phase 1-2) is complete and non-blocking
