@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 
 from claude_code_log.cache import CacheManager
-from claude_code_log.renderer import generate_session_html
+from claude_code_log.html.renderer import generate_session_html
 
 
 class TestCombinedTranscriptLink:

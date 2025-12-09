@@ -5,12 +5,12 @@ import pytest
 import re
 from pathlib import Path
 from claude_code_log.parser import load_transcript, load_directory_transcripts
+from claude_code_log.html.renderer import generate_projects_index_html
 from claude_code_log.renderer import (
     generate_html,
     TemplateMessage,
     TemplateProject,
     TemplateSummary,
-    generate_projects_index_html,
 )
 
 
