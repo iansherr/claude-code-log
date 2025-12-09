@@ -113,7 +113,33 @@ def convert_jsonl_to_html(
     use_cache: bool = True,
     silent: bool = False,
 ) -> Path:
-    """Convert JSONL transcript(s) to HTML file(s)."""
+    """Convert JSONL transcript(s) to HTML file(s).
+
+    Convenience wrapper around convert_jsonl_to() for HTML format.
+    """
+    return convert_jsonl_to(
+        "html",
+        input_path,
+        output_path,
+        from_date,
+        to_date,
+        generate_individual_sessions,
+        use_cache,
+        silent,
+    )
+
+
+def convert_jsonl_to(
+    format: str,
+    input_path: Path,
+    output_path: Optional[Path] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    generate_individual_sessions: bool = True,
+    use_cache: bool = True,
+    silent: bool = False,
+) -> Path:
+    """Convert JSONL transcript(s) to the specified format."""
     if not input_path.exists():
         raise FileNotFoundError(f"Input path not found: {input_path}")
 
@@ -129,14 +155,14 @@ def convert_jsonl_to_html(
     if input_path.is_file():
         # Single file mode - cache only available for directory mode
         if output_path is None:
-            output_path = input_path.with_suffix(".html")
+            output_path = input_path.with_suffix(f".{format}")
         messages = load_transcript(input_path, silent=silent)
         title = f"Claude Transcript - {input_path.stem}"
         cache_was_updated = False  # No cache in single file mode
     else:
         # Directory mode - Cache-First Approach
         if output_path is None:
-            output_path = input_path / "combined_transcripts.html"
+            output_path = input_path / f"combined_transcripts.{format}"
 
         # Phase 1: Ensure cache is fresh and populated
         cache_was_updated = ensure_fresh_cache(
@@ -170,9 +196,9 @@ def convert_jsonl_to_html(
         date_range_str = " ".join(date_range_parts)
         title += f" ({date_range_str})"
 
-    # Generate combined HTML file (check if regeneration needed)
+    # Generate combined output file (check if regeneration needed)
     assert output_path is not None
-    renderer = get_renderer("html")
+    renderer = get_renderer(format)
     should_regenerate = (
         renderer.is_outdated(output_path)
         or from_date is not None
@@ -184,16 +210,24 @@ def convert_jsonl_to_html(
     )
 
     if should_regenerate:
-        html_content = renderer.generate(messages, title)
-        assert html_content is not None
-        output_path.write_text(html_content, encoding="utf-8")
+        content = renderer.generate(messages, title)
+        assert content is not None
+        output_path.write_text(content, encoding="utf-8")
     else:
-        print(f"HTML file {output_path.name} is current, skipping regeneration")
+        print(
+            f"{format.upper()} file {output_path.name} is current, skipping regeneration"
+        )
 
     # Generate individual session files if requested and in directory mode
     if generate_individual_sessions and input_path.is_dir():
         _generate_individual_session_files(
-            messages, input_path, from_date, to_date, cache_manager, cache_was_updated
+            format,
+            messages,
+            input_path,
+            from_date,
+            to_date,
+            cache_manager,
+            cache_was_updated,
         )
 
     return output_path
@@ -519,6 +553,7 @@ def _collect_project_sessions(messages: List[TranscriptEntry]) -> List[Dict[str,
 
 
 def _generate_individual_session_files(
+    format: str,
     messages: List[TranscriptEntry],
     output_dir: Path,
     from_date: Optional[str] = None,
@@ -526,7 +561,7 @@ def _generate_individual_session_files(
     cache_manager: Optional["CacheManager"] = None,
     cache_was_updated: bool = False,
 ) -> None:
-    """Generate individual HTML files for each session."""
+    """Generate individual files for each session in the specified format."""
     # Pre-compute warmup sessions to exclude them
     warmup_session_ids = get_warmup_session_ids(messages)
 
@@ -583,8 +618,8 @@ def _generate_individual_session_files(
             session_title += f" ({date_range_str})"
 
         # Check if session file needs regeneration
-        session_file_path = output_dir / f"session-{session_id}.html"
-        renderer = get_renderer("html")
+        session_file_path = output_dir / f"session-{session_id}.{format}"
+        renderer = get_renderer(format)
 
         # Only regenerate if outdated, doesn't exist, or date filtering is active
         should_regenerate_session = (
@@ -596,13 +631,13 @@ def _generate_individual_session_files(
         )
 
         if should_regenerate_session:
-            # Generate session HTML
-            session_html = renderer.generate_session(
+            # Generate session content
+            session_content = renderer.generate_session(
                 messages, session_id, session_title, cache_manager
             )
-            assert session_html is not None
+            assert session_content is not None
             # Write session file
-            session_file_path.write_text(session_html, encoding="utf-8")
+            session_file_path.write_text(session_content, encoding="utf-8")
         else:
             print(
                 f"Session file {session_file_path.name} is current, skipping regeneration"

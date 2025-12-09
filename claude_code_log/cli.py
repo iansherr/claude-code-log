@@ -10,7 +10,11 @@ from typing import Optional, List
 import click
 from git import Repo, InvalidGitRepositoryError
 
-from .converter import convert_jsonl_to_html, process_projects_hierarchy
+from .converter import (
+    convert_jsonl_to,
+    convert_jsonl_to_html,
+    process_projects_hierarchy,
+)
 from .cache import CacheManager, get_library_version
 
 
@@ -411,6 +415,13 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
     default=None,
     help="Custom projects directory (default: ~/.claude/projects/). Useful for testing.",
 )
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["html"]),
+    default="html",
+    help="Output format (default: html). Currently only html is supported.",
+)
 def main(
     input_path: Optional[Path],
     output: Optional[Path],
@@ -424,6 +435,7 @@ def main(
     clear_html: bool,
     tui: bool,
     projects_dir: Optional[Path],
+    output_format: str,
 ) -> None:
     """Convert Claude transcript JSONL files to HTML.
 
@@ -602,7 +614,8 @@ def main(
                     f"Neither {input_path} nor {claude_path} exists"
                 )
 
-        output_path = convert_jsonl_to_html(
+        output_path = convert_jsonl_to(
+            output_format,
             input_path,
             output,
             from_date,
