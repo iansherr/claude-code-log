@@ -517,21 +517,10 @@ def _collect_project_sessions(messages: List[TranscriptEntry]) -> List[Dict[str,
     # Convert to list format with formatted timestamps
     session_list: List[Dict[str, Any]] = []
     for session_data in sessions.values():
-        from .utils import format_timestamp
-
-        first_ts = session_data["first_timestamp"]
-        last_ts = session_data["last_timestamp"]
-        timestamp_range = ""
-        if first_ts and last_ts:
-            if first_ts == last_ts:
-                timestamp_range = format_timestamp(first_ts)
-            else:
-                timestamp_range = (
-                    f"{format_timestamp(first_ts)} - {format_timestamp(last_ts)}"
-                )
-        elif first_ts:
-            timestamp_range = format_timestamp(first_ts)
-
+        timestamp_range = format_timestamp_range(
+            session_data["first_timestamp"],
+            session_data["last_timestamp"],
+        )
         session_dict: Dict[str, Any] = {
             "id": session_data["id"],
             "summary": session_data["summary"],
