@@ -88,11 +88,11 @@ class TestTemplateRendering:
         assert "Caveat: The messages below were generated" not in html_content
 
         # Check command message handling
-        assert "Command:" in html_content
+        assert "Slash Command" in html_content
         assert "test-command" in html_content
 
         # Check local command output is present (output from /context can be interesting)
-        assert "message system command-output" in html_content
+        assert "message user command-output" in html_content
         assert "Line 1 of output" in html_content
 
         # Check special characters
