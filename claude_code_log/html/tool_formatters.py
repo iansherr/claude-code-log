@@ -28,11 +28,11 @@ from ..models import (
     AskUserQuestionItem,
     BashInput,
     EditInput,
-    EditOutputContent,
+    EditOutput,
     ExitPlanModeInput,
     MultiEditInput,
     ReadInput,
-    ReadOutputContent,
+    ReadOutput,
     TaskInput,
     TodoWriteInput,
     ToolUseContent,
@@ -322,7 +322,7 @@ def _parse_cat_n_snippet(
     return (code_content, system_reminder, line_offset)
 
 
-def parse_read_output(content: str, file_path: str) -> Optional[ReadOutputContent]:
+def parse_read_output(content: str, file_path: str) -> Optional[ReadOutput]:
     """Parse Read tool result into structured content.
 
     Args:
@@ -330,7 +330,7 @@ def parse_read_output(content: str, file_path: str) -> Optional[ReadOutputConten
         file_path: Path to the file that was read
 
     Returns:
-        ReadOutputContent if parsing succeeds, None otherwise
+        ReadOutput if parsing succeeds, None otherwise
     """
     # Check if content matches the cat-n format pattern (line_number → content)
     lines = content.split("\n")
@@ -344,7 +344,7 @@ def parse_read_output(content: str, file_path: str) -> Optional[ReadOutputConten
     code_content, system_reminder, line_offset = result
     num_lines = len(code_content.split("\n"))
 
-    return ReadOutputContent(
+    return ReadOutput(
         file_path=file_path,
         content=code_content,
         start_line=line_offset,
@@ -355,11 +355,11 @@ def parse_read_output(content: str, file_path: str) -> Optional[ReadOutputConten
     )
 
 
-def format_read_tool_result(output: ReadOutputContent) -> str:
+def format_read_tool_result(output: ReadOutput) -> str:
     """Format Read tool result as HTML with syntax highlighting.
 
     Args:
-        output: Parsed ReadOutputContent
+        output: Parsed ReadOutput
 
     Returns:
         HTML string with syntax-highlighted, collapsible file content
@@ -381,7 +381,7 @@ def format_read_tool_result(output: ReadOutputContent) -> str:
     )
 
 
-def parse_edit_output(content: str, file_path: str) -> Optional[EditOutputContent]:
+def parse_edit_output(content: str, file_path: str) -> Optional[EditOutput]:
     """Parse Edit tool result into structured content.
 
     Edit tool results typically have format:
@@ -393,7 +393,7 @@ def parse_edit_output(content: str, file_path: str) -> Optional[EditOutputConten
         file_path: Path to the file that was edited
 
     Returns:
-        EditOutputContent if parsing succeeds, None otherwise
+        EditOutput if parsing succeeds, None otherwise
     """
     # Look for the cat-n snippet after the preamble
     # Pattern: look for first line that matches the cat-n format
@@ -415,7 +415,7 @@ def parse_edit_output(content: str, file_path: str) -> Optional[EditOutputConten
     code_content, _system_reminder, line_offset = result
     # Edit tool doesn't use system_reminder
 
-    return EditOutputContent(
+    return EditOutput(
         file_path=file_path,
         success=True,  # If we got here, edit succeeded
         diffs=[],  # We don't have diff info from result
@@ -424,11 +424,11 @@ def parse_edit_output(content: str, file_path: str) -> Optional[EditOutputConten
     )
 
 
-def format_edit_tool_result(output: EditOutputContent) -> str:
+def format_edit_tool_result(output: EditOutput) -> str:
     """Format Edit tool result as HTML with syntax highlighting.
 
     Args:
-        output: Parsed EditOutputContent
+        output: Parsed EditOutput
 
     Returns:
         HTML string with syntax-highlighted, collapsible file content

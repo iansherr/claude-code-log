@@ -71,8 +71,6 @@ from .html import (
     parse_edit_output,
     parse_read_output,
     parse_slash_command,
-    render_collapsible_code,
-    render_file_content_collapsible,
     render_markdown_collapsible,
     render_params_table,
 )

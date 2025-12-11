@@ -236,6 +236,20 @@ OUTPUT_CATEGORIES: dict[str, CategoryDef] = {
         "subdir": "user",
         "filter": lambda m: (m.get("type") == "user" and _has_image(m)),
     },
+    "bash_input": {
+        "css_class": "user",
+        "description": "Bash command input (from background Bash tool)",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (m.get("type") == "user" and _has_bash_input(m)),
+    },
+    "bash_output": {
+        "css_class": "user",
+        "description": "Bash command output (stdout/stderr)",
+        "input_type": "user",
+        "subdir": "user",
+        "filter": lambda m: (m.get("type") == "user" and _has_bash_output(m)),
+    },
     # Assistant message variants -> assistant/
     "assistant": {
         "css_class": "assistant",
@@ -418,6 +432,22 @@ def _has_command_name(content: str) -> bool:
 def _has_command_output(content: str) -> bool:
     """Check if system message has command output tag."""
     return "<local-command-stdout>" in content
+
+
+def _has_bash_input(msg: dict[str, Any]) -> bool:
+    """Check if user message has bash-input tag."""
+    content = msg.get("message", {}).get("content", "")
+    if isinstance(content, str):
+        return "<bash-input>" in content
+    return False
+
+
+def _has_bash_output(msg: dict[str, Any]) -> bool:
+    """Check if user message has bash-stdout tag."""
+    content = msg.get("message", {}).get("content", "")
+    if isinstance(content, str):
+        return "<bash-stdout>" in content
+    return False
 
 
 def find_samples(data_dirs: list[Path]) -> dict[str, list[dict]]:

@@ -133,10 +133,11 @@ class HookSummaryContent(MessageContent):
 
 
 @dataclass
-class ReadOutputContent(MessageContent):
+class ReadOutput(MessageContent):
     """Parsed Read tool output.
 
     Represents the result of reading a file with optional line range.
+    Symmetric with ReadInput for tool_use → tool_result pairing.
     """
 
     file_path: str
@@ -149,8 +150,11 @@ class ReadOutputContent(MessageContent):
 
 
 @dataclass
-class WriteOutputContent(MessageContent):
-    """Parsed Write tool output."""
+class WriteOutput(MessageContent):
+    """Parsed Write tool output.
+
+    Symmetric with WriteInput for tool_use → tool_result pairing.
+    """
 
     file_path: str
     success: bool
@@ -166,10 +170,11 @@ class EditDiff:
 
 
 @dataclass
-class EditOutputContent(MessageContent):
+class EditOutput(MessageContent):
     """Parsed Edit tool output.
 
     Contains diff information for file edits.
+    Symmetric with EditInput for tool_use → tool_result pairing.
     """
 
     file_path: str
@@ -180,8 +185,11 @@ class EditOutputContent(MessageContent):
 
 
 @dataclass
-class BashOutputContent(MessageContent):
-    """Parsed Bash tool output."""
+class BashOutput(MessageContent):
+    """Parsed Bash tool output.
+
+    Symmetric with BashInput for tool_use → tool_result pairing.
+    """
 
     stdout: str
     stderr: str
@@ -191,8 +199,11 @@ class BashOutputContent(MessageContent):
 
 
 @dataclass
-class TaskOutputContent(MessageContent):
-    """Parsed Task (sub-agent) tool output."""
+class TaskOutput(MessageContent):
+    """Parsed Task (sub-agent) tool output.
+
+    Symmetric with TaskInput for tool_use → tool_result pairing.
+    """
 
     agent_id: Optional[str]
     result: str  # Agent's response
@@ -200,8 +211,11 @@ class TaskOutputContent(MessageContent):
 
 
 @dataclass
-class GlobOutputContent(MessageContent):
-    """Parsed Glob tool output."""
+class GlobOutput(MessageContent):
+    """Parsed Glob tool output.
+
+    Symmetric with GlobInput for tool_use → tool_result pairing.
+    """
 
     pattern: str
     files: List[str]  # Matching file paths
@@ -209,8 +223,11 @@ class GlobOutputContent(MessageContent):
 
 
 @dataclass
-class GrepOutputContent(MessageContent):
-    """Parsed Grep tool output."""
+class GrepOutput(MessageContent):
+    """Parsed Grep tool output.
+
+    Symmetric with GrepInput for tool_use → tool_result pairing.
+    """
 
     pattern: str
     matches: List[str]  # Matching lines/files
@@ -713,48 +730,13 @@ class AssistantMessage(BaseModel):
         )
 
 
-class FileInfo(BaseModel):
-    filePath: str
-    content: str
-    numLines: int
-    startLine: int
-    totalLines: int
-
-
-class FileReadResult(BaseModel):
-    type: Literal["text"]
-    file: FileInfo
-
-
-class CommandResult(BaseModel):
-    stdout: str
-    stderr: str
-    interrupted: bool
-    isImage: bool
-
-
-class TodoResult(BaseModel):
-    oldTodos: List[TodoItem]
-    newTodos: List[TodoItem]
-
-
-class EditResult(BaseModel):
-    oldString: Optional[str] = None
-    newString: Optional[str] = None
-    replaceAll: Optional[bool] = None
-    originalFile: Optional[str] = None
-    structuredPatch: Optional[Any] = None
-    userModified: Optional[bool] = None
-
-
+# Tool result type - flexible to accept various result formats from JSONL
+# The specific parsing/formatting happens in tool_formatters.py using
+# ReadOutput, EditOutput, etc. (see Tool Output Content Models section)
 ToolUseResult = Union[
     str,
-    List[TodoItem],
-    FileReadResult,
-    CommandResult,
-    TodoResult,
-    EditResult,
-    List[ContentItem],
+    List[Any],  # Covers List[TodoItem], List[ContentItem], etc.
+    Dict[str, Any],  # Covers structured results
 ]
 
 
@@ -876,19 +858,63 @@ def normalize_usage_info(usage_data: Any) -> Optional[UsageInfo]:
     return None
 
 
-def parse_content_item(item_data: Dict[str, Any]) -> ContentItem:
-    """Parse a content item using enhanced approach with Anthropic types."""
+# =============================================================================
+# Content Item Parsing
+# =============================================================================
+# Functions to parse content items from JSONL data. Organized by entry type
+# to clarify which content types can appear in which context.
+
+
+def _parse_text_content(item_data: Dict[str, Any]) -> ContentItem:
+    """Parse text content, trying Anthropic types first.
+
+    Common to both user and assistant messages.
+    """
+    try:
+        from anthropic.types.text_block import TextBlock
+
+        return TextBlock.model_validate(item_data)
+    except Exception:
+        return TextContent.model_validate(item_data)
+
+
+def parse_user_content_item(item_data: Dict[str, Any]) -> ContentItem:
+    """Parse a content item from a UserTranscriptEntry.
+
+    User messages can contain:
+    - text: User-typed text
+    - tool_result: Results from tool execution
+    - image: User-attached images
+    """
     try:
         content_type = item_data.get("type", "")
 
-        # Try official Anthropic types first for better future compatibility
         if content_type == "text":
-            try:
-                from anthropic.types.text_block import TextBlock
+            return _parse_text_content(item_data)
+        elif content_type == "tool_result":
+            return ToolResultContent.model_validate(item_data)
+        elif content_type == "image":
+            return ImageContent.model_validate(item_data)
+        else:
+            # Fallback to text content for unknown types
+            return TextContent(type="text", text=str(item_data))
+    except Exception:
+        return TextContent(type="text", text=str(item_data))
 
-                return TextBlock.model_validate(item_data)
-            except Exception:
-                return TextContent.model_validate(item_data)
+
+def parse_assistant_content_item(item_data: Dict[str, Any]) -> ContentItem:
+    """Parse a content item from an AssistantTranscriptEntry.
+
+    Assistant messages can contain:
+    - text: Assistant's response text
+    - tool_use: Tool invocations
+    - thinking: Extended thinking blocks
+    """
+    try:
+        content_type = item_data.get("type", "")
+
+        if content_type == "text":
+            return _parse_text_content(item_data)
         elif content_type == "tool_use":
             try:
                 from anthropic.types.tool_use_block import ToolUseBlock
@@ -903,10 +929,48 @@ def parse_content_item(item_data: Dict[str, Any]) -> ContentItem:
                 return ThinkingBlock.model_validate(item_data)
             except Exception:
                 return ThinkingContent.model_validate(item_data)
-        elif content_type == "tool_result":
+        else:
+            # Fallback to text content for unknown types
+            return TextContent(type="text", text=str(item_data))
+    except Exception:
+        return TextContent(type="text", text=str(item_data))
+
+
+def parse_content_item(item_data: Dict[str, Any]) -> ContentItem:
+    """Parse a content item (generic fallback).
+
+    For cases where the entry type is unknown. Handles all content types.
+    Prefer parse_user_content_item or parse_assistant_content_item when
+    the entry type is known.
+    """
+    try:
+        content_type = item_data.get("type", "")
+
+        # User-specific content types
+        if content_type == "tool_result":
             return ToolResultContent.model_validate(item_data)
         elif content_type == "image":
             return ImageContent.model_validate(item_data)
+
+        # Assistant-specific content types
+        elif content_type == "tool_use":
+            try:
+                from anthropic.types.tool_use_block import ToolUseBlock
+
+                return ToolUseBlock.model_validate(item_data)
+            except Exception:
+                return ToolUseContent.model_validate(item_data)
+        elif content_type == "thinking":
+            try:
+                from anthropic.types.thinking_block import ThinkingBlock
+
+                return ThinkingBlock.model_validate(item_data)
+            except Exception:
+                return ThinkingContent.model_validate(item_data)
+
+        # Common content types
+        elif content_type == "text":
+            return _parse_text_content(item_data)
         else:
             # Fallback to text content for unknown types
             return TextContent(type="text", text=str(item_data))
@@ -1023,48 +1087,3 @@ def is_user_entry(entry: TranscriptEntry) -> TypeGuard[UserTranscriptEntry]:
 def is_assistant_entry(entry: TranscriptEntry) -> TypeGuard[AssistantTranscriptEntry]:
     """Check if entry is an assistant transcript entry."""
     return entry.type == MessageType.ASSISTANT
-
-
-def is_system_entry(entry: TranscriptEntry) -> TypeGuard[SystemTranscriptEntry]:
-    """Check if entry is a system transcript entry."""
-    return entry.type == MessageType.SYSTEM
-
-
-def is_summary_entry(entry: TranscriptEntry) -> TypeGuard[SummaryTranscriptEntry]:
-    """Check if entry is a summary transcript entry."""
-    return entry.type == MessageType.SUMMARY
-
-
-def is_queue_operation_entry(
-    entry: TranscriptEntry,
-) -> TypeGuard[QueueOperationTranscriptEntry]:
-    """Check if entry is a queue operation transcript entry."""
-    return entry.type == MessageType.QUEUE_OPERATION
-
-
-# Content item type guards
-
-
-def is_tool_use_content(item: ContentItem) -> TypeGuard[ToolUseContent]:
-    """Check if content item is a tool use."""
-    return getattr(item, "type", None) == "tool_use"
-
-
-def is_tool_result_content(item: ContentItem) -> TypeGuard[ToolResultContent]:
-    """Check if content item is a tool result."""
-    return getattr(item, "type", None) == "tool_result"
-
-
-def is_thinking_content(item: ContentItem) -> TypeGuard[ThinkingContent]:
-    """Check if content item is thinking content."""
-    return getattr(item, "type", None) == "thinking"
-
-
-def is_image_content(item: ContentItem) -> TypeGuard[ImageContent]:
-    """Check if content item is an image."""
-    return getattr(item, "type", None) == "image"
-
-
-def is_text_content(item: ContentItem) -> TypeGuard[TextContent]:
-    """Check if content item is text content."""
-    return getattr(item, "type", None) == "text"

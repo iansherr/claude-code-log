@@ -12,33 +12,44 @@ Claude Code transcripts contain messages in JSONL format. Each line represents a
 
 This document maps input types to their intermediate and output representations.
 
-## Message Categories Summary
+---
 
-| Input Type | `.type` Field | CSS Class | Description |
-|------------|---------------|-----------|-------------|
-| `user` + text | `user` | `user` | Regular user prompt |
-| `user` + text (compacted) | `user` | `user compacted` | Compacted conversation summary |
-| `user` + text (isMeta) | `user` | `user slash-command` | Expanded slash command prompt |
-| `user` + text (sidechain) | `user` | `user sidechain` | Sub-agent user prompt (skipped) |
-| `user` + tool_result | `tool_result` | `tool_result` | Tool execution result |
-| `user` + tool_result (error) | `tool_result` | `tool_result error` | Tool execution error |
-| `user` + image | `image` | `image` | User-attached image |
-| `assistant` + text | `assistant` | `assistant` | Assistant response |
-| `assistant` + text (sidechain) | `assistant` | `assistant sidechain` | Sub-agent response |
-| `assistant` + thinking | `thinking` | `thinking` | Extended thinking content |
-| `assistant` + tool_use | `tool_use` | `tool_use` | Tool invocation |
-| `user` (command-name) | `user` | `user slash-command` | User-initiated slash command |
-| `user` (command-output) | `user` | `user command-output` | Slash command output |
-| `system` (level=info) | `system` | `system system-info` | Info message |
-| `system` (level=warning) | `system` | `system system-warning` | Warning message |
-| `system` (level=error) | `system` | `system system-error` | Error message |
-| `system` (hook summary) | `system` | `system system-hook` | Hook execution summary |
-| `queue-operation` (remove) | `queue-operation` | `queue-operation steering` | User steering (rendered) |
-| (internal) | `session-header` | `session-header` | Session header |
-| (fallback) | `unknown` | `unknown` | Unknown content type |
-| `summary` | — | — | Session summary (metadata only) |
-| `queue-operation` (other) | — | — | Queue control (not rendered) |
-| `file-history-snapshot` | — | — | File snapshot (not rendered) |
+## Data Flow: From Transcript Entries to Rendered Messages
+
+```
+JSONL Parsing (parser.py)
+│
+├── UserTranscriptEntry
+│   ├── TextContent → User message variants:
+│   │   ├── SlashCommandContent (isMeta or <command-name> tags)
+│   │   ├── CommandOutputContent (<local-command-stdout> tags)
+│   │   ├── BashInputContent (<bash-input> tags)
+│   │   ├── CompactedSummaryContent (compacted conversation)
+│   │   └── Plain user text
+│   ├── ToolResultContent → Tool result messages:
+│   │   ├── ReadOutput (cat-n formatted file content)
+│   │   ├── EditOutput (cat-n formatted edit result)
+│   │   └── Generic tool result text
+│   └── ImageContent → Image messages
+│
+├── AssistantTranscriptEntry
+│   ├── TextContent → AssistantTextContent
+│   ├── ThinkingContent → ThinkingContentModel
+│   └── ToolUseContent → Tool use messages with parsed inputs:
+│       ├── ReadInput, WriteInput, EditInput, MultiEditInput
+│       ├── BashInput, GlobInput, GrepInput
+│       ├── TaskInput, TodoWriteInput, AskUserQuestionInput
+│       └── ExitPlanModeInput
+│
+├── SystemTranscriptEntry
+│   ├── SystemContent (level: info/warning/error)
+│   └── HookSummaryContent (subtype: stop_hook_summary)
+│
+├── SummaryTranscriptEntry → Session metadata (not rendered)
+│
+└── QueueOperationTranscriptEntry
+    └── "remove" operation → Steering message (rendered as user)
+```
 
 ---
 
@@ -48,7 +59,7 @@ The intermediate representation is `TemplateMessage`, a Python class (in `render
 
 **Important**: Traits like "sidechain", "compacted", "slash-command", "error" are NOT stored as boolean fields. They are encoded in the `css_class` string (e.g., `"user sidechain"`, `"tool_result error"`). This is a current limitation - a truly format-neutral representation would store these as explicit fields.
 
-### Actual Fields (Current Implementation)
+### Key Fields
 
 ```python
 class TemplateMessage:
@@ -56,120 +67,78 @@ class TemplateMessage:
     type: str                  # Base type: "user", "assistant", "tool_use", etc.
     message_id: str            # Unique ID within session (e.g., "msg-0", "tool-1")
     uuid: str                  # Original JSONL uuid
-    parent_uuid: Optional[str] # Parent message uuid for hierarchy
 
-    # Content
-    content_html: str          # Rendered HTML content
+    # Content (format-neutral)
+    content: Optional[MessageContent]  # Structured content model
+    content_html: str                  # Rendered HTML (populated by HtmlRenderer)
 
     # Display
-    message_title: str         # Display title (e.g., "User", "🔗 Sub-assistant")
-    css_class: str             # CSS classes (encodes type + traits like "sidechain")
+    message_title: str         # Display title (e.g., "User", "Assistant")
+    css_class: str             # CSS classes (encodes type + traits)
 
     # Metadata
     raw_timestamp: str         # ISO 8601 timestamp
-    formatted_timestamp: str   # Human-readable timestamp
     session_id: str            # Session UUID
 
     # Hierarchy
-    ancestry: List[str]        # Parent message IDs for fold/unfold
-    has_children: bool         # True if has descendant messages
     children: List[TemplateMessage]  # Child messages (tree mode)
-    immediate_children_count: int    # Direct children only
-    total_descendants_count: int     # All descendants recursively
-    immediate_children_by_type: Dict[str, int]  # {"assistant": 2, "tool_use": 3}
-    total_descendants_by_type: Dict[str, int]   # All descendants by type
+    ancestry: List[str]        # Parent message IDs for fold/unfold
 
     # Pairing
     is_paired: bool            # True if part of a pair
     pair_role: Optional[str]   # "pair_first", "pair_last", "pair_middle"
-    pair_duration: Optional[str]  # Duration for pair_last
 
     # Tool-specific
     tool_use_id: Optional[str]  # ID linking tool_use to tool_result
-    title_hint: Optional[str]   # Additional title info (e.g., file path)
-
-    # Agent-specific
-    agent_id: Optional[str]     # Agent ID for sidechain messages
-
-    # Session-specific (for session headers)
-    is_session_header: bool     # True for session header messages
-    session_summary: Optional[str]  # Summary text for ToC
-    session_subtitle: Optional[str] # Working directory info
-    token_usage: Optional[str]  # Token usage string
-
-    # Deduplication
-    raw_text_content: Optional[str]  # For sidechain/Task result dedup
-
-    # Rendering hints
-    has_markdown: bool         # True if content should be rendered as markdown
 ```
 
 ### Traits Encoded in css_class
-
-The `css_class` field encodes the base type plus modifier traits:
 
 | css_class | Base Type | Traits |
 |-----------|-----------|--------|
 | `"user"` | user | (none) |
 | `"user compacted"` | user | compacted conversation |
-| `"user slash-command"` | user | isMeta=true |
+| `"user slash-command"` | user | isMeta=true or command tags |
+| `"user command-output"` | user | command output |
 | `"user sidechain"` | user | isSidechain=true |
 | `"user steering"` | user | queue-operation remove |
+| `"assistant"` | assistant | (none) |
 | `"assistant sidechain"` | assistant | isSidechain=true |
+| `"tool_use"` | tool_use | (none) |
+| `"tool_use sidechain"` | tool_use | isSidechain=true |
+| `"tool_result"` | tool_result | (none) |
 | `"tool_result error"` | tool_result | is_error=true |
 | `"tool_result sidechain"` | tool_result | isSidechain=true |
-| `"tool_use sidechain"` | tool_use | isSidechain=true |
+| `"thinking"` | thinking | (none) |
 | `"system system-info"` | system | level=info |
 | `"system system-warning"` | system | level=warning |
 | `"system system-error"` | system | level=error |
-| `"user command-output"` | user | command output |
 | `"system system-hook"` | system | hook summary |
 
-**Note**: See [css-classes.md](css-classes.md) for complete CSS support status. Some combinations (7 partial, 1 none) inherit styling from parent selectors.
+**Note**: See [css-classes.md](css-classes.md) for complete CSS support status.
 
 ---
 
-## JSONL Entry Types (Top Level)
+# Part 1: User Messages (UserTranscriptEntry)
 
-Each line in a `.jsonl` file is a JSON object with a `type` field:
+User transcript entries (`type: "user"`) contain human input, tool results, and images.
 
-```
-Session
-├── user                    # User input or tool results
-│   ├── text content        # User typed message
-│   ├── tool_result         # Result from tool execution
-│   └── image               # User attached image
-│
-├── assistant               # Claude's response
-│   ├── text content        # Assistant's text response
-│   ├── thinking content    # Extended thinking (when enabled)
-│   └── tool_use content    # Tool invocation
-│       ├── Read, Edit, Write, Glob, Grep
-│       ├── Bash, BashOutput, KillShell
-│       ├── Task (spawns sidechain)
-│       ├── TodoWrite, AskUserQuestion
-│       ├── WebFetch, WebSearch
-│       └── ExitPlanMode, etc.
-│
-├── system                  # System messages (init command, notifications)
-│
-├── summary                 # Session summary (generated after session ends)
-│
-├── queue-operation         # Steering messages (interrupt/continue)
-│
-└── file-history-snapshot   # File state snapshots
-```
+## 1.1 Content Types in User Messages
 
----
+User messages contain `ContentItem` instances that are either:
+- **TextContent**: User-typed text (with various semantic variants)
+- **ToolResultContent**: Results from tool execution
+- **ImageContent**: User-attached images
 
-## User Messages
+## 1.2 User Text Variants
 
-User messages (`type: "user"`) represent human input. They have several variants based on content and flags.
+Based on flags and tag patterns in `TextContent`, user text messages are classified into specialized content types defined in `html/user_formatters.py`.
 
 ### Regular User Prompt
 
-- **Input**: `user` with text content, `isSidechain: false`, `isMeta: false`
-- **Intermediate**: `message_type: "user"`, `css_class: "user"`
+- **Condition**: No special flags or tags
+- **Content Model**: Plain `TextContent`
+- **CSS Class**: `user`
 - **Files**: [user.json](messages/user/user.json) | [user.jsonl](messages/user/user.jsonl)
 
 ```json
@@ -177,95 +146,117 @@ User messages (`type: "user"`) represent human input. They have several variants
   "type": "user",
   "message": {
     "role": "user",
-    "content": [{ "type": "text", "text": "..." }]
+    "content": [{ "type": "text", "text": "Help me fix this bug..." }]
   },
   "isSidechain": false
 }
 ```
 
-### Compacted Conversation
+### Slash Command (isMeta)
 
-- **Input**: `user` with text containing "(compacted conversation)"
-- **Intermediate**: `message_type: "user"`, `is_compacted: true`, `css_class: "user compacted"`
-- **Files**: *(No sample in real_projects)*
-
-Rendered with a collapsible summary showing the compacted conversation content.
-
-### Slash Command Expansion
-
-- **Input**: `user` with `isMeta: true`
-- **Intermediate**: `message_type: "user"`, `is_meta: true`, `css_class: "user slash-command"`
-- **Files**: [user_slash_command.json](messages/user/user_slash_command.json) | [user_slash_command.jsonl](messages/user/user_slash_command.jsonl)
+- **Condition**: `isMeta: true` flag
+- **Content Model**: `SlashCommandContent` (html/user_formatters.py)
+- **CSS Class**: `user slash-command`
+- **Files**: [user_slash_command.json](messages/user/user_slash_command.json)
 
 ```json
 {
   "type": "user",
-  "message": {
-    "content": "Caveat: The messages below were generated..."
-  },
+  "message": { "content": "Caveat: The messages below were generated..." },
   "isMeta": true
 }
 ```
 
-The `isMeta` field indicates this is an LLM-generated prompt from a slash command.
+### Slash Command (Tags)
+
+- **Condition**: Contains `<command-name>` tags
+- **Content Model**: `SlashCommandContent` with parsed name/args/contents
+- **CSS Class**: `user slash-command`
+- **Files**: [user_command.json](messages/user/user_command.json)
+
+```python
+@dataclass
+class SlashCommandContent(MessageContent):
+    command_name: str      # e.g., "/model", "/context"
+    command_args: str      # Arguments after command
+    command_contents: str  # Content inside command
+```
+
+### Command Output
+
+- **Condition**: Contains `<local-command-stdout>` tags
+- **Content Model**: `CommandOutputContent`
+- **CSS Class**: `user command-output`
+- **Files**: [command_output.json](messages/user/command_output.json)
+
+```python
+@dataclass
+class CommandOutputContent(MessageContent):
+    stdout: str        # Command output text
+    is_markdown: bool  # True if content appears to be markdown
+```
+
+### Bash Input
+
+- **Condition**: Contains `<bash-input>` tags
+- **Content Model**: `BashInputContent`
+- **CSS Class**: Part of bash tool pairing
+- **Files**: [bash_input.json](messages/user/bash_input.json)
+
+```python
+@dataclass
+class BashInputContent(MessageContent):
+    command: str  # The bash command that was executed
+```
+
+### Bash Output
+
+The corresponding output uses `<bash-stdout>` and optionally `<bash-stderr>` tags:
+
+- **Condition**: Contains `<bash-stdout>` tags
+- **Content Model**: `BashOutputContent`
+- **CSS Class**: Part of bash tool pairing
+- **Files**: [bash_output.json](messages/user/bash_output.json)
+
+### Compacted Conversation
+
+- **Condition**: Contains "(compacted conversation)" marker
+- **Content Model**: `CompactedSummaryContent`
+- **CSS Class**: `user compacted`
+
+```python
+@dataclass
+class CompactedSummaryContent(MessageContent):
+    summary_text: str  # The compacted conversation summary
+```
 
 ### Sidechain User (Sub-agent)
 
-- **Input**: `user` with `isSidechain: true`
-- **Intermediate**: `message_type: "user"`, `is_sidechain: true`, `css_class: "user sidechain"`
-- **Files**: [user_sidechain.json](messages/user/user_sidechain.json) | [user_sidechain.jsonl](messages/user/user_sidechain.jsonl)
+- **Condition**: `isSidechain: true`
+- **CSS Class**: `user sidechain`
+- **Note**: Typically skipped during rendering (duplicates Task prompt)
+- **Files**: [user_sidechain.json](messages/user/user_sidechain.json)
 
-**Note**: These are typically **skipped** during rendering because they duplicate the Task tool input prompt.
+## 1.3 Tool Results (ToolResultContent)
 
-### User Command (Slash Command)
+Tool results appear as `ToolResultContent` items in user messages, linked to their corresponding `ToolUseContent` via `tool_use_id`.
 
-- **Input**: `user` with `<command-name>` tag in content
-- **Intermediate**: `message_type: "user"`, `css_class: "user slash-command"`
-- **Files**: [user_command.json](messages/user/user_command.json) | [user_command.jsonl](messages/user/user_command.jsonl)
+### Tool Result Output Models
 
-```json
-{
-  "type": "user",
-  "message": {
-    "role": "user",
-    "content": "<command-name>/model</command-name>\n            <command-message>model</command-message>\n            <command-args></command-args>"
-  },
-  "isSidechain": false
-}
-```
+| Tool | Output Model | Key Fields | Files |
+|------|--------------|------------|-------|
+| Read | `ReadOutput` | file_path, content, start_line, num_lines, is_truncated | [tool_result](messages/tools/Read-tool_result.json) |
+| Edit | `EditOutput` | file_path, success, diffs, message, start_line | [tool_result](messages/tools/Edit-tool_result.json) |
+| Bash | — | Raw stdout/stderr | [tool_result](messages/tools/Bash-tool_result.json) |
+| Glob | — | File list | [tool_result](messages/tools/Glob-tool_result.json) |
+| Grep | — | Match results | [tool_result](messages/tools/Grep-tool_result.json) |
+| Task | — | Agent output | [tool_result](messages/tools/Task-tool_result.json) |
+| (error) | — | is_error: true | [Bash error](messages/tools/Bash-tool_result_error.json) |
 
-Shows the slash command name (e.g., `/context`, `/model`) that the user executed.
+### Generic Tool Result
 
-### Command Output (Slash Command Result)
-
-- **Input**: `user` with `<local-command-stdout>` tag in content
-- **Intermediate**: `message_type: "user"`, `css_class: "user command-output"`
-- **Files**: [command_output.json](messages/user/command_output.json) | [command_output.jsonl](messages/user/command_output.jsonl)
-
-```json
-{
-  "type": "user",
-  "message": {
-    "role": "user",
-    "content": "<local-command-stdout>Set model to opus (claude-opus-4-5-20251101)</local-command-stdout>"
-  },
-  "isSidechain": false
-}
-```
-
-Shows the output from the slash command with ANSI color support.
-
----
-
-## Tool Results
-
-Tool results are contained within `user` messages as `tool_result` content items.
-
-### Successful Tool Result
-
-- **Input**: `user` with `tool_result` content, `is_error: false`
-- **Intermediate**: `message_type: "tool_result"`, `css_class: "tool_result"`
-- **Files**: See [messages/tools/](messages/tools/) for tool-specific samples (e.g., `Read-tool_result.json`)
+- **CSS Class**: `tool_result`
+- **Content**: Raw string or structured content
 
 ```json
 {
@@ -281,55 +272,48 @@ Tool results are contained within `user` messages as `tool_result` content items
 }
 ```
 
-### Error Tool Result
+### Tool Result Error
 
-- **Input**: `user` with `tool_result` content, `is_error: true`
-- **Intermediate**: `message_type: "tool_result"`, `is_error: true`, `css_class: "tool_result error"`
-- **Files**:
-  - Bash error: [Bash-tool_result_error.json](messages/tools/Bash-tool_result_error.json) | [Bash-tool_result_error.jsonl](messages/tools/Bash-tool_result_error.jsonl)
-  - Read error: [Read-tool_result_error.json](messages/tools/Read-tool_result_error.json) | [Read-tool_result_error.jsonl](messages/tools/Read-tool_result_error.jsonl)
+- **Condition**: `is_error: true`
+- **CSS Class**: `tool_result error`
+- **Files**: [Bash-tool_result_error.json](messages/tools/Bash-tool_result_error.json)
 
-Error results can occur with any tool. The `is_error: true` flag triggers the `tool_result error` CSS class regardless of which tool failed.
+### Read Tool Result → ReadOutput
 
-**Bash error example** (command not found):
-```json
-{
-  "type": "user",
-  "message": {
-    "content": [{
-      "type": "tool_result",
-      "content": "Exit code 127\n/bin/bash: line 1: pytest: command not found",
-      "is_error": true,
-      "tool_use_id": "toolu_xxx"
-    }]
-  },
-  "toolUseResult": "Error: Exit code 127..."
-}
+Read tool results in cat-n format are parsed into structured `ReadOutput`:
+- **Files**: [Read-tool_result.json](messages/tools/Read-tool_result.json)
+
+```python
+@dataclass
+class ReadOutput(MessageContent):
+    file_path: str
+    content: str           # File content (may be truncated)
+    start_line: int        # 1-based starting line number
+    num_lines: int         # Number of lines in content
+    total_lines: int       # Total lines in file
+    is_truncated: bool
+    system_reminder: Optional[str]  # Embedded system reminder
 ```
 
-**Read error example** (directory instead of file):
-```json
-{
-  "type": "user",
-  "message": {
-    "content": [{
-      "type": "tool_result",
-      "content": "EISDIR: illegal operation on a directory, read",
-      "is_error": true,
-      "tool_use_id": "toolu_xxx"
-    }]
-  },
-  "toolUseResult": "Error: EISDIR: illegal operation on a directory, read"
-}
+### Edit Tool Result → EditOutput
+
+Edit tool results with cat-n snippets are parsed into structured `EditOutput`:
+- **Files**: [Edit-tool_result.json](messages/tools/Edit-tool_result.json)
+
+```python
+@dataclass
+class EditOutput(MessageContent):
+    file_path: str
+    success: bool
+    diffs: List[EditDiff]  # Changes made
+    message: str           # Result message or code snippet
+    start_line: int        # Starting line for display
 ```
 
----
+## 1.4 Images (ImageContent)
 
-## Images
-
-- **Input**: `user` with `image` content item
-- **Intermediate**: `message_type: "image"`, `css_class: "image"`
-- **Files**: [image.json](messages/user/image.json) | [image.jsonl](messages/user/image.jsonl)
+- **CSS Class**: `image`
+- **Files**: [image.json](messages/user/image.json)
 
 ```json
 {
@@ -349,57 +333,87 @@ Error results can occur with any tool. The `is_error: true` flag triggers the `t
 
 ---
 
-## Assistant Messages
+# Part 2: Assistant Messages (AssistantTranscriptEntry)
 
-Assistant messages (`type: "assistant"`) contain Claude's responses.
+Assistant transcript entries (`type: "assistant"`) contain Claude's responses.
 
-### Assistant Text Response
+## 2.1 Content Types in Assistant Messages
 
-- **Input**: `assistant` with text content, `isSidechain: false`
-- **Intermediate**: `message_type: "assistant"`, `css_class: "assistant"`
-- **Files**: [assistant.json](messages/assistant/assistant.json) | [assistant.jsonl](messages/assistant/assistant.jsonl)
+Assistant messages contain `ContentItem` instances that are:
+- **TextContent**: Claude's text response
+- **ThinkingContent**: Extended thinking blocks
+- **ToolUseContent**: Tool invocations
+
+## 2.2 Assistant Text → AssistantTextContent
+
+- **Content Model**: `AssistantTextContent` (html/assistant_formatters.py)
+- **CSS Class**: `assistant` (or `assistant sidechain`)
+- **Files**: [assistant.json](messages/assistant/assistant.json)
+
+```python
+@dataclass
+class AssistantTextContent(MessageContent):
+    text: str  # The assistant's response text
+```
+
+### Sidechain Assistant
+
+- **Condition**: `isSidechain: true`
+- **CSS Class**: `assistant sidechain`
+- **Title**: "Sub-assistant"
+- **Files**: [assistant_sidechain.json](messages/assistant/assistant_sidechain.json)
+
+## 2.3 Thinking Content → ThinkingContentModel
+
+- **Content Model**: `ThinkingContentModel` (html/assistant_formatters.py)
+- **CSS Class**: `thinking`
+- **Files**: [thinking.json](messages/assistant/thinking.json)
+
+```python
+@dataclass
+class ThinkingContentModel(MessageContent):
+    thinking: str              # The thinking text
+    signature: Optional[str]   # Thinking block signature
+```
 
 ```json
 {
   "type": "assistant",
   "message": {
-    "role": "assistant",
-    "model": "claude-opus-4-1-20250805",
-    "content": [{ "type": "text", "text": "..." }]
+    "content": [{ "type": "thinking", "thinking": "Let me analyze..." }]
   }
 }
 ```
 
-### Sidechain Assistant (Sub-agent)
+## 2.4 Tool Use → ToolUseContent with Typed Inputs
 
-- **Input**: `assistant` with `isSidechain: true`
-- **Intermediate**: `message_type: "assistant"`, `is_sidechain: true`, `css_class: "assistant sidechain"`
-- **Files**: [assistant_sidechain.json](messages/assistant/assistant_sidechain.json) | [assistant_sidechain.jsonl](messages/assistant/assistant_sidechain.jsonl)
+Tool invocations contain a `ToolUseContent` item with:
+- `name`: The tool name (e.g., "Read", "Bash", "Task")
+- `id`: Unique ID for pairing with results
+- `input`: Raw input dictionary
 
-Displayed with title "🔗 Sub-assistant".
+The `parsed_input` property returns a typed input model via `parse_tool_input()`.
 
-### Thinking Content
+### Tool Input Models (models.py)
 
-- **Input**: `assistant` with `thinking` content item
-- **Intermediate**: `message_type: "thinking"`, `css_class: "thinking"`
-- **Files**: [thinking.json](messages/assistant/thinking.json) | [thinking.jsonl](messages/assistant/thinking.jsonl)
+| Tool | Input Model | Key Fields |
+|------|-------------|------------|
+| Read | `ReadInput` | file_path, offset, limit |
+| Write | `WriteInput` | file_path, content |
+| Edit | `EditInput` | file_path, old_string, new_string, replace_all |
+| MultiEdit | `MultiEditInput` | file_path, edits[] |
+| Bash | `BashInput` | command, description, timeout, run_in_background |
+| Glob | `GlobInput` | pattern, path |
+| Grep | `GrepInput` | pattern, path, glob, type, output_mode |
+| Task | `TaskInput` | prompt, subagent_type, description, model |
+| TodoWrite | `TodoWriteInput` | todos[] |
+| AskUserQuestion | `AskUserQuestionInput` | questions[], question |
+| ExitPlanMode | `ExitPlanModeInput` | plan, launchSwarm, teammateCount |
 
-```json
-{
-  "type": "assistant",
-  "message": {
-    "content": [{ "type": "thinking", "thinking": "..." }]
-  }
-}
-```
+### Tool Use Message Structure
 
-Extended thinking is rendered in a collapsible block.
-
-### Tool Use
-
-- **Input**: `assistant` with `tool_use` content item
-- **Intermediate**: `message_type: "tool_use"`, `tool_name: "..."`, `css_class: "tool_use"`
-- **Files**: See [messages/tools/](messages/tools/) for tool-specific samples (e.g., `Read-tool_use.json`)
+- **CSS Class**: `tool_use` (or `tool_use sidechain`)
+- **Files**: See [messages/tools/](messages/tools/) (e.g., `Read-tool_use.json`)
 
 ```json
 {
@@ -415,19 +429,30 @@ Extended thinking is rendered in a collapsible block.
 }
 ```
 
-See [messages/tools/](messages/tools/) for samples of each tool type.
-
 ---
 
-## System Messages
+# Part 3: System Messages (SystemTranscriptEntry)
 
-System messages (`type: "system"`) convey notifications and hook summaries.
+System transcript entries (`type: "system"`) convey notifications and hook summaries.
 
-### System Info
+## 3.1 Content Types for System Messages
 
-- **Input**: `system` with `level: "info"` (default)
-- **Intermediate**: `message_type: "system"`, `css_class: "system system-info"`
-- **Files**: [system_info.json](messages/system/system_info.json) | [system_info.jsonl](messages/system/system_info.jsonl)
+System messages are parsed into structured content models in `models.py`:
+- **SystemContent**: For info/warning/error messages
+- **HookSummaryContent**: For hook execution summaries
+
+## 3.2 System Info/Warning/Error → SystemContent
+
+- **Content Model**: `SystemContent` (models.py)
+- **CSS Class**: `system system-info`, `system system-warning`, `system system-error`
+- **Files**: [system_info.json](messages/system/system_info.json)
+
+```python
+@dataclass
+class SystemContent(MessageContent):
+    level: str  # "info", "warning", "error"
+    text: str   # Raw text content (may contain ANSI codes)
+```
 
 ```json
 {
@@ -437,34 +462,34 @@ System messages (`type: "system"`) convey notifications and hook summaries.
 }
 ```
 
-### System Warning
+## 3.3 Hook Summary → HookSummaryContent
 
-- **Input**: `system` with `level: "warning"`
-- **Intermediate**: `message_type: "system"`, `css_class: "system system-warning"`
-- **Files**: *(No sample in real_projects)*
+- **Content Model**: `HookSummaryContent` (models.py)
+- **Condition**: `subtype: "stop_hook_summary"`
+- **CSS Class**: `system system-hook`
 
-### System Error
+```python
+@dataclass
+class HookInfo:
+    command: str
 
-- **Input**: `system` with `level: "error"`
-- **Intermediate**: `message_type: "system"`, `css_class: "system system-error"`
-- **Files**: *(No sample in real_projects)*
-
-### Hook Summary
-
-- **Input**: `system` with `subtype: "stop_hook_summary"`
-- **Intermediate**: `message_type: "system"`, `css_class: "system system-hook"`
-- **Files**: *(No sample in real_projects)*
+@dataclass
+class HookSummaryContent(MessageContent):
+    has_output: bool
+    hook_errors: List[str]
+    hook_infos: List[HookInfo]
+```
 
 ---
 
-## Metadata Messages (Not Rendered)
+# Part 4: Metadata Entries
 
-These message types are not rendered as visual messages but contain important metadata.
+These entry types primarily contain metadata, with some rendered conditionally.
 
-### Summary
+## 4.1 Summary (SummaryTranscriptEntry)
 
-- **Input**: `type: "summary"`
-- **Files**: [summary.json](messages/system/summary.json) | [summary.jsonl](messages/system/summary.jsonl)
+- **Purpose**: Session summary for navigation
+- **Files**: [summary.json](messages/system/summary.json)
 
 ```json
 {
@@ -474,171 +499,108 @@ These message types are not rendered as visual messages but contain important me
 }
 ```
 
-The `leafUuid` links the summary to the last message of the session for matching.
+The `leafUuid` links the summary to the last message of the session.
 
-### Queue Operation
+## 4.2 Queue Operation (QueueOperationTranscriptEntry)
 
-- **Input**: `type: "queue-operation"`
-- **Files**: [queue_operation.json](messages/system/queue_operation.json) | [queue_operation.jsonl](messages/system/queue_operation.jsonl)
+- **Purpose**: User interrupts and steering during assistant responses
+- **Rendered**: Only `remove` operations (as `user steering`)
+- **Files**: [queue_operation.json](messages/system/queue_operation.json)
 
-Used for user interrupts and steering during assistant responses.
+## 4.3 File History Snapshot
 
-### File History Snapshot
-
-- **Input**: `type: "file-history-snapshot"`
-- **Files**: [file_history_snapshot.json](messages/system/file_history_snapshot.json) | [file_history_snapshot.jsonl](messages/system/file_history_snapshot.jsonl)
-
-Contains file state snapshots for undo/redo functionality.
+- **Purpose**: File state snapshots for undo/redo
+- **Not Rendered**
+- **Files**: [file_history_snapshot.json](messages/system/file_history_snapshot.json)
 
 ---
 
-## Message Hierarchy (Rendering)
+# Part 5: Message Relationships
 
-When rendering, messages are organized hierarchically:
+## 5.1 Hierarchy (Parent/Child)
+
+The message hierarchy is determined by **sequence and message type**, not by `parentUuid`:
+
+- Session headers are topmost (Level 0)
+- User messages follow at Level 1
+- Assistant responses and system messages nest under user messages (Level 2)
+- Tool use/result pairs nest under assistant responses (Level 3)
+- Sidechain messages nest under their Task result (Level 4+)
 
 ```
-Level 0: Session header
-└── Level 1: User message
-    ├── Level 2: System message (info/warning)
-    └── Level 2: Assistant response
-        └── Level 3: Tool use/result (paired)
-            └── Level 4: Sidechain assistant (from Task)
-                └── Level 5: Sidechain tools
+Session header (Level 0)
+└── User message (Level 1)
+    ├── System message (Level 2)
+    └── Assistant response (Level 2)
+        └── Tool use/result pair (Level 3)
+            └── Sidechain messages (Level 4+)
 ```
 
-The `ancestry` field contains parent message IDs for hierarchy tracking.
+**Note**: `parentUuid` links messages temporally (which message preceded this one) but is not used for rendering hierarchy.
 
-## Message Pairing
+## 5.2 Tool Pairing
 
-Related messages are paired together for visual grouping. Pairing uses CSS classes `pair_first` and `pair_last` to control styling.
+`tool_use` and `tool_result` messages are paired by `tool_use_id`:
 
-### Pairing Patterns
+| First | Last | Link |
+|-------|------|------|
+| `tool_use` | `tool_result` | `tool_use.id` = `tool_result.tool_use_id` |
 
-| First Message | Last Message | Linked By |
-|---------------|--------------|-----------|
-| `tool_use` | `tool_result` | `tool_use_id` field |
-| `bash-input` | `bash-output` | Sequential (from Bash tool) |
-| `thinking` | `assistant` | Sequential (same response) |
-| `user` (slash-command) | `user` (command-output) | Sequential |
-| `system` (system-info) | `system` (system-info) | Paired info |
+### Other Pairings
 
-### Pairing Rules by Type
+| First | Last | Link |
+|-------|------|------|
+| `bash-input` | `bash-output` | Sequential |
+| `thinking` | `assistant` | Sequential |
+| `slash-command` | `command-output` | Sequential |
 
-| Base Type | Can Be `pair_first` | Can Be `pair_last` |
-|-----------|---------------------|-------------------|
-| `assistant` | No | Yes |
-| `bash-input` | Yes | No |
-| `bash-output` | No | Yes |
-| `system` | Yes | Yes |
-| `thinking` | Yes | No |
-| `tool_result` | No | Yes |
-| `tool_use` | Yes | No |
-| `user` | Yes (slash-command) | Yes (command-output) |
+## 5.3 Sidechain Linking
 
-### Pairing Metadata
-
-- `is_paired`: True if part of a pair
-- `pair_role`: `"pair_first"`, `"pair_last"`, or `"pair_middle"`
-- `pair_duration`: Elapsed time displayed on `pair_last` messages
-
-**Note**: See [css-classes.md](css-classes.md) for complete pairing behavior analysis and CSS support.
+Sub-agent messages (from `Task` tool):
+- Have `isSidechain: true`
+- Have `agentId` linking to the Task
+- Appear nested under their Task result
 
 ---
 
-## Key Relationships
+# Part 6: Tool Reference
 
-1. **Parent/Child**: `parentUuid` links messages in conversation order
-2. **Tool Pairing**: `tool_use.id` matches `tool_result.tool_use_id`
-3. **Sidechain Linking**: `agentId` links sidechain messages to Task results
-4. **Summary Linking**: `summary.leafUuid` links to the last message's `uuid`
-
----
-
-## Tool Types
-
-Tools are invoked via `tool_use` content items in assistant messages, with results appearing as `tool_result` in subsequent user messages.
+## Available Tools by Category
 
 ### File Operations
-- **Read**: Read file contents
-- **Edit**: Edit file with old_string/new_string replacement
-- **Write**: Write entire file
-- **MultiEdit**: Multiple edits in one operation
-- **Glob**: Find files by pattern
-- **Grep**: Search file contents
+
+| Tool | Use Sample | Result Sample | Input Model | Output Model |
+|------|------------|---------------|-------------|--------------|
+| Read | [tool_use](messages/tools/Read-tool_use.json) | [tool_result](messages/tools/Read-tool_result.json) | `ReadInput` | `ReadOutput` |
+| Write | [tool_use](messages/tools/Write-tool_use.json) | [tool_result](messages/tools/Write-tool_result.json) | `WriteInput` | — |
+| Edit | [tool_use](messages/tools/Edit-tool_use.json) | [tool_result](messages/tools/Edit-tool_result.json) | `EditInput` | `EditOutput` |
+| MultiEdit | [tool_use](messages/tools/MultiEdit-tool_use.json) | [tool_result](messages/tools/MultiEdit-tool_result.json) | `MultiEditInput` | — |
+| Glob | [tool_use](messages/tools/Glob-tool_use.json) | [tool_result](messages/tools/Glob-tool_result.json) | `GlobInput` | — |
+| Grep | [tool_use](messages/tools/Grep-tool_use.json) | [tool_result](messages/tools/Grep-tool_result.json) | `GrepInput` | — |
 
 ### Shell Operations
-- **Bash**: Execute shell command
-- **BashOutput**: Get output from background shell
-- **KillShell**: Terminate background shell
 
-### Agent/Task Operations
-- **Task**: Spawn sub-agent (creates sidechain)
-- **TodoWrite**: Update task list
-- **AskUserQuestion**: Prompt user for input
-- **ExitPlanMode**: Complete planning phase
+| Tool | Use Sample | Result Sample | Input Model | Output Model |
+|------|------------|---------------|-------------|--------------|
+| Bash | [tool_use](messages/tools/Bash-tool_use.json) | [tool_result](messages/tools/Bash-tool_result.json) | `BashInput` | — |
+| BashOutput | [tool_use](messages/tools/BashOutput-tool_use.json) | [tool_result](messages/tools/BashOutput-tool_result.json) | — | — |
+| KillShell | [tool_use](messages/tools/KillShell-tool_use.json) | [tool_result](messages/tools/KillShell-tool_result.json) | — | — |
+
+### Agent Operations
+
+| Tool | Use Sample | Result Sample | Input Model | Output Model |
+|------|------------|---------------|-------------|--------------|
+| Task | [tool_use](messages/tools/Task-tool_use.json) | [tool_result](messages/tools/Task-tool_result.json) | `TaskInput` | — |
+| TodoWrite | [tool_use](messages/tools/TodoWrite-tool_use.json) | [tool_result](messages/tools/TodoWrite-tool_result.json) | `TodoWriteInput` | — |
+| AskUserQuestion | [tool_use](messages/tools/AskUserQuestion-tool_use.json) | [tool_result](messages/tools/AskUserQuestion-tool_result.json) | `AskUserQuestionInput` | — |
+| ExitPlanMode | [tool_use](messages/tools/ExitPlanMode-tool_use.json) | [tool_result](messages/tools/ExitPlanMode-tool_result.json) | `ExitPlanModeInput` | — |
 
 ### Web Operations
-- **WebFetch**: Fetch URL content
-- **WebSearch**: Search the web
 
-**See:** [messages/tools/](messages/tools/) for samples of each tool type. Files are organized as:
-- `ToolName-tool_use.json` / `.jsonl` - Tool invocation (assistant message)
-- `ToolName-tool_result.json` / `.jsonl` - Tool result (user message)
-
-### Available Tool Samples
-
-| Tool | Category | Use | Result | Input Model | Result Model |
-|------|----------|-----|--------|-------------|--------------|
-| AskUserQuestion | Agent | [tool_use](messages/tools/AskUserQuestion-tool_use.json) | [tool_result](messages/tools/AskUserQuestion-tool_result.json) | Generic | `str` |
-| Bash | Shell | [tool_use](messages/tools/Bash-tool_use.json) | [tool_result](messages/tools/Bash-tool_result.json) | *`BashInput`* | `CommandResult` |
-| BashOutput | Shell | [tool_use](messages/tools/BashOutput-tool_use.json) | [tool_result](messages/tools/BashOutput-tool_result.json) | Generic | `str` |
-| Edit | File | [tool_use](messages/tools/Edit-tool_use.json) | [tool_result](messages/tools/Edit-tool_result.json) | *`EditInput`* | `EditResult` |
-| ExitPlanMode | Agent | [tool_use](messages/tools/ExitPlanMode-tool_use.json) | [tool_result](messages/tools/ExitPlanMode-tool_result.json) | Generic | `str` |
-| Glob | File | [tool_use](messages/tools/Glob-tool_use.json) | [tool_result](messages/tools/Glob-tool_result.json) | *`GlobInput`* | `str` |
-| Grep | File | [tool_use](messages/tools/Grep-tool_use.json) | [tool_result](messages/tools/Grep-tool_result.json) | *`GrepInput`* | `str` |
-| KillShell | Shell | [tool_use](messages/tools/KillShell-tool_use.json) | [tool_result](messages/tools/KillShell-tool_result.json) | Generic | `str` |
-| LS | File | [tool_use](messages/tools/LS-tool_use.json) | [tool_result](messages/tools/LS-tool_result.json) | Generic | `str` |
-| MultiEdit | File | [tool_use](messages/tools/MultiEdit-tool_use.json) | [tool_result](messages/tools/MultiEdit-tool_result.json) | *`MultiEditInput`* | `str` |
-| Read | File | [tool_use](messages/tools/Read-tool_use.json) | [tool_result](messages/tools/Read-tool_result.json) | *`ReadInput`* | `FileReadResult` |
-| Task | Agent | [tool_use](messages/tools/Task-tool_use.json) | [tool_result](messages/tools/Task-tool_result.json) | *`TaskInput`* | `str` |
-| TodoWrite | Agent | [tool_use](messages/tools/TodoWrite-tool_use.json) | [tool_result](messages/tools/TodoWrite-tool_result.json) | *`TodoWriteInput`* | `TodoResult` |
-| WebFetch | Web | [tool_use](messages/tools/WebFetch-tool_use.json) | [tool_result](messages/tools/WebFetch-tool_result.json) | Generic | `str` |
-| WebSearch | Web | [tool_use](messages/tools/WebSearch-tool_use.json) | [tool_result](messages/tools/WebSearch-tool_result.json) | Generic | `str` |
-| Write | File | [tool_use](messages/tools/Write-tool_use.json) | [tool_result](messages/tools/Write-tool_result.json) | *`WriteInput`* | `str` |
-
-**Note**: `ToolUseContent.input` remains `Dict[str, Any]` for backward compatibility. Input models shown in *italics* are available via `parse_tool_input()` but not yet used in the renderer. Only 4 tools have specialized result models: `FileReadResult` (Read), `CommandResult` (Bash), `EditResult` (Edit), `TodoResult` (TodoWrite). See [models.py](../claude_code_log/models.py) for model definitions.
-
----
-
-## Sidechains (Sub-agents)
-
-When Claude uses the `Task` tool, a sub-agent is spawned. Messages from this sub-agent:
-- Have `isSidechain: true`
-- Have an `agentId` field linking them to the Task
-- Appear in the transcript interleaved with main messages
-- Are reordered during rendering to appear after their Task result
-
----
-
-## Rendering Considerations
-
-- Messages with same `uuid` but different `sessionId` are duplicates (from session resume)
-- Multiple assistant messages may share the same `requestId` (streaming responses)
-- Tool pairs should be visually grouped and foldable together
-- Sidechains should be nested under their Task result
-- Extended thinking should be collapsible
-
----
-
-## Future: Neutral Intermediate Format
-
-The current `TemplateMessage` includes `content_html` which ties it to HTML output. A truly format-neutral intermediate would:
-
-1. Store raw content (text, markdown) without HTML
-2. Use typed content blocks instead of HTML strings
-3. Support multiple output renderers (HTML, Markdown, JSON, Text)
-
-This aligns with golergka's `content_extractor.py` approach which extracts typed content items (`ExtractedText`, `ExtractedThinking`, etc.) from messages.
+| Tool | Use Sample | Result Sample | Input Model | Output Model |
+|------|------------|---------------|-------------|--------------|
+| WebFetch | [tool_use](messages/tools/WebFetch-tool_use.json) | [tool_result](messages/tools/WebFetch-tool_result.json) | — | — |
+| WebSearch | [tool_use](messages/tools/WebSearch-tool_use.json) | [tool_result](messages/tools/WebSearch-tool_result.json) | — | — |
 
 ---
 
@@ -647,7 +609,11 @@ This aligns with golergka's `content_extractor.py` approach which extracts typed
 - [css-classes.md](css-classes.md) - Complete CSS class reference with support status
 - [models.py](../claude_code_log/models.py) - Pydantic models for transcript data
 - [renderer.py](../claude_code_log/renderer.py) - Main rendering module
+- [html/](../claude_code_log/html/) - HTML-specific formatters
+  - [system_formatters.py](../claude_code_log/html/system_formatters.py) - SystemContent, HookSummaryContent
+  - [user_formatters.py](../claude_code_log/html/user_formatters.py) - SlashCommandContent, etc.
+  - [assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) - AssistantTextContent, ThinkingContentModel
+  - [tool_formatters.py](../claude_code_log/html/tool_formatters.py) - Tool use/result formatting
 - [parser.py](../claude_code_log/parser.py) - JSONL parsing module
-- [extract_message_samples.py](../scripts/extract_message_samples.py) - Sample extraction script
 - [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) - Tree architecture exploration
 - [MESSAGE_REFACTORING.md](MESSAGE_REFACTORING.md) - Refactoring plan
