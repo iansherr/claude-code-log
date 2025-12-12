@@ -27,22 +27,24 @@ from .models import (
     ToolUseContent,
     ThinkingContent,
     ImageContent,
-    is_user_entry,
-    is_assistant_entry,
     # Structured content types
     HookInfo,
     HookSummaryContent,
     SystemContent,
 )
-from .parser import extract_text_content
+from .parser import (
+    extract_text_content,
+    is_assistant_entry,
+    is_bash_input,
+    is_bash_output,
+    is_command_message,
+    is_local_command_output,
+    is_user_entry,
+)
 from .utils import (
     format_timestamp,
     format_timestamp_range,
     get_project_display_name,
-    is_command_message,
-    is_local_command_output,
-    is_bash_input,
-    is_bash_output,
     should_skip_message,
     should_use_as_session_starter,
     create_session_preview,

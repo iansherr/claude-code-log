@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from claude_code_log.converter import convert_jsonl_to_html
 from claude_code_log.converter import filter_messages_by_date
-from claude_code_log.models import parse_transcript_entry
+from claude_code_log.parser import parse_transcript_entry
 
 
 def create_test_message(timestamp_str: str, text: str) -> dict:

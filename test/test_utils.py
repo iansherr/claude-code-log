@@ -2,17 +2,19 @@
 """Test cases for the utils module functions."""
 
 import pytest
-from claude_code_log.utils import (
-    is_system_message,
-    is_command_message,
-    is_local_command_output,
+from claude_code_log.parser import (
     is_bash_input,
     is_bash_output,
+    is_command_message,
+    is_local_command_output,
+    is_system_message,
+    is_warmup_only_session,
+)
+from claude_code_log.utils import (
     should_skip_message,
     should_use_as_session_starter,
     extract_text_content_length,
     create_session_preview,
-    is_warmup_only_session,
     get_warmup_session_ids,
     _compact_ide_tags_for_preview,
     FIRST_USER_MESSAGE_PREVIEW_LENGTH,
