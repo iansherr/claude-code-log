@@ -198,13 +198,45 @@ class UserMemoryContent(MessageContent):
 
 
 @dataclass
+class IdeOpenedFile:
+    """IDE notification for an opened file."""
+
+    content: str  # Raw content from the tag
+
+
+@dataclass
+class IdeSelection:
+    """IDE notification for a code selection."""
+
+    content: str  # Raw selection content
+
+
+@dataclass
+class IdeDiagnostic:
+    """IDE diagnostic notification.
+
+    Contains either parsed JSON diagnostics or raw content if parsing failed.
+    """
+
+    diagnostics: Optional[List[Dict[str, Any]]] = None  # Parsed diagnostic objects
+    raw_content: Optional[str] = None  # Fallback if JSON parsing failed
+
+
+@dataclass
 class IdeNotificationContent(MessageContent):
     """Content for IDE notification tags.
 
-    These are user messages containing ide-notification-* tags.
+    These are user messages containing IDE notification tags like:
+    - <ide_opened_file>: File open notifications
+    - <ide_selection>: Code selection notifications
+    - <post-tool-use-hook><ide_diagnostics>: Diagnostic JSON arrays
+
+    Format-neutral: stores structured data, not HTML.
     """
 
-    notifications: List[str]  # HTML strings for each notification
+    opened_files: List[IdeOpenedFile]
+    selections: List[IdeSelection]
+    diagnostics: List[IdeDiagnostic]
     remaining_text: str  # Text after notifications extracted
 
 

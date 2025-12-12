@@ -9,6 +9,9 @@ from typing import Dict, List, Optional, Union
 from claude_code_log.cache import SessionCacheData
 from .models import ContentItem, TextContent, TranscriptEntry, UserTranscriptEntry
 from .parser import (
+    IDE_DIAGNOSTICS_PATTERN,
+    IDE_OPENED_FILE_PATTERN,
+    IDE_SELECTION_PATTERN,
     is_command_message,
     is_local_command_output,
     is_system_message,
@@ -211,17 +214,6 @@ def extract_working_directories(
     return [path for path, _ in sorted_dirs]
 
 
-# IDE tag patterns for compact preview rendering (same as renderer.py)
-IDE_OPENED_FILE_PATTERN = re.compile(
-    r"<ide_opened_file>(.*?)</ide_opened_file>", re.DOTALL
-)
-IDE_SELECTION_PATTERN = re.compile(r"<ide_selection>(.*?)</ide_selection>", re.DOTALL)
-IDE_DIAGNOSTICS_PATTERN = re.compile(
-    r"<post-tool-use-hook>\s*<ide_diagnostics>(.*?)</ide_diagnostics>\s*</post-tool-use-hook>",
-    re.DOTALL,
-)
-
-
 def _compact_ide_tags_for_preview(text_content: str) -> str:
     """Replace verbose IDE/system tags with compact emoji indicators for previews.
 
@@ -260,57 +252,52 @@ def _compact_ide_tags_for_preview(text_content: str) -> str:
 
     # Process only LEADING IDE tags - stop when we hit non-IDE content
     # This prevents replacing tags inside quoted strings/JSONL content
+    # Uses shared patterns from parser.py for consistency
     compact_parts: list[str] = []
     remaining = text_content
 
+    # Compiled pattern for bash-input (not in parser.py as it's preview-specific)
+    bash_input_pattern = re.compile(r"<bash-input>(.*?)</bash-input>", re.DOTALL)
+
     while remaining:
-        # Try to match each IDE tag type at the start of remaining text
-        # Check for <ide_opened_file> at start
-        match = re.match(
-            r"^\s*<ide_opened_file>(.*?)</ide_opened_file>", remaining, re.DOTALL
-        )
+        # Strip leading whitespace for matching
+        stripped = remaining.lstrip()
+
+        # Try to match each IDE tag type at the start of stripped text
+        # Check for <ide_opened_file> at start (using shared pattern)
+        match = IDE_OPENED_FILE_PATTERN.match(stripped)
         if match:
             content = match.group(1).strip()
             filepath = _extract_file_path(content)
             compact_parts.append(f"📎 {filepath}" if filepath else "📎 file")
-            remaining = remaining[match.end() :]
+            remaining = stripped[match.end() :]
             continue
 
-        # Check for <ide_selection> at start
-        match = re.match(
-            r"^\s*<ide_selection>(.*?)</ide_selection>", remaining, re.DOTALL
-        )
+        # Check for <ide_selection> at start (using shared pattern)
+        match = IDE_SELECTION_PATTERN.match(stripped)
         if match:
             content = match.group(1).strip()
             filepath = _extract_file_path(content)
             compact_parts.append(f"✂️ {filepath}" if filepath else "✂️ selection")
-            remaining = remaining[match.end() :]
+            remaining = stripped[match.end() :]
             continue
 
-        # Check for <post-tool-use-hook><ide_diagnostics>...</ide_diagnostics></post-tool-use-hook> at start
-        match = re.match(
-            r"^\s*<post-tool-use-hook>\s*<ide_diagnostics>.*?</ide_diagnostics>\s*</post-tool-use-hook>",
-            remaining,
-            re.DOTALL,
-        )
+        # Check for <post-tool-use-hook><ide_diagnostics>... (using shared pattern)
+        match = IDE_DIAGNOSTICS_PATTERN.match(stripped)
         if match:
             compact_parts.append("🩺 diagnostics")
-            remaining = remaining[match.end() :]
+            remaining = stripped[match.end() :]
             continue
 
         # Check for <bash-input>command</bash-input> at start
-        match = re.match(
-            r"^\s*<bash-input>(.*?)</bash-input>",
-            remaining,
-            re.DOTALL,
-        )
+        match = bash_input_pattern.match(stripped)
         if match:
             command = match.group(1).strip()
             # Truncate very long commands
             if len(command) > 50:
                 command = command[:47] + "..."
             compact_parts.append(f"💻 {command}")
-            remaining = remaining[match.end() :]
+            remaining = stripped[match.end() :]
             continue
 
         # No more tags at start - stop processing

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Render Claude transcript data to HTML format."""
 
-import json
 import re
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, cast
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .cache import CacheManager
@@ -62,6 +61,7 @@ from .html import (
     format_bash_input_content,
     format_bash_output_content,
     format_command_output_content,
+    format_ide_notification_content,
     format_image_content,
     format_slash_command_content,
     format_thinking_content,
@@ -74,8 +74,8 @@ from .html import (
     parse_command_output,
     parse_slash_command,
     render_markdown_collapsible,
-    render_params_table,
 )
+from .parser import parse_ide_notifications
 
 
 # -- Content Formatters -------------------------------------------------------
@@ -109,88 +109,14 @@ def extract_ide_notifications(text: str) -> tuple[List[str], str]:
         where notifications are pre-rendered HTML divs and remaining_text
         is the message content with IDE tags removed.
     """
-    import re
+    # Parse structured content from text
+    ide_content = parse_ide_notifications(text)
+    if ide_content is None:
+        return [], text
 
-    notifications: List[str] = []
-    remaining_text = text
-
-    # Pattern 1: <ide_opened_file>content</ide_opened_file>
-    ide_file_pattern = r"<ide_opened_file>(.*?)</ide_opened_file>"
-    file_matches = list(re.finditer(ide_file_pattern, remaining_text, flags=re.DOTALL))
-
-    for match in file_matches:
-        content = match.group(1).strip()
-        escaped_content = escape_html(content)
-        notification_html = f"<div class='ide-notification'>🤖 {escaped_content}</div>"
-        notifications.append(notification_html)
-
-    # Remove ide_opened_file tags
-    remaining_text = re.sub(ide_file_pattern, "", remaining_text, flags=re.DOTALL)
-
-    # Pattern 2: <ide_selection>content</ide_selection>
-    selection_pattern = r"<ide_selection>(.*?)</ide_selection>"
-    selection_matches = list(
-        re.finditer(selection_pattern, remaining_text, flags=re.DOTALL)
-    )
-
-    for match in selection_matches:
-        content = match.group(1).strip()
-        escaped_content = escape_html(content)
-
-        # For large selections, make them collapsible
-        if len(content) > 200:
-            preview = escape_html(content[:150]) + "..."
-            notification_html = f"""
-                <div class='ide-notification ide-selection'>
-                    <details class='ide-selection-collapsible'>
-                        <summary>📝 {preview}</summary>
-                        <pre class='ide-selection-content'>{escaped_content}</pre>
-                    </details>
-                </div>
-            """
-        else:
-            notification_html = f"<div class='ide-notification ide-selection'>📝 {escaped_content}</div>"
-
-        notifications.append(notification_html)
-
-    # Remove ide_selection tags
-    remaining_text = re.sub(selection_pattern, "", remaining_text, flags=re.DOTALL)
-
-    # Pattern 3: <post-tool-use-hook><ide_diagnostics>JSON</ide_diagnostics></post-tool-use-hook>
-    hook_pattern = r"<post-tool-use-hook>\s*<ide_diagnostics>(.*?)</ide_diagnostics>\s*</post-tool-use-hook>"
-    hook_matches = list(re.finditer(hook_pattern, remaining_text, flags=re.DOTALL))
-
-    for match in hook_matches:
-        json_content = match.group(1).strip()
-        try:
-            # Parse JSON array of diagnostic objects
-            diagnostics: Any = json.loads(json_content)
-            if isinstance(diagnostics, list):
-                # Render each diagnostic as a table
-                for diagnostic in cast(List[Any], diagnostics):
-                    if isinstance(diagnostic, dict):
-                        # Type assertion: we've confirmed it's a dict
-                        diagnostic_dict = cast(Dict[str, Any], diagnostic)
-                        table_html = render_params_table(diagnostic_dict)
-                        notification_html = (
-                            f"<div class='ide-notification ide-diagnostic'>"
-                            f"⚠️ IDE Diagnostic<br>{table_html}"
-                            f"</div>"
-                        )
-                        notifications.append(notification_html)
-        except (json.JSONDecodeError, ValueError):
-            # If JSON parsing fails, render as plain text
-            escaped_content = escape_html(json_content[:200])
-            notification_html = (
-                f"<div class='ide-notification'>🤖 IDE Diagnostics (parse error)<br>"
-                f"<pre>{escaped_content}...</pre></div>"
-            )
-            notifications.append(notification_html)
-
-    # Remove hook tags
-    remaining_text = re.sub(hook_pattern, "", remaining_text, flags=re.DOTALL)
-
-    return notifications, remaining_text.strip()
+    # Format to HTML and return with remaining text
+    notifications = format_ide_notification_content(ide_content)
+    return notifications, ide_content.remaining_text
 
 
 def render_user_message_content(

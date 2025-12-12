@@ -25,6 +25,10 @@ from .models import (
     CommandOutputContent,
     BashInputContent,
     BashOutputContent,
+    IdeNotificationContent,
+    IdeOpenedFile,
+    IdeSelection,
+    IdeDiagnostic,
     # Tool input models
     BashInput,
     ReadInput,
@@ -198,6 +202,82 @@ def parse_bash_output(text: str) -> Optional[BashOutputContent]:
         stderr = None
 
     return BashOutputContent(stdout=stdout, stderr=stderr)
+
+
+# Shared regex patterns for IDE notification tags
+IDE_OPENED_FILE_PATTERN = re.compile(
+    r"<ide_opened_file>(.*?)</ide_opened_file>", re.DOTALL
+)
+IDE_SELECTION_PATTERN = re.compile(r"<ide_selection>(.*?)</ide_selection>", re.DOTALL)
+IDE_DIAGNOSTICS_PATTERN = re.compile(
+    r"<post-tool-use-hook>\s*<ide_diagnostics>(.*?)</ide_diagnostics>\s*</post-tool-use-hook>",
+    re.DOTALL,
+)
+
+
+def parse_ide_notifications(text: str) -> Optional[IdeNotificationContent]:
+    """Parse IDE notification tags from text.
+
+    Handles:
+    - <ide_opened_file>: Simple file open notifications
+    - <ide_selection>: Code selection notifications
+    - <post-tool-use-hook><ide_diagnostics>: JSON diagnostic arrays
+
+    Args:
+        text: Raw text that may contain IDE notification tags
+
+    Returns:
+        IdeNotificationContent if any tags found, None otherwise
+    """
+    opened_files: List[IdeOpenedFile] = []
+    selections: List[IdeSelection] = []
+    diagnostics: List[IdeDiagnostic] = []
+    remaining_text = text
+
+    # Pattern 1: <ide_opened_file>content</ide_opened_file>
+    for match in IDE_OPENED_FILE_PATTERN.finditer(remaining_text):
+        content = match.group(1).strip()
+        opened_files.append(IdeOpenedFile(content=content))
+
+    remaining_text = IDE_OPENED_FILE_PATTERN.sub("", remaining_text)
+
+    # Pattern 2: <ide_selection>content</ide_selection>
+    for match in IDE_SELECTION_PATTERN.finditer(remaining_text):
+        content = match.group(1).strip()
+        selections.append(IdeSelection(content=content))
+
+    remaining_text = IDE_SELECTION_PATTERN.sub("", remaining_text)
+
+    # Pattern 3: <post-tool-use-hook><ide_diagnostics>JSON</ide_diagnostics></post-tool-use-hook>
+    for match in IDE_DIAGNOSTICS_PATTERN.finditer(remaining_text):
+        json_content = match.group(1).strip()
+        try:
+            parsed_diagnostics: Any = json.loads(json_content)
+            if isinstance(parsed_diagnostics, list):
+                diagnostics.append(
+                    IdeDiagnostic(
+                        diagnostics=cast(List[Dict[str, Any]], parsed_diagnostics)
+                    )
+                )
+            else:
+                # Not a list, store as raw content
+                diagnostics.append(IdeDiagnostic(raw_content=json_content))
+        except (json.JSONDecodeError, ValueError):
+            # JSON parsing failed, store raw content
+            diagnostics.append(IdeDiagnostic(raw_content=json_content))
+
+    remaining_text = IDE_DIAGNOSTICS_PATTERN.sub("", remaining_text)
+
+    # Only return if we found any IDE tags
+    if not opened_files and not selections and not diagnostics:
+        return None
+
+    return IdeNotificationContent(
+        opened_files=opened_files,
+        selections=selections,
+        diagnostics=diagnostics,
+        remaining_text=remaining_text.strip(),
+    )
 
 
 # =============================================================================

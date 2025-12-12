@@ -46,7 +46,10 @@ from ..models import (
     BashOutputContent,
     CommandOutputContent,
     CompactedSummaryContent,
+    IdeDiagnostic,
     IdeNotificationContent,
+    IdeOpenedFile,
+    IdeSelection,
     SlashCommandContent,
     ThinkingContentModel,
     UserMemoryContent,
@@ -55,12 +58,14 @@ from ..parser import (
     parse_bash_input,
     parse_bash_output,
     parse_command_output,
+    parse_ide_notifications,
     parse_slash_command,
 )
 from .user_formatters import (
     format_bash_input_content,
     format_bash_output_content,
     format_command_output_content,
+    format_ide_notification_content,
     format_slash_command_content,
     format_user_text_content,
 )
@@ -114,17 +119,22 @@ __all__ = [
     "CompactedSummaryContent",
     "UserMemoryContent",
     "IdeNotificationContent",
+    "IdeOpenedFile",
+    "IdeSelection",
+    "IdeDiagnostic",
     # user_formatters (formatting)
     "format_slash_command_content",
     "format_command_output_content",
     "format_bash_input_content",
     "format_bash_output_content",
     "format_user_text_content",
+    "format_ide_notification_content",
     # user_formatters (parsing)
     "parse_slash_command",
     "parse_command_output",
     "parse_bash_input",
     "parse_bash_output",
+    "parse_ide_notifications",
     # assistant_formatters (content models)
     "AssistantTextContent",
     "ThinkingContentModel",

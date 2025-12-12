@@ -17,8 +17,13 @@ from ..models import (
     BashInputContent,
     BashOutputContent,
     CommandOutputContent,
+    IdeDiagnostic,
+    IdeNotificationContent,
+    IdeOpenedFile,
+    IdeSelection,
     SlashCommandContent,
 )
+from .tool_formatters import render_params_table
 from .utils import escape_html, render_collapsible_code
 
 
@@ -185,6 +190,88 @@ def format_user_text_content(text: str) -> str:
     return f"<pre>{escaped_text}</pre>"
 
 
+def _format_opened_file(opened_file: IdeOpenedFile) -> str:
+    """Format a single IDE opened file notification as HTML."""
+    escaped_content = escape_html(opened_file.content)
+    return f"<div class='ide-notification'>🤖 {escaped_content}</div>"
+
+
+def _format_selection(selection: IdeSelection) -> str:
+    """Format a single IDE selection notification as HTML."""
+    escaped_content = escape_html(selection.content)
+
+    # For large selections, make them collapsible
+    if len(selection.content) > 200:
+        preview = escape_html(selection.content[:150]) + "..."
+        return f"""
+            <div class='ide-notification ide-selection'>
+                <details class='ide-selection-collapsible'>
+                    <summary>📝 {preview}</summary>
+                    <pre class='ide-selection-content'>{escaped_content}</pre>
+                </details>
+            </div>
+        """
+    else:
+        return f"<div class='ide-notification ide-selection'>📝 {escaped_content}</div>"
+
+
+def _format_diagnostic(diagnostic: IdeDiagnostic) -> List[str]:
+    """Format a single IDE diagnostic as HTML (may produce multiple notifications)."""
+    notifications: List[str] = []
+
+    if diagnostic.diagnostics:
+        # Parsed JSON diagnostics - render each as a table
+        for diag_item in diagnostic.diagnostics:
+            if isinstance(diag_item, dict):
+                table_html = render_params_table(diag_item)
+                notification_html = (
+                    f"<div class='ide-notification ide-diagnostic'>"
+                    f"⚠️ IDE Diagnostic<br>{table_html}"
+                    f"</div>"
+                )
+                notifications.append(notification_html)
+    elif diagnostic.raw_content:
+        # JSON parsing failed, render as plain text
+        escaped_content = escape_html(diagnostic.raw_content[:200])
+        notification_html = (
+            f"<div class='ide-notification'>🤖 IDE Diagnostics (parse error)<br>"
+            f"<pre>{escaped_content}...</pre></div>"
+        )
+        notifications.append(notification_html)
+
+    return notifications
+
+
+def format_ide_notification_content(content: IdeNotificationContent) -> List[str]:
+    """Format IDE notification content as HTML.
+
+    Takes structured IdeNotificationContent and returns a list of HTML
+    notification strings, preserving the same output format as the original
+    extract_ide_notifications function.
+
+    Args:
+        content: IdeNotificationContent with opened_files, selections, diagnostics
+
+    Returns:
+        List of HTML notification strings
+    """
+    notifications: List[str] = []
+
+    # Format opened files
+    for opened_file in content.opened_files:
+        notifications.append(_format_opened_file(opened_file))
+
+    # Format selections
+    for selection in content.selections:
+        notifications.append(_format_selection(selection))
+
+    # Format diagnostics (may produce multiple notifications per diagnostic)
+    for diagnostic in content.diagnostics:
+        notifications.extend(_format_diagnostic(diagnostic))
+
+    return notifications
+
+
 # =============================================================================
 # Public Exports
 # =============================================================================
@@ -196,4 +283,5 @@ __all__ = [
     "format_bash_input_content",
     "format_bash_output_content",
     "format_user_text_content",
+    "format_ide_notification_content",
 ]
