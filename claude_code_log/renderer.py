@@ -26,6 +26,7 @@ from .models import (
     ToolResultContent,
     ToolUseContent,
     ThinkingContent,
+    ThinkingContentModel,
     ImageContent,
     # Structured content types
     HookInfo,
@@ -66,6 +67,7 @@ from .html import (
     format_exitplanmode_result,
     format_read_tool_result,
     format_slash_command_content,
+    format_thinking_content,
     format_tool_use_content,
     format_tool_use_title,
     parse_bash_input,
@@ -261,16 +263,7 @@ def _looks_like_bash_output(content: str) -> bool:
 
 
 # -- Content Formatters -------------------------------------------------------
-
-
-def format_thinking_content(thinking: ThinkingContent) -> str:
-    """Format thinking content as HTML with markdown rendering."""
-    thinking_text = thinking.thinking.strip()
-
-    # Use line-based collapsible rendering (10 lines threshold, 5 preview)
-    return render_markdown_collapsible(
-        thinking_text, "thinking-text", line_threshold=10
-    )
+# NOTE: format_thinking_content moved to html/assistant_formatters.py
 
 
 def format_image_content(image: ImageContent) -> str:
@@ -1471,18 +1464,20 @@ def _process_thinking_item(tool_item: ContentItem) -> Optional[ToolItemResult]:
     Returns:
         ToolItemResult with processed content
     """
-    # Convert Anthropic type to our format if necessary
-    if not isinstance(tool_item, ThinkingContent):
-        thinking = ThinkingContent(
-            type="thinking",
-            thinking=getattr(tool_item, "thinking", str(tool_item)),
-        )
+    # Extract thinking text from the content item
+    if isinstance(tool_item, ThinkingContent):
+        thinking_text = tool_item.thinking.strip()
+        signature = getattr(tool_item, "signature", None)
     else:
-        thinking = tool_item
+        thinking_text = getattr(tool_item, "thinking", str(tool_item)).strip()
+        signature = None
+
+    # Create the content model and format
+    thinking_model = ThinkingContentModel(thinking=thinking_text, signature=signature)
 
     return ToolItemResult(
         message_type="thinking",
-        content_html=format_thinking_content(thinking),
+        content_html=format_thinking_content(thinking_model, line_threshold=10),
         message_title="Thinking",
     )
 
