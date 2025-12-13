@@ -80,29 +80,15 @@ def check_html_version(html_file_path: Path) -> Optional[str]:
 class HtmlRenderer(Renderer):
     """HTML renderer for Claude Code transcripts."""
 
-    def _format_message_content(
-        self, message: TemplateMessage, format_cache: Optional[Dict[str, str]] = None
-    ) -> None:
+    def _format_message_content(self, message: TemplateMessage) -> None:
         """Format structured content to HTML for a single message.
 
         This populates message.content_html from message.content for messages
         that have structured content. Messages without structured content
         (content is None) are left unchanged.
-
-        Args:
-            message: The message to format
-            format_cache: Optional cache for tool_use_id -> HTML mapping to avoid
-                re-formatting duplicated tool results (performance optimization)
         """
         if message.content is None:
             return
-
-        # For ToolResultContentModel, check cache first to avoid re-formatting duplicates
-        if isinstance(message.content, ToolResultContentModel):
-            tool_use_id = message.content.tool_use_id
-            if format_cache is not None and tool_use_id in format_cache:
-                message.content_html = format_cache[tool_use_id]
-                return
 
         # Dispatch to appropriate formatter based on content type
         if isinstance(message.content, SystemContent):
@@ -142,69 +128,19 @@ class HtmlRenderer(Renderer):
                 message.content.file_path,
                 message.content.tool_name,
             )
-            # Store in cache to avoid re-formatting duplicates
-            if format_cache is not None:
-                format_cache[message.content.tool_use_id] = message.content_html
         # Future content types will be added here as they are migrated
 
-    def _format_all_content(
-        self,
-        messages: List[TemplateMessage],
-        type_counts: Optional[Dict[str, int]] = None,
-        type_times: Optional[Dict[str, float]] = None,
-        format_cache: Optional[Dict[str, str]] = None,
-    ) -> None:
+    def _format_all_content(self, messages: List[TemplateMessage]) -> None:
         """Format structured content to HTML for all messages.
 
         Iterates through all messages (including children) and populates
         content_html from content where structured content exists.
-
-        Args:
-            messages: List of template messages to format
-            type_counts: Optional dict for timing stats (debug)
-            type_times: Optional dict for timing stats (debug)
-            format_cache: Cache for tool_use_id -> HTML to avoid duplicate formatting
         """
-        import os
-        import time
-
-        debug_timing = os.environ.get("CLAUDE_CODE_LOG_DEBUG_TIMING")
-        is_root = type_counts is None
-        if is_root:
-            # Initialize format cache at root level
-            format_cache = {}
-        if debug_timing and is_root:
-            type_counts = {}
-            type_times = {}
-
         for message in messages:
-            if debug_timing and type_counts is not None and type_times is not None:
-                content_type = (
-                    type(message.content).__name__ if message.content else "None"
-                )
-                t0 = time.time()
-                self._format_message_content(message, format_cache)
-                elapsed = time.time() - t0
-                type_counts[content_type] = type_counts.get(content_type, 0) + 1
-                type_times[content_type] = type_times.get(content_type, 0) + elapsed
-            else:
-                self._format_message_content(message, format_cache)
+            self._format_message_content(message)
             # Recursively process children
             if message.children:
-                self._format_all_content(
-                    message.children, type_counts, type_times, format_cache
-                )
-
-        # Print summary at root level
-        if debug_timing and is_root and type_counts and type_times:
-            print("\n[TIMING] Content formatting breakdown:")
-            for content_type in sorted(type_times.keys(), key=lambda x: -type_times[x]):
-                count = type_counts[content_type]
-                total_time = type_times[content_type]
-                avg_time = total_time / count * 1000 if count > 0 else 0
-                print(
-                    f"[TIMING]   {content_type}: {count} items, {total_time:.3f}s total, {avg_time:.2f}ms avg"
-                )
+                self._format_all_content(message.children)
 
     def generate(
         self,
