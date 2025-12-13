@@ -290,9 +290,7 @@ class TestParseUserMessageContent:
             image_item,
         ]
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         # Should return UserTextContent with IDE notifications
         assert content_model is not None
@@ -305,10 +303,6 @@ class TestParseUserMessageContent:
 
         # Remaining text should be preserved
         assert "Please review this code" in content_model.text
-
-        # Should not be compacted or memory input
-        assert is_compacted is False
-        assert is_memory_input is False
 
 
 # =============================================================================

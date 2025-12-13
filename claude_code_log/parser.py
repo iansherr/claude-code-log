@@ -348,10 +348,11 @@ UserMessageContent = Union[CompactedSummaryContent, UserMemoryContent, UserTextC
 
 def parse_user_message_content(
     content_list: List[ContentItem],
-) -> tuple[Optional[UserMessageContent], bool, bool]:
+) -> Optional[UserMessageContent]:
     """Parse user message content into a structured content model.
 
-    Returns a content model for HtmlRenderer to format. Handles:
+    Returns a content model for HtmlRenderer to format. The caller can use
+    isinstance() checks to determine the content type:
     - CompactedSummaryContent: Session continuation summaries
     - UserMemoryContent: User memory input from CLAUDE.md
     - UserTextContent: Normal user text with optional IDE notifications
@@ -360,24 +361,23 @@ def parse_user_message_content(
         content_list: List of ContentItem from user message
 
     Returns:
-        A tuple of (content_model, is_compacted, is_memory_input)
-        content_model is None only if content_list is empty or has no text.
+        A content model, or None if content_list is empty or has no text.
     """
     # Check first text item
     if not content_list or not hasattr(content_list[0], "text"):
-        return None, False, False
+        return None
 
     # Check for compacted session summary first (handles text combining internally)
     compacted = parse_compacted_summary(content_list)
     if compacted:
-        return compacted, True, False
+        return compacted
 
     first_text = getattr(content_list[0], "text", "")
 
     # Check for user memory input
     user_memory = parse_user_memory(first_text)
     if user_memory:
-        return user_memory, False, True
+        return user_memory
 
     # Parse IDE notifications from first text item
     ide_content = parse_ide_notifications(first_text)
@@ -396,7 +396,7 @@ def parse_user_message_content(
         all_text = "\n\n".join([remaining_text] + other_text)
 
     # Return UserTextContent with optional IDE notifications
-    return UserTextContent(text=all_text, ide_notifications=ide_content), False, False
+    return UserTextContent(text=all_text, ide_notifications=ide_content)
 
 
 # =============================================================================

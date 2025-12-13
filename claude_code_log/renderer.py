@@ -802,7 +802,6 @@ def _process_regular_message(
     message_title = message_type.title()  # Default title
     is_compacted = False
     is_slash_command = False
-    is_memory_input = False
     content_model: Optional["MessageContent"] = None
 
     # Handle user-specific preprocessing
@@ -822,12 +821,12 @@ def _process_regular_message(
             # Use UserTextContent with is_slash_command flag for HtmlRenderer to format
             content_model = UserTextContent(text=all_text)
         else:
-            content_model, is_compacted, is_memory_input = parse_user_message_content(
-                text_only_content
-            )
-            if is_compacted:
+            content_model = parse_user_message_content(text_only_content)
+            # Determine message_title and modifiers from content type
+            if isinstance(content_model, CompactedSummaryContent):
+                is_compacted = True
                 message_title = "User (compacted conversation)"
-            elif is_memory_input:
+            elif isinstance(content_model, UserMemoryContent):
                 message_title = "Memory"
     # Non-user messages (assistant): content_model stays None
     # The calling code will handle this via render_message_content

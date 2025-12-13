@@ -155,14 +155,10 @@ class TestParseUserMessageContentCompacted:
         text = f"{COMPACTED_SUMMARY_PREFIX}. The conversation summary."
         content_list = [TextContent(type="text", text=text)]
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
         assert isinstance(content_model, CompactedSummaryContent)
-        assert is_compacted is True
-        assert is_memory_input is False
         assert content_model.summary_text == text
 
     def test_compacted_summary_multiple_text_items(self):
@@ -176,13 +172,10 @@ class TestParseUserMessageContentCompacted:
             TextContent(type="text", text=third_text),
         ]
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
         assert isinstance(content_model, CompactedSummaryContent)
-        assert is_compacted is True
         # All text items should be combined with double newlines
         expected = "\n\n".join([first_text, second_text, third_text])
         assert content_model.summary_text == expected
@@ -196,14 +189,10 @@ class TestParseUserMessageContentMemory:
         text = "<user-memory-input>CLAUDE.md content here</user-memory-input>"
         content_list = [TextContent(type="text", text=text)]
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
         assert isinstance(content_model, UserMemoryContent)
-        assert is_compacted is False
-        assert is_memory_input is True
         assert content_model.memory_text == "CLAUDE.md content here"
 
 
@@ -215,14 +204,10 @@ class TestParseUserMessageContentRegular:
         text = "Hello, please help me with this code."
         content_list = [TextContent(type="text", text=text)]
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
         assert isinstance(content_model, UserTextContent)
-        assert is_compacted is False
-        assert is_memory_input is False
         assert content_model.text == text
         assert content_model.ide_notifications is None
 
@@ -230,13 +215,9 @@ class TestParseUserMessageContentRegular:
         """Test empty content list returns None."""
         content_list = []
 
-        content_model, is_compacted, is_memory_input = parse_user_message_content(
-            content_list
-        )
+        content_model = parse_user_message_content(content_list)
 
         assert content_model is None
-        assert is_compacted is False
-        assert is_memory_input is False
 
 
 # =============================================================================
