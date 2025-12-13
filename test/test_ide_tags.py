@@ -4,12 +4,21 @@ Split into:
 - Parsing tests: test parse_ide_notifications() from parser.py
 - Formatting tests: test format_ide_notification_content() from user_formatters.py
 - User message tests: test parse_user_message_content() and formatters
+- Assistant text tests: test format_assistant_text_content()
 """
 
 from claude_code_log.parser import parse_ide_notifications, parse_user_message_content
-from claude_code_log.renderer import render_message_content
-from claude_code_log.html.user_formatters import format_ide_notification_content
-from claude_code_log.models import TextContent, ImageContent, ImageSource
+from claude_code_log.html.user_formatters import (
+    format_ide_notification_content,
+    format_user_text_content,
+)
+from claude_code_log.html.assistant_formatters import format_assistant_text_content
+from claude_code_log.models import (
+    AssistantTextContent,
+    TextContent,
+    ImageContent,
+    ImageSource,
+)
 
 
 # =============================================================================
@@ -306,29 +315,27 @@ class TestParseUserMessageContent:
 
 
 # =============================================================================
-# Legacy render_message_content Tests
+# Content Formatter Tests
 # =============================================================================
 
 
-class TestRenderMessageContent:
-    """Tests for render_message_content() function (legacy path for assistant messages)."""
+class TestContentFormatters:
+    """Tests for content formatter functions (user and assistant text)."""
 
-    def test_render_message_content_single_text_item(self):
-        """Test that single TextContent item takes fast path for user messages."""
-        content = [TextContent(type="text", text="Simple user message")]
-
-        html = render_message_content(content, "user")
+    def test_format_user_text_content(self):
+        """Test that user text is formatted as preformatted HTML."""
+        html = format_user_text_content("Simple user message")
 
         # Should be wrapped in <pre> for user messages
         assert html.startswith("<pre>")
         assert html.endswith("</pre>")
         assert "Simple user message" in html
 
-    def test_render_message_content_single_text_item_assistant(self):
-        """Test that single TextContent item takes fast path for assistant messages."""
-        content = [TextContent(type="text", text="**Bold** response")]
+    def test_format_assistant_text_content(self):
+        """Test that assistant text is formatted as markdown."""
+        content = AssistantTextContent(text="**Bold** response")
 
-        html = render_message_content(content, "assistant")
+        html = format_assistant_text_content(content)
 
         # Should be rendered as markdown (no <pre>)
         assert "<pre>" not in html

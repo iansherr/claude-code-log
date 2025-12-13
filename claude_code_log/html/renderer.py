@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ..cache import get_library_version
 from ..models import (
+    AssistantTextContent,
     BashInputContent,
     BashOutputContent,
     CommandOutputContent,
@@ -46,7 +47,11 @@ from .user_formatters import (
     format_user_memory_content,
     format_user_text_model_content,
 )
-from .assistant_formatters import format_image_content, format_thinking_content
+from .assistant_formatters import (
+    format_assistant_text_content,
+    format_image_content,
+    format_thinking_content,
+)
 from .tool_formatters import format_tool_result_content, format_tool_use_content
 from .utils import css_class_from_message, get_message_emoji, get_template_environment
 
@@ -117,6 +122,8 @@ class HtmlRenderer(Renderer):
             message.content_html = format_thinking_content(
                 message.content, line_threshold=10
             )
+        elif isinstance(message.content, AssistantTextContent):
+            message.content_html = format_assistant_text_content(message.content)
         elif isinstance(message.content, ImageContent):
             message.content_html = format_image_content(message.content)
         elif isinstance(message.content, ToolUseContent):

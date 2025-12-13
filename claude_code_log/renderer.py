@@ -28,6 +28,7 @@ from .models import (
     ThinkingContentModel,
     ImageContent,
     # Structured content types
+    AssistantTextContent,
     CompactedSummaryContent,
     DedupNoticeContent,
     HookInfo,
@@ -63,104 +64,24 @@ from .renderer_timings import (
 
 from .html import (
     escape_html,
-    format_image_content,
     format_tool_use_title,
-    format_user_text_content,
     parse_bash_input,
     parse_bash_output,
     parse_command_output,
     parse_slash_command,
-    render_markdown_collapsible,
 )
-from .parser import (
-    parse_compacted_summary,
-    parse_ide_notifications,
-    parse_user_memory,
-    parse_user_message_content,
-)
+from .parser import parse_user_message_content
 
 
 # -- Content Formatters -------------------------------------------------------
-# NOTE: Most content formatters have been moved to html/ submodules:
+# NOTE: Content formatters have been moved to html/ submodules:
 #   - format_thinking_content -> html/assistant_formatters.py
+#   - format_assistant_text_content -> html/assistant_formatters.py
 #   - format_tool_result_content -> html/tool_formatters.py
 #   - format_tool_use_content -> html/tool_formatters.py
-#   - format_image_content -> html/assistant_formatters.py (still used in legacy render_message_content)
+#   - format_image_content -> html/assistant_formatters.py
+#   - format_user_text_model_content -> html/user_formatters.py
 #   - parse_user_message_content -> parser.py
-
-
-def render_message_content(content: List[ContentItem], message_type: str) -> str:
-    """Render message content with proper tool use and tool result formatting.
-
-    Note: This does NOT handle user-specific preprocessing like IDE tags or
-    compacted session summaries. Those should be handled by parse_user_message_content().
-    """
-    if len(content) == 1 and isinstance(content[0], TextContent):
-        if message_type == MessageType.USER:
-            # User messages are shown as-is in preformatted blocks
-            return format_user_text_content(content[0].text)
-        else:
-            # Assistant messages get markdown rendering with collapsible for long content
-            return render_markdown_collapsible(
-                content[0].text,
-                "assistant-text",
-                line_threshold=30,
-                preview_line_count=10,
-            )
-
-    # content is a list of ContentItem objects
-    rendered_parts: List[str] = []
-
-    for item in content:
-        # Handle both custom and Anthropic types
-        item_type = getattr(item, "type", None)
-
-        if type(item) is TextContent or (
-            hasattr(item, "type") and hasattr(item, "text") and item_type == "text"
-        ):
-            # Handle both TextContent and Anthropic TextBlock
-            text_value = getattr(item, "text", str(item))
-            if message_type == MessageType.USER:
-                # User messages are shown as-is in preformatted blocks
-                rendered_parts.append(format_user_text_content(text_value))
-            else:
-                # Assistant messages get markdown rendering with collapsible for long content
-                rendered_parts.append(
-                    render_markdown_collapsible(
-                        text_value,
-                        "assistant-text",
-                        line_threshold=30,
-                        preview_line_count=10,
-                    )
-                )
-        elif type(item) is ToolUseContent or (
-            hasattr(item, "type") and item_type == "tool_use"
-        ):
-            # Tool use items should not appear here - they are filtered out before this function
-            print(
-                "Warning: tool_use content should not be processed in render_message_content",
-                flush=True,
-            )
-        elif type(item) is ToolResultContent or (
-            hasattr(item, "type") and item_type == "tool_result"
-        ):
-            # Tool result items should not appear here - they are filtered out before this function
-            print(
-                "Warning: tool_result content should not be processed in render_message_content",
-                flush=True,
-            )
-        elif type(item) is ThinkingContent or (
-            hasattr(item, "type") and item_type == "thinking"
-        ):
-            # Thinking items should not appear here - they are filtered out before this function
-            print(
-                "Warning: thinking content should not be processed in render_message_content",
-                flush=True,
-            )
-        elif type(item) is ImageContent:
-            rendered_parts.append(format_image_content(item))  # type: ignore
-
-    return "\n".join(rendered_parts)
 
 
 def _format_type_counts(type_counts: dict[str, int]) -> str:
@@ -828,8 +749,15 @@ def _process_regular_message(
                 message_title = "User (compacted conversation)"
             elif isinstance(content_model, UserMemoryContent):
                 message_title = "Memory"
-    # Non-user messages (assistant): content_model stays None
-    # The calling code will handle this via render_message_content
+    elif message_type == MessageType.ASSISTANT:
+        # Create AssistantTextContent for assistant messages
+        all_text = "\n\n".join(
+            getattr(item, "text", "")
+            for item in text_only_content
+            if hasattr(item, "text")
+        )
+        if all_text:
+            content_model = AssistantTextContent(text=all_text)
 
     if is_sidechain:
         # Update message title for display (only non-user types reach here)
@@ -2158,11 +2086,6 @@ def _render_messages(
                 )
             )
             message_type = message_type_result  # Update message_type with result
-
-            # For non-user messages (assistant), content_model is None
-            # Use legacy render_message_content for now
-            if content_model is None and text_only_content:
-                content_html = render_message_content(text_only_content, message_type)
 
             # Add 'steering' modifier for queue-operation 'remove' messages
             if (

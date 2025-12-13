@@ -3,7 +3,7 @@
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Union, cast, TypeGuard
+from typing import Any, Callable, Dict, List, Optional, Union, cast, TypeGuard
 from datetime import datetime
 
 from anthropic.types import Message as AnthropicMessage
@@ -32,6 +32,8 @@ from .models import (
     IdeOpenedFile,
     IdeSelection,
     IdeDiagnostic,
+    # Assistant message content models
+    AssistantTextContent,
     # Tool input models
     BashInput,
     ReadInput,
@@ -832,13 +834,23 @@ def parse_content_item(item_data: Dict[str, Any]) -> ContentItem:
         return TextContent(type="text", text=str(item_data))
 
 
-def parse_message_content(content_data: Any) -> Union[str, List[ContentItem]]:
-    """Parse message content, handling both string and list formats."""
+def parse_message_content(
+    content_data: Any,
+    item_parser: Callable[[Dict[str, Any]], ContentItem] = parse_content_item,
+) -> Union[str, List[ContentItem]]:
+    """Parse message content, handling both string and list formats.
+
+    Args:
+        content_data: Raw content data (string or list of items)
+        item_parser: Function to parse individual content items. Defaults to
+            generic parse_content_item, but can be parse_user_content_item or
+            parse_assistant_content_item for type-specific parsing.
+    """
     if isinstance(content_data, str):
         return content_data
     elif isinstance(content_data, list):
         content_list = cast(List[Dict[str, Any]], content_data)
-        return [parse_content_item(item) for item in content_list]
+        return [item_parser(item) for item in content_list]
     else:
         return str(content_data)
 
@@ -866,12 +878,13 @@ def parse_transcript_entry(data: Dict[str, Any]) -> TranscriptEntry:
     entry_type = data.get("type")
 
     if entry_type == "user":
-        # Parse message content if present
+        # Parse message content if present, using user-specific parser
         data_copy = data.copy()
         if "message" in data_copy and "content" in data_copy["message"]:
             data_copy["message"] = data_copy["message"].copy()
             data_copy["message"]["content"] = parse_message_content(
-                data_copy["message"]["content"]
+                data_copy["message"]["content"],
+                item_parser=parse_user_content_item,
             )
         # Parse toolUseResult if present and it's a list of content items
         if "toolUseResult" in data_copy and isinstance(
@@ -905,10 +918,13 @@ def parse_transcript_entry(data: Dict[str, Any]) -> TranscriptEntry:
                 # Validation failed - continue with standard parsing
                 pass
 
-        # Standard parsing path (works for all cases)
+        # Standard parsing path using assistant-specific parser
         if "message" in data_copy and "content" in data_copy["message"]:
             message_copy = data_copy["message"].copy()
-            message_copy["content"] = parse_message_content(message_copy["content"])
+            message_copy["content"] = parse_message_content(
+                message_copy["content"],
+                item_parser=parse_assistant_content_item,
+            )
 
             # Normalize usage data to support both Anthropic and custom formats
             if "usage" in message_copy:
