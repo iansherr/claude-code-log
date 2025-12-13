@@ -76,6 +76,7 @@ from .parser import (
     parse_compacted_summary,
     parse_ide_notifications,
     parse_user_memory,
+    parse_user_message_content,
 )
 
 
@@ -85,67 +86,7 @@ from .parser import (
 #   - format_tool_result_content -> html/tool_formatters.py
 #   - format_tool_use_content -> html/tool_formatters.py
 #   - format_image_content -> html/assistant_formatters.py (still used in legacy render_message_content)
-
-
-# Type alias for content models returned by parse_user_message_content
-from typing import Union
-
-UserMessageContent = Union[CompactedSummaryContent, UserMemoryContent, UserTextContent]
-
-
-def parse_user_message_content(
-    content_list: List[ContentItem],
-) -> tuple[Optional[UserMessageContent], bool, bool]:
-    """Parse user message content into a structured content model.
-
-    Returns a content model for HtmlRenderer to format. Handles:
-    - CompactedSummaryContent: Session continuation summaries
-    - UserMemoryContent: User memory input from CLAUDE.md
-    - UserTextContent: Normal user text with optional IDE notifications
-
-    Returns:
-        A tuple of (content_model, is_compacted, is_memory_input)
-        content_model is None only if content_list is empty or has no text.
-    """
-    # Check first text item
-    if not content_list or not hasattr(content_list[0], "text"):
-        return None, False, False
-
-    first_text = getattr(content_list[0], "text", "")
-
-    # Check for compacted session summary first
-    compacted = parse_compacted_summary(first_text)
-    if compacted:
-        # Combine all text content for compacted summaries
-        all_text = "\n\n".join(
-            item.text for item in content_list if isinstance(item, TextContent)
-        )
-        return CompactedSummaryContent(summary_text=all_text), True, False
-
-    # Check for user memory input
-    user_memory = parse_user_memory(first_text)
-    if user_memory:
-        return user_memory, False, True
-
-    # Parse IDE notifications from first text item
-    ide_content = parse_ide_notifications(first_text)
-
-    # Get remaining text after IDE notifications extracted
-    if ide_content:
-        remaining_text = ide_content.remaining_text
-    else:
-        remaining_text = first_text
-
-    # Combine remaining text with any other text items
-    other_text = [
-        item.text for item in content_list[1:] if isinstance(item, TextContent)
-    ]
-    all_text = remaining_text
-    if other_text:
-        all_text = "\n\n".join([remaining_text] + other_text)
-
-    # Return UserTextContent with optional IDE notifications
-    return UserTextContent(text=all_text, ide_notifications=ide_content), False, False
+#   - parse_user_message_content -> parser.py
 
 
 def render_message_content(content: List[ContentItem], message_type: str) -> str:

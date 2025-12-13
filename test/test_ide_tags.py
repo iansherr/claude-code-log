@@ -6,8 +6,8 @@ Split into:
 - User message tests: test parse_user_message_content() and formatters
 """
 
-from claude_code_log.parser import parse_ide_notifications
-from claude_code_log.renderer import parse_user_message_content, render_message_content
+from claude_code_log.parser import parse_ide_notifications, parse_user_message_content
+from claude_code_log.renderer import render_message_content
 from claude_code_log.html.user_formatters import format_ide_notification_content
 from claude_code_log.models import TextContent, ImageContent, ImageSource
 
