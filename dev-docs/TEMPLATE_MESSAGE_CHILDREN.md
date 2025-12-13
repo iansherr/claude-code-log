@@ -2,17 +2,26 @@
 
 This document tracks the exploration of a children-based architecture for `TemplateMessage`, where messages can have nested children to form an explicit tree structure.
 
-## Current Architecture
+## Current Architecture (2025-12-13)
+
+### Data Flow
+```
+TranscriptEntry[] → generate_template_messages() → root_messages (tree)
+                                                          ↓
+                    HtmlRenderer._flatten_preorder() → flat_list
+                                                          ↓
+                              template.render(messages=flat_list)
+```
 
 ### TemplateMessage (current)
-- Flat list of messages with `message_id` and `ancestry` fields
-- Ancestry is a list of parent message IDs (from root to immediate parent)
-- Hierarchy is determined by levels based on message type/css_class
-- Multiple reordering passes: session → pairs → sidechains → build_hierarchy
+- `generate_template_messages()` returns **tree roots** (typically session headers)
+- Each message has `children: List[TemplateMessage]` populated
+- `ancestry` field preserved for CSS classes / JavaScript fold/unfold
+- HtmlRenderer flattens via pre-order traversal before template rendering
 
-### Hierarchy Levels (current)
+### Hierarchy Levels
 ```
-Level 0: Session headers
+Level 0: Session headers (tree roots)
 Level 1: User messages
 Level 2: Assistant, System, Thinking
 Level 3: Tool use/result
@@ -21,30 +30,16 @@ Level 5: Sidechain tools
 ```
 
 ### Template Rendering (current)
-- Single `{% for message in messages %}` loop
+- Single `{% for message in messages %}` loop over flattened list
 - Ancestry rendered as CSS classes for JavaScript DOM queries
 - Fold/unfold uses `document.querySelectorAll('.message.${targetId}')`
+- Tree structure used internally but template still receives flat list
 
-## Proposed Architecture
+## Future: Recursive Template Rendering
 
-### TemplateMessage (proposed)
-Add `children: List[TemplateMessage]` field to make hierarchy explicit.
+The next step would be to pass tree roots directly to the template and use a recursive macro, eliminating the flatten step.
 
-```python
-class TemplateMessage:
-    # ... existing fields ...
-    children: List["TemplateMessage"] = []
-```
-
-### Tree Building
-Replace flat list processing with tree construction:
-1. Session headers become root nodes
-2. User messages are children of sessions
-3. Assistant/System are children of users
-4. Tools are children of assistants
-5. Sidechains are children of Task tool_results
-
-### Template Rendering (proposed)
+### Template Rendering (future)
 Recursive macro approach:
 ```jinja2
 {% macro render_message(message, depth=0) %}
@@ -59,9 +54,13 @@ Recursive macro approach:
     {% endif %}
 </div>
 {% endmacro %}
+
+{% for root in roots %}
+{{ render_message(root) }}
+{% endfor %}
 ```
 
-### JavaScript Simplification
+### JavaScript Simplification (future)
 With nested DOM structure, fold/unfold becomes trivial:
 ```javascript
 // Hide all children
@@ -69,6 +68,8 @@ messageEl.querySelector('.children').style.display = 'none';
 // Show children
 messageEl.querySelector('.children').style.display = '';
 ```
+
+This would require updating the fold/unfold JavaScript to work with the nested structure rather than CSS class queries.
 
 ## Exploration Log
 
@@ -86,31 +87,38 @@ messageEl.querySelector('.children').style.display = '';
   - Populates `children` field based on ancestry
   - Returns list of root messages (those with empty ancestry)
 - [x] Called after `_mark_messages_with_children()` in render pipeline
-- [x] Root messages stored but flat list still passed to template
 - [x] Integration tests verify tree building doesn't break HTML generation
+
+### Phase 2.5: Tree-First Architecture ✅ COMPLETE (2025-12-13)
+- [x] `generate_template_messages()` now returns tree roots, not flat list (commit `c5048b9`)
+- [x] `HtmlRenderer._flatten_preorder()` traverses tree, formats content, builds flat list
+- [x] Content formatting happens during pre-order traversal (no separate pass)
+- [x] Template unchanged - still receives flat list
+
+**Key insight:** The flat list was being passed to template AND the same messages had children populated. This caused confusion about which structure was authoritative. Now the tree is authoritative and the flat list is derived.
 
 ### Phase 3: Template Migration (TODO - Future Work)
 - [ ] Create recursive render macro
 - [ ] Update DOM structure to use nested `.children` divs
-- [ ] Migrate JavaScript fold/unfold
-- [ ] Pass `root_messages` to template instead of flat list
+- [ ] Migrate JavaScript fold/unfold to use nested DOM
+- [ ] Pass `root_messages` directly to template (eliminate flatten step)
 
 ### Challenges & Notes
 
-**Current State (2025-12-02):**
-- Tree is built internally but not yet used for rendering
-- Both data structures exist: flat list (used by template) and tree (populated but unused)
-- This allows incremental migration - template can switch to tree rendering later
+**Current State (2025-12-13):**
+- Tree is the primary structure returned from `generate_template_messages()`
+- HtmlRenderer flattens via pre-order traversal for template rendering
+- This is cleaner than before: tree in → flat list out (explicit transformation)
 
-**Why Keep Both:**
-1. Backward compatibility with existing template
-2. Can test tree-building logic without breaking rendering
-3. `flatten_all()` provides escape hatch if tree rendering has issues
+**Performance (2025-12-13):**
+- Benchmark: 3.35s for 3917 messages across 5 projects
+- Pre-order traversal + formatting is O(n)
+- No caching needed - each message formatted exactly once
 
-**Performance Consideration:**
-- Tree building is O(n) where n = number of messages
-- No significant overhead observed in timing logs
-- Most time spent in template rendering, not data structure manipulation
+**Why Keep Flat Template (for now):**
+1. JavaScript fold/unfold relies on CSS class queries
+2. Changing DOM structure requires JS migration
+3. Current approach works correctly
 
 ## Related Work
 
