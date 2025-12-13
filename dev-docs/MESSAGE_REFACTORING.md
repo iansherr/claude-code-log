@@ -4,24 +4,25 @@ This document tracks the ongoing refactoring effort to improve the message rende
 
 ## Current State (dev/message-tree-refactoring)
 
-As of December 2024, `renderer.py` has grown to **4246 lines** with several new subsystems:
+As of December 2025, significant refactoring has been completed. The architecture now separates format-neutral message processing from HTML-specific rendering:
 
-| Function/System | Lines | Notes |
-|-----------------|-------|-------|
-| `_process_messages_loop()` | ~687 | Main message processing - needs decomposition |
-| `_convert_ansi_to_html()` | ~252 | Self-contained, could be extracted |
-| `_identify_message_pairs()` | ~227 | Complex pairing logic |
-| `_reorder_paired_messages()` | ~104 | Pair reordering |
-| Hierarchy system | ~150 | `_build_message_hierarchy`, `_mark_messages_with_children` |
-| Tree building | ~60 | `_build_message_tree()` - NEW: builds children hierarchy |
-| Tool formatters | ~600 | Various `format_*_tool_content` functions |
+| Module | Lines | Notes |
+|--------|-------|-------|
+| `renderer.py` | 2525 | Format-neutral: tree building, pairing, hierarchy |
+| `html/renderer.py` | 297 | HtmlRenderer: tree traversal, template rendering |
+| `html/tool_formatters.py` | 950 | Tool use/result HTML formatting |
+| `html/user_formatters.py` | 326 | User message HTML formatting |
+| `html/assistant_formatters.py` | 90 | Assistant/thinking HTML formatting |
+| `html/system_formatters.py` | 113 | System message HTML formatting |
+| `html/utils.py` | 352 | Shared HTML utilities (markdown, escape, etc.) |
+| `html/ansi_colors.py` | 261 | ANSI → HTML conversion |
+| `models.py` | 858 | Content models, MessageModifiers |
 
-**New systems added since initial plan:**
-- **Message pairing** - System command + slash-command, tool use + result
-- **Hierarchy/fold system** - Level-based ancestry for fold/unfold UI
-- **Message processors** - `_process_command_message`, `_process_bash_input`, etc.
-- **ANSI color conversion** - Full terminal color to HTML support
-- **Message tree** - `_build_message_tree()` and `TemplateMessage.flatten()` methods (Phase 1-2 of TEMPLATE_MESSAGE_CHILDREN.md)
+**Key architectural changes:**
+- **Tree-first architecture** - `generate_template_messages()` returns tree roots, HtmlRenderer flattens via pre-order traversal
+- **Format-neutral Renderer base class** - Subclasses (HtmlRenderer) implement format-specific rendering
+- **Content models in models.py** - SessionHeaderContent, DedupNoticeContent, IdeNotificationContent, etc.
+- **Formatter separation** - HTML formatters split by message type in `html/` directory
 
 ## Motivation
 
@@ -37,18 +38,31 @@ The refactoring aims to:
 
 ### dev/message-tree-refactoring (Current Branch)
 
-This branch builds the foundation for tree-based message rendering. See [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) for details.
+This branch implements tree-based message rendering. See [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) for details.
 
 **Completed Work:**
 - ✅ Phase 1: Added `children: List[TemplateMessage]` field to TemplateMessage
 - ✅ Phase 1: Added `flatten()` and `flatten_all()` methods for backward compatibility
 - ✅ Phase 2: Implemented `_build_message_tree()` function
-- ✅ Phase 2: Tree is built after hierarchy processing but flat list still used for templates
+- ✅ **Phase 2.5: Tree-first architecture** (December 2025)
+  - `generate_template_messages()` now returns tree roots, not flat list
+  - `HtmlRenderer._flatten_preorder()` traverses tree, formats content, builds flat list
+  - Content formatting happens during pre-order traversal (single pass)
+  - Template unchanged - still receives flat list (Phase 3 future work)
 
-**Integration with MESSAGE_REFACTORING.md:**
-- The tree structure enables future **recursive template rendering** (Phase 3 in TEMPLATE_MESSAGE_CHILDREN.md)
+**Architecture:**
+```
+TranscriptEntry[] → generate_template_messages() → root_messages (tree)
+                                                          ↓
+                    HtmlRenderer._flatten_preorder() → flat_list
+                                                          ↓
+                              template.render(messages=flat_list)
+```
+
+**Integration with this refactoring:**
+- Tree structure enables future **recursive template rendering** (Phase 3 in TEMPLATE_MESSAGE_CHILDREN.md)
 - Provides foundation for **Visitor pattern** output formats (HTML, Markdown, JSON)
-- `flatten_all()` ensures backward compatibility during migration
+- Format-neutral `Renderer` base class allows alternative renderer implementations
 
 ### golergka's text-output-format Branch (ada7ef5)
 
@@ -325,82 +339,72 @@ and format-specific modules), while Phase 11 provides typed tool input models as
 optional type-safety enhancement. The typed models can be adopted incrementally by any
 code that wants to use them, independent of the format-neutral refactoring.
 
-### Phase 12: Renderer Decomposition - Format Neutral
+### Phase 12: Renderer Decomposition - Format Neutral ✅ COMPLETE
 
 **Goal**: Separate format-neutral logic from HTML-specific generation
 
-**Current Architecture** (before Phase 12):
+**Achieved Architecture** (December 2025):
 ```
-renderer.py (3853 lines)
-├── Message processing (format-neutral)
-│   ├── _process_messages_loop() - 460 lines
-│   ├── Pairing logic
-│   ├── Hierarchy building
-│   └── Token usage extraction
-├── HTML generation (format-specific)
-│   ├── Template rendering
-│   ├── CSS class computation
-│   └── Content HTML formatting
-└── Tool formatters (mixed)
-```
-
-**Target Architecture**:
-```
-renderer.py (format-neutral orchestration)
-├── Message processing
+renderer.py (2525 lines) - Format-neutral
+├── generate_template_messages() → returns tree roots
+├── Renderer base class (subclassed by HtmlRenderer)
+├── TemplateMessage, TemplateProject, TemplateSummary classes
+├── Message processing loop with content model creation
 ├── Pairing & hierarchy logic
-└── Token aggregation
+└── Deduplication
 
-html_renderer.py (HTML utilities)
-├── CSS class computation
-├── Markdown rendering
-├── Collapsible content
-└── Template environment
+html/ directory - HTML-specific
+├── renderer.py (297 lines) - HtmlRenderer class
+│   ├── _flatten_preorder() - tree traversal + formatting
+│   ├── _format_message_content() - dispatches to formatters
+│   └── generate(), generate_session() - template rendering
+├── tool_formatters.py (950 lines) - Tool use/result formatters
+├── user_formatters.py (326 lines) - User message formatters
+├── assistant_formatters.py (90 lines) - Assistant/thinking formatters
+├── system_formatters.py (113 lines) - System message formatters
+├── utils.py (352 lines) - Markdown, escape, collapsibles
+└── ansi_colors.py (261 lines) - ANSI → HTML conversion
 
-html_tool_renderers.py (tool HTML formatters)
-├── Tool use formatters
-└── Tool result formatters
-
-text_renderer.py (future - golergka's work)
-├── Text/markdown output
-└── Chat format
+models.py (858 lines) - Content models
+├── MessageContent base class and subclasses
+├── SessionHeaderContent, DedupNoticeContent (renderer content)
+├── IdeNotificationContent, UserTextContent (user content)
+├── ReadOutput, EditOutput, etc. (tool output models)
+└── MessageModifiers dataclass
 ```
 
-**Implementation Steps** (Phase 13 plan):
+**Implementation Steps** (completed differently than original plan):
 
 | Step | Description | Status |
 |------|-------------|--------|
-| 1 | Organize html_renderer.py with thematic sections | ✅ Complete |
-| 2 | Move pure HTML utilities (escape_html, render_markdown, _create_pygments_plugin) | ✅ Complete |
-| 3 | Move collapsible rendering functions | ✅ Complete |
-| 4 | Move template environment (get_template_environment, starts_with_emoji) | ✅ Complete |
-| 5 | Create html_tool_renderers.py with tool formatters | ✅ Complete |
-| 6 | Split tool formatters (two-stage: parse + render) | ⏸️ Deferred |
-| 7 | Split message content renderers | ⏸️ Deferred |
-| 8 | Split _process_* message functions | ⏸️ Deferred |
-| 9 | Move generate_projects_index_html | ⏸️ Deferred |
-| 10 | Reorganize renderer.py with thematic sections | ✅ Complete |
-| 11 | Finalize html_renderer.py structure and update docs | ✅ Complete |
+| 1-5 | Initial HTML extraction | ✅ Complete |
+| 6 | Split tool formatters (two-stage: parse + render) | ✅ Done via content models in models.py |
+| 7 | Split message content renderers | ✅ Done via html/{user,assistant,system,tool}_formatters.py |
+| 8 | Split _process_* message functions | ✅ Content models created during processing |
+| 9 | Move generate_projects_index_html | ⏸️ Still in renderer.py (format-neutral prep + HTML) |
+| 10-11 | Final organization | ✅ Complete |
 
-**Deferred Steps (6-9) Rationale**:
-- **Steps 6-8 (Two-stage splits)**: Typed input models already exist in `models.py` (BashInput, EditInput, etc.) via `parse_tool_input()`. The two-stage split would add complexity without clear benefit since there's no immediate need for alternative renderers (text/markdown). Current formatters are well-organized in `html_tool_renderers.py`.
-- **Step 9 (generate_projects_index_html)**: Function depends on TemplateProject/TemplateSummary classes and utility functions in renderer.py. Moving would create circular dependencies or require significant restructuring. Not pure HTML generation - mixes data preparation with rendering.
+**Steps 6-8 Resolution**:
+The original plan called for two-stage (parse + render) splits. This was achieved differently:
+- **Content models** in `models.py` capture parsed data (SessionHeaderContent, IdeNotificationContent, ReadOutput, etc.)
+- **Format-neutral processing** in `renderer.py` creates content models during message processing
+- **HTML formatters** in `html/*.py` render content models to HTML
+- **Tree-first architecture** means HtmlRenderer traverses tree and formats during pre-order walk
 
-**Completed Changes**:
-- `html_renderer.py` (352 lines): CSS class computation, markdown rendering, collapsible content, template env
-- `html_tool_renderers.py` (506 lines): 13 tool formatters moved from renderer.py
-- `renderer.py` (3219 lines): Reduced from 3853 lines, organized with 9 thematic section headers:
-  - Utility Functions, Tool Summary and Result Parsing, Content Formatters
-  - Template Classes, Message Processing Functions, Message Pairing and Hierarchy
-  - Deduplication, High-Level HTML Generation, Project Index Generation
+**Step 9 Status**:
+`generate_projects_index_html()` remains in renderer.py because:
+- Mixes format-neutral data preparation (TemplateProject/TemplateSummary) with HTML generation
+- Moving just the HTML part would require restructuring the data flow
+- Low priority: function works correctly and is ~100 lines
 
 **Dependencies**:
 - Requires Phase 9 (type safety) for clean interfaces ✅
 - Benefits from Phase 10 (parser simplification) ✅
+- Tree-first architecture (TEMPLATE_MESSAGE_CHILDREN.md Phase 2.5) ✅
 - Enables golergka's multi-format integration
 
 **Risk**: High - requires careful refactoring
-**Status**: ✅ COMPLETE (Steps 1-5, 10-11 done; Steps 6-9 deferred)
+**Status**: ✅ COMPLETE
 
 ## Recommended Execution Order
 
@@ -418,31 +422,49 @@ For maximum impact with minimum risk:
 ### Next Steps
 8. ✅ **Phase 10 (Parser)** - Simplified extract_text_content() with isinstance checks
 9. ✅ **Phase 11 (Tool Models)** - Added typed input models for 9 common tools
-10. ✅ **Phase 12 (Format Neutral)** - Complete (Steps 1-5, 10-11 done; Steps 6-9 deferred)
+10. ✅ **Phase 12 (Format Neutral)** - HTML formatters in `html/` directory, content models in models.py
+11. ✅ **Tree-first architecture** - `generate_template_messages()` returns tree roots (TEMPLATE_MESSAGE_CHILDREN.md Phase 2.5)
 
-**Tree Refactoring Integration:**
-- Tree building (TEMPLATE_MESSAGE_CHILDREN.md Phase 1-2) is complete and non-blocking
-- Template migration (Phase 3) can now leverage MessageType enum
-- golergka's text formats can be integrated using type guards
+**Current Status (December 2025):**
+- All planned phases complete
+- renderer.py reduced from 4246 to 2525 lines (41% reduction)
+- Clean separation: format-neutral in renderer.py, HTML-specific in html/ directory
+- Tree-first architecture enables future recursive template rendering
 
-**golergka Integration Timing:**
-- Phase 9 type guards available for interface clarity
-- When integrating, resolve `render_message_content()` conflicts carefully
-- Tree structure and MessageType enum benefit text renderer
+**Future Work:**
+- **Recursive templates** (TEMPLATE_MESSAGE_CHILDREN.md Phase 3): Pass tree roots directly to template with recursive macro
+- **Alternative renderers**: Text/markdown renderer using Renderer base class
+- **golergka integration**: Content models and tree structure ready for multi-format output
 
 ## Metrics to Track
 
-| Metric | Baseline (v0.9) | Current (Phase 12 done) | Target |
-|--------|-----------------|-------------------------|--------|
-| renderer.py lines | 4246 | 3219 | <3000 |
-| Largest function | ~687 lines | ~460 lines | <100 lines |
-| `_identify_message_pairs()` | ~120 lines | ~37 lines | - |
-| `extract_text_content()` | ~17 lines | ~13 lines | - |
-| Typed tool input models | 0 | 9 | - |
-| Module count | 3 (renderer, timings, models) | 7 (+ansi_colors, +renderer_code, +html_renderer, +html_tool_renderers) | 6-7 |
+| Metric | Baseline (v0.9) | Current (Dec 2025) | Target |
+|--------|-----------------|-------------------|--------|
+| renderer.py lines | 4246 | 2525 | ✅ <3000 |
+| html/ directory | - | 2389 total | - |
+| models.py lines | ~400 | 858 | - |
+| Largest function | ~687 lines | ~300 lines | <100 lines |
+| `_identify_message_pairs()` | ~120 lines | ~37 lines | ✅ |
+| Typed tool input models | 0 | 9 | ✅ |
+| Content models | 0 | 15+ | - |
+| Module count | 3 | 11 | - |
 | Test coverage | ~78% | ~78% | >85% |
 
-**Progress**: Main loop reduced by 33% (687 → 460 lines). Pairing function reduced by 69% (120 → 37 lines). MessageType enum and type guards added. Parser simplified with isinstance checks (Phase 10). 9 typed tool input models added (Phase 11). Phase 12 complete: renderer.py reduced by 634 lines (3853 → 3219), HTML utilities and tool formatters extracted to html_renderer.py (352 lines) and html_tool_renderers.py (506 lines).
+**html/ directory breakdown:**
+- renderer.py: 297 lines (HtmlRenderer)
+- tool_formatters.py: 950 lines
+- user_formatters.py: 326 lines
+- utils.py: 352 lines
+- ansi_colors.py: 261 lines
+- assistant_formatters.py: 90 lines
+- system_formatters.py: 113 lines
+
+**Progress Summary**:
+- renderer.py reduced by 41% (4246 → 2525 lines)
+- Format-neutral/HTML separation complete
+- Tree-first architecture implemented
+- Content models moved to models.py
+- HTML formatters organized by message type in html/ directory
 
 ## Quality Gates
 
@@ -463,30 +485,36 @@ Before merging any phase:
 
 ## References
 
-### Code Modules
-- [renderer.py](../claude_code_log/renderer.py) - Main rendering module (3219 lines)
-- [html_renderer.py](../claude_code_log/html_renderer.py) - HTML utilities, CSS, markdown, collapsibles (352 lines) - Phase 12
-- [html_tool_renderers.py](../claude_code_log/html_tool_renderers.py) - Tool HTML formatters (506 lines) - Phase 12
-- [ansi_colors.py](../claude_code_log/ansi_colors.py) - ANSI color conversion (261 lines) - Phase 3
-- [renderer_code.py](../claude_code_log/renderer_code.py) - Code highlighting & diffs (330 lines) - Phase 4
+### Code Modules - Format Neutral
+- [renderer.py](../claude_code_log/renderer.py) - Format-neutral rendering (2525 lines)
+- [models.py](../claude_code_log/models.py) - Content models, MessageModifiers, type guards (858 lines)
+- [renderer_code.py](../claude_code_log/renderer_code.py) - Code highlighting & diffs (330 lines)
 - [renderer_timings.py](../claude_code_log/renderer_timings.py) - Timing utilities
-- [models.py](../claude_code_log/models.py) - Pydantic models, MessageType enum, type guards - Phase 9
 - [parser.py](../claude_code_log/parser.py) - JSONL parsing
 
+### Code Modules - HTML Specific (html/ directory)
+- [html/renderer.py](../claude_code_log/html/renderer.py) - HtmlRenderer class (297 lines)
+- [html/tool_formatters.py](../claude_code_log/html/tool_formatters.py) - Tool HTML formatters (950 lines)
+- [html/user_formatters.py](../claude_code_log/html/user_formatters.py) - User message formatters (326 lines)
+- [html/assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) - Assistant/thinking formatters (90 lines)
+- [html/system_formatters.py](../claude_code_log/html/system_formatters.py) - System message formatters (113 lines)
+- [html/utils.py](../claude_code_log/html/utils.py) - Markdown, escape, collapsibles (352 lines)
+- [html/ansi_colors.py](../claude_code_log/html/ansi_colors.py) - ANSI color conversion (261 lines)
+
 ### Documentation
-- [css-classes.md](css-classes.md) - Complete CSS class reference with support status - Phase 7
-- [messages.md](messages.md) - Message types and tool documentation - Phase 7
+- [css-classes.md](css-classes.md) - Complete CSS class reference with support status
+- [messages.md](messages.md) - Message types, content models, tool documentation
 - [FOLD_STATE_DIAGRAM.md](FOLD_STATE_DIAGRAM.md) - Fold system documentation
-- [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) - Tree architecture exploration
+- [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) - Tree architecture (Phase 2.5 complete)
 
 ### Tests
 - [test/test_ansi_colors.py](../test/test_ansi_colors.py) - ANSI tests
 - [test/test_preview_truncation.py](../test/test_preview_truncation.py) - Code preview tests
 - [test/test_sidechain_agents.py](../test/test_sidechain_agents.py) - Integration tests
 - [test/test_template_data.py](../test/test_template_data.py) - Tree building tests (TestTemplateMessageTree)
-- [test/test_phase8_message_variants.py](../test/test_phase8_message_variants.py) - Phase 8: Message variants
-- [test/test_renderer.py](../test/test_renderer.py) - Phase 8: Renderer edge cases
-- [test/test_renderer_code.py](../test/test_renderer_code.py) - Phase 8: Code highlighting/diff tests
+- [test/test_phase8_message_variants.py](../test/test_phase8_message_variants.py) - Message variants
+- [test/test_renderer.py](../test/test_renderer.py) - Renderer edge cases
+- [test/test_renderer_code.py](../test/test_renderer_code.py) - Code highlighting/diff tests
 
 ### External
 - golergka's branch: `remotes/golergka/feat/text-output-format` (commit ada7ef5)
