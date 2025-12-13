@@ -10,7 +10,7 @@ Part of the thematic formatter organization:
 
 import html
 
-from ..ansi_colors import convert_ansi_to_html
+from .ansi_colors import convert_ansi_to_html
 from ..models import (
     DedupNoticeContent,
     HookSummaryContent,

@@ -39,7 +39,7 @@ from ..models import (
     ToolUseContent,
     WriteInput,
 )
-from ..ansi_colors import convert_ansi_to_html
+from .ansi_colors import convert_ansi_to_html
 from ..renderer_code import render_single_diff
 
 
