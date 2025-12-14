@@ -72,6 +72,12 @@ class TestAnsiColorConversion:
         result = convert_ansi_to_html(text)
         assert '<span class="ansi-bold">Bold</span> Normal' in result
 
+        # Test empty params reset form (ESC[m is equivalent to ESC[0m)
+        text = "\x1b[31mRed\x1b[m Normal"
+        result = convert_ansi_to_html(text)
+        assert '<span class="ansi-red">Red</span> Normal' in result
+        assert "\x1b" not in result  # No raw escape sequences
+
     def test_html_escaping(self):
         """Test that HTML special characters are escaped."""
         text = "\x1b[31m<script>alert('test')</script>\x1b[0m"

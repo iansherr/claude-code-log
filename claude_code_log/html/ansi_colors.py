@@ -68,7 +68,7 @@ def convert_ansi_to_html(text: str) -> str:
     current_rgb_fg = None
     current_rgb_bg = None
 
-    for match in re.finditer(r"\x1b\[([0-9;]+)m", text):
+    for match in re.finditer(r"\x1b\[([0-9;]*)m", text):
         # Add text before this escape code
         if match.start() > last_end:
             segments.append(
@@ -85,8 +85,11 @@ def convert_ansi_to_html(text: str) -> str:
                 }
             )
 
-        # Process escape codes
-        codes = match.group(1).split(";")
+        # Process escape codes (empty params = reset, same as code 0)
+        code_blob = match.group(1)
+        codes = code_blob.split(";") if code_blob else ["0"]
+        if codes == [""]:
+            codes = ["0"]
         i = 0
         while i < len(codes):
             code = codes[i]
