@@ -268,24 +268,33 @@ class TestSessionStarterSelection:
 class TestTextContentLength:
     """Test the text content length extraction functionality."""
 
-    def test_extract_text_content_length_string(self):
-        """Test length extraction from string content."""
-        content = "Hello world, this is a test message."
-        assert extract_text_content_length(content) == len(content)
+    def test_extract_text_content_length_single_text_item(self):
+        """Test length extraction from list with single text item."""
+        content = [
+            TextContent(type="text", text="Hello world, this is a test message.")
+        ]
+        assert extract_text_content_length(content) == len(
+            "Hello world, this is a test message."
+        )
 
-    def test_extract_text_content_length_string_with_whitespace(self):
-        """Test length extraction from string with leading/trailing whitespace."""
-        content = "   Hello world   "
+    def test_extract_text_content_length_text_with_whitespace(self):
+        """Test length extraction from text with leading/trailing whitespace."""
+        content = [TextContent(type="text", text="   Hello world   ")]
         assert extract_text_content_length(content) == len("Hello world")
 
-    def test_extract_text_content_length_empty_string(self):
-        """Test length extraction from empty string."""
-        content = ""
+    def test_extract_text_content_length_empty_list(self):
+        """Test length extraction from empty list."""
+        content: list = []
+        assert extract_text_content_length(content) == 0
+
+    def test_extract_text_content_length_empty_text(self):
+        """Test length extraction from list with empty text."""
+        content = [TextContent(type="text", text="")]
         assert extract_text_content_length(content) == 0
 
     def test_extract_text_content_length_whitespace_only(self):
-        """Test length extraction from whitespace-only string."""
-        content = "   \n\t   "
+        """Test length extraction from text with whitespace only."""
+        content = [TextContent(type="text", text="   \n\t   ")]
         assert extract_text_content_length(content) == 0
 
     def test_extract_text_content_length_list_with_text(self):
@@ -617,7 +626,9 @@ class TestWarmupOnlySessionDetection:
             userType="external",
             cwd="/test",
             version="1.0.0",
-            message=UserMessage(role="user", content=content),
+            message=UserMessage(
+                role="user", content=[TextContent(type="text", text=content)]
+            ),
             uuid=uuid,
             timestamp=timestamp,
         )
@@ -748,7 +759,9 @@ class TestGetWarmupSessionIds:
             userType="external",
             cwd="/test",
             version="1.0.0",
-            message=UserMessage(role="user", content=content),
+            message=UserMessage(
+                role="user", content=[TextContent(type="text", text=content)]
+            ),
             uuid=uuid,
             timestamp="2025-01-01T10:00:00Z",
         )

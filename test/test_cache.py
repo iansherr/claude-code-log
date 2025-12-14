@@ -22,6 +22,7 @@ from claude_code_log.models import (
     UserMessage,
     AssistantMessage,
     UsageInfo,
+    TextContent,
 )
 
 
@@ -59,7 +60,9 @@ def sample_entries():
             uuid="user1",
             timestamp="2023-01-01T10:00:00Z",
             type="user",
-            message=UserMessage(role="user", content="Hello"),
+            message=UserMessage(
+                role="user", content=[TextContent(type="text", text="Hello")]
+            ),
         ),
         AssistantTranscriptEntry(
             parentUuid=None,
@@ -219,7 +222,10 @@ class TestCacheManager:
                 uuid="user1",
                 timestamp="2023-01-01T10:00:00Z",
                 type="user",
-                message=UserMessage(role="user", content="Early message"),
+                message=UserMessage(
+                    role="user",
+                    content=[TextContent(type="text", text="Early message")],
+                ),
             ),
             UserTranscriptEntry(
                 parentUuid=None,
@@ -231,7 +237,10 @@ class TestCacheManager:
                 uuid="user2",
                 timestamp="2023-01-02T10:00:00Z",
                 type="user",
-                message=UserMessage(role="user", content="Later message"),
+                message=UserMessage(
+                    role="user",
+                    content=[TextContent(type="text", text="Later message")],
+                ),
             ),
         ]
 

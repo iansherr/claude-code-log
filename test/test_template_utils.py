@@ -70,9 +70,9 @@ class TestContentExtraction:
         result = extract_text_content(content_items)
         assert result == "Text content\nMore text"
 
-    def test_extract_text_content_from_string(self):
-        """Test extracting text content from string."""
-        content = "Simple string content"
+    def test_extract_text_content_from_single_text_item(self):
+        """Test extracting text content from list with single text item."""
+        content = [TextContent(type="text", text="Simple string content")]
         result = extract_text_content(content)
         assert result == "Simple string content"
 

@@ -164,18 +164,13 @@ def create_session_preview(text_content: str) -> str:
     return preview_content
 
 
-def extract_text_content_length(content: Union[str, List[ContentItem]]) -> int:
+def extract_text_content_length(content: List[ContentItem]) -> int:
     """Get the length of text content for quick checks without full extraction."""
-    if isinstance(content, str):
-        return len(content.strip())
-
-    # For list content, count only text items
     total_length = 0
     for item in content:
         # Only count TextContent items, skip tool/thinking/image items
         if isinstance(item, TextContent):
             total_length += len(item.text.strip())
-
     return total_length
 
 

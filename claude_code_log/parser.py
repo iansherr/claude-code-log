@@ -61,26 +61,23 @@ from .models import (
 )
 
 
-def extract_text_content(content: Union[str, List[ContentItem], None]) -> str:
+def extract_text_content(content: Optional[List[ContentItem]]) -> str:
     """Extract text content from Claude message content structure.
 
     Supports both custom models (TextContent, ThinkingContent) and official
     Anthropic SDK types (TextBlock, ThinkingBlock).
     """
-    if content is None:
+    if not content:
         return ""
-    if isinstance(content, list):
-        text_parts: List[str] = []
-        for item in content:
-            # Handle text content (custom TextContent or Anthropic TextBlock)
-            if isinstance(item, (TextContent, TextBlock)):
-                text_parts.append(item.text)
-            # Skip thinking content (custom ThinkingContent or Anthropic ThinkingBlock)
-            elif isinstance(item, (ThinkingContent, ThinkingBlock)):
-                continue
-        return "\n".join(text_parts)
-    else:
-        return str(content) if content else ""
+    text_parts: List[str] = []
+    for item in content:
+        # Handle text content (custom TextContent or Anthropic TextBlock)
+        if isinstance(item, (TextContent, TextBlock)):
+            text_parts.append(item.text)
+        # Skip thinking content (custom ThinkingContent or Anthropic ThinkingBlock)
+        elif isinstance(item, (ThinkingContent, ThinkingBlock)):
+            continue
+    return "\n".join(text_parts)
 
 
 def parse_timestamp(timestamp_str: str) -> Optional[datetime]:
@@ -843,8 +840,11 @@ def parse_content_item(item_data: Dict[str, Any]) -> ContentItem:
 def parse_message_content(
     content_data: Any,
     item_parser: Callable[[Dict[str, Any]], ContentItem] = parse_content_item,
-) -> Union[str, List[ContentItem]]:
-    """Parse message content, handling both string and list formats.
+) -> List[ContentItem]:
+    """Parse message content, normalizing to a list of ContentItems.
+
+    Always returns a list for consistent downstream handling. String content
+    is wrapped in a TextContent item.
 
     Args:
         content_data: Raw content data (string or list of items)
@@ -853,12 +853,19 @@ def parse_message_content(
             parse_assistant_content_item for type-specific parsing.
     """
     if isinstance(content_data, str):
-        return content_data
+        return [TextContent(type="text", text=content_data)]
     elif isinstance(content_data, list):
-        content_list = cast(List[Dict[str, Any]], content_data)
-        return [item_parser(item) for item in content_list]
+        content_list = cast(List[Any], content_data)
+        result: List[ContentItem] = []
+        for item in content_list:
+            if isinstance(item, dict):
+                result.append(item_parser(cast(Dict[str, Any], item)))
+            else:
+                # Non-dict items (e.g., raw strings) become TextContent
+                result.append(TextContent(type="text", text=str(item)))
+        return result
     else:
-        return str(content_data)
+        return [TextContent(type="text", text=str(content_data))]
 
 
 # =============================================================================
