@@ -10,8 +10,6 @@ Part of the thematic formatter organization:
 
 from typing import List
 
-import mistune
-
 from .ansi_colors import convert_ansi_to_html
 from ..models import (
     BashInputContent,
@@ -87,9 +85,10 @@ def format_command_output_content(content: CommandOutputContent) -> str:
         HTML string for the command output display
     """
     if content.is_markdown:
-        # Render as markdown
-        markdown_html = mistune.html(content.stdout)
-        return f"<div class='command-output-content'>{markdown_html}</div>"
+        # Render as markdown using shared renderer for GFM plugins and syntax highlighting
+        return render_markdown_collapsible(
+            content.stdout, "command-output-content", line_threshold=20
+        )
     else:
         # Convert ANSI codes to HTML for colored display
         html_content = convert_ansi_to_html(content.stdout)
