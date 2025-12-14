@@ -41,16 +41,20 @@ from .renderer import get_renderer
 def filter_messages_by_date(
     messages: List[TranscriptEntry], from_date: Optional[str], to_date: Optional[str]
 ) -> List[TranscriptEntry]:
-    """Filter messages based on date range."""
+    """Filter messages based on date range.
+
+    Date parsing is done in UTC to match transcript timestamps which are stored in UTC.
+    """
     if not from_date and not to_date:
         return messages
 
-    # Parse the date strings using dateparser
+    # Parse dates in UTC to match transcript timestamps (which are stored in UTC)
+    dateparser_settings = {"TIMEZONE": "UTC", "RETURN_AS_TIMEZONE_AWARE": False}
     from_dt = None
     to_dt = None
 
     if from_date:
-        from_dt = dateparser.parse(from_date)
+        from_dt = dateparser.parse(from_date, settings=dateparser_settings)
         if not from_dt:
             raise ValueError(f"Could not parse from-date: {from_date}")
         # If parsing relative dates like "today", start from beginning of day
@@ -58,7 +62,7 @@ def filter_messages_by_date(
             from_dt = from_dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
     if to_date:
-        to_dt = dateparser.parse(to_date)
+        to_dt = dateparser.parse(to_date, settings=dateparser_settings)
         if not to_dt:
             raise ValueError(f"Could not parse to-date: {to_date}")
         # If parsing relative dates like "today", end at end of day
