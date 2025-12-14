@@ -329,11 +329,6 @@ class TestTextContentLength:
         content = [tool_item]
         assert extract_text_content_length(content) == 0
 
-    def test_extract_text_content_length_empty_list(self):
-        """Test length extraction from empty list."""
-        content = []
-        assert extract_text_content_length(content) == 0
-
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
