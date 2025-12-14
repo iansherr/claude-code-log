@@ -138,7 +138,7 @@ def _create_pygments_plugin() -> Any:
                 # Language hint provided, use Pygments
                 lang = info.split()[0] if info else ""
                 try:
-                    lexer = get_lexer_by_name(lang, stripall=True)  # type: ignore[reportUnknownVariableType]
+                    lexer = get_lexer_by_name(lang, stripall=False)  # type: ignore[reportUnknownVariableType]
                 except ClassNotFound:
                     lexer = TextLexer()  # type: ignore[reportUnknownVariableType]
 
