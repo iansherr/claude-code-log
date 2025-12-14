@@ -739,7 +739,9 @@ class TestIncrementalJSONLUpdates:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -772,7 +774,9 @@ class TestIncrementalJSONLUpdates:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -803,7 +807,9 @@ class TestIncrementalJSONLUpdates:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -917,7 +923,9 @@ class TestCLIOutputOption:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -1104,7 +1112,9 @@ class TestIndexHTMLRegeneration:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -1157,7 +1167,9 @@ class TestErrorHandlingRealistic:
         if not project.exists():
             pytest.skip("JSSoundRecorder test data not available")
 
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if not jsonl_files:
             pytest.skip("No JSONL files available")
 
@@ -1235,7 +1247,9 @@ class TestFileDeletionScenarios:
             pytest.skip("JSSoundRecorder test data not available")
 
         # Get list of JSONL files
-        jsonl_files = list(project.glob("*.jsonl"))
+        jsonl_files = [
+            f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")
+        ]
         if len(jsonl_files) < 2:
             pytest.skip("Need multiple files for deletion test")
 

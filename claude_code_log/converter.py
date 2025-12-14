@@ -242,9 +242,9 @@ def load_transcript(
                 )
                 agent_messages_map[agent_id] = agent_messages
 
-    # Insert agent messages at their point of use
+    # Insert agent messages at their point of use (only once per agent)
     if agent_messages_map:
-        # Iterate through messages and insert agent messages after the message
+        # Iterate through messages and insert agent messages after the FIRST message
         # that references them (via UserTranscriptEntry.agentId)
         result_messages: List[TranscriptEntry] = []
         for message in messages:
@@ -254,8 +254,8 @@ def load_transcript(
             if isinstance(message, UserTranscriptEntry) and message.agentId:
                 agent_id = message.agentId
                 if agent_id in agent_messages_map:
-                    # Insert agent messages right after this message
-                    result_messages.extend(agent_messages_map[agent_id])
+                    # Insert agent messages right after this message (pop to insert only once)
+                    result_messages.extend(agent_messages_map.pop(agent_id))
 
         messages = result_messages
 
@@ -276,8 +276,11 @@ def load_directory_transcripts(
     """Load all JSONL transcript files from a directory and combine them."""
     all_messages: List[TranscriptEntry] = []
 
-    # Find all .jsonl files
-    jsonl_files = list(directory_path.glob("*.jsonl"))
+    # Find all .jsonl files, excluding agent files (they are loaded via load_transcript
+    # when a session references them via agentId)
+    jsonl_files = [
+        f for f in directory_path.glob("*.jsonl") if not f.name.startswith("agent-")
+    ]
 
     for jsonl_file in jsonl_files:
         messages = load_transcript(
@@ -512,21 +515,28 @@ def ensure_fresh_cache(
         return False
 
     # Check if cache needs updating
-    jsonl_files = list(project_dir.glob("*.jsonl"))
-    if not jsonl_files:
+    # Exclude agent files from direct check - they are loaded via session references
+    # Note: If only an agent file changes (session unchanged), cache won't detect it.
+    # This is acceptable since agent files typically change alongside their sessions.
+    session_jsonl_files = [
+        f for f in project_dir.glob("*.jsonl") if not f.name.startswith("agent-")
+    ]
+    if not session_jsonl_files:
         return False
 
     # Get cached project data
     cached_project_data = cache_manager.get_cached_project_data()
 
     # Check various invalidation conditions
-    modified_files = cache_manager.get_modified_files(jsonl_files)
+    modified_files = cache_manager.get_modified_files(session_jsonl_files)
     needs_update = (
         cached_project_data is None
         or from_date is not None
         or to_date is not None
-        or bool(modified_files)  # Files changed
-        or (cached_project_data.total_message_count == 0 and jsonl_files)  # Stale cache
+        or bool(modified_files)  # Session files changed
+        or (
+            cached_project_data.total_message_count == 0 and session_jsonl_files
+        )  # Stale cache
     )
 
     if not needs_update:
@@ -956,7 +966,12 @@ def process_projects_hierarchy(
             )
 
             # Get project info for index - use cached data if available
-            jsonl_files = list(project_dir.glob("*.jsonl"))
+            # Exclude agent files (they are loaded via session references)
+            jsonl_files = [
+                f
+                for f in project_dir.glob("*.jsonl")
+                if not f.name.startswith("agent-")
+            ]
             jsonl_count = len(jsonl_files)
             last_modified: float = (
                 max(f.stat().st_mtime for f in jsonl_files) if jsonl_files else 0.0
