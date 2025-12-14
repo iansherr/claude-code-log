@@ -737,8 +737,12 @@ pre > code {
 }
 
 .thinking-content {
-    background-color: var(--thinking-dimmed);
-    border-left: #66666688 1px solid;
+    font-style: italic;
+    font-size: 80%;
+}
+
+.thinking-content em {
+    font-style: normal;
 }
 
 .thinking-text {
