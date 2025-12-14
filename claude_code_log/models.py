@@ -11,7 +11,7 @@ from anthropic.types import Message as AnthropicMessage
 from anthropic.types import StopReason
 from anthropic.types import Usage as AnthropicUsage
 from anthropic.types.content_block import ContentBlock
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 
 class MessageType(str, Enum):
@@ -689,7 +689,9 @@ class ToolUseContent(BaseModel, MessageContent):
     id: str
     name: str
     input: Dict[str, Any]
-    _parsed_input: Optional["ToolInput"] = None  # Cached parsed input
+    _parsed_input: Optional["ToolInput"] = PrivateAttr(
+        default=None
+    )  # Cached parsed input
 
     @property
     def parsed_input(self) -> "ToolInput":
