@@ -804,6 +804,15 @@ def format_tool_result_content(
                 source = cast(Dict[str, Any], item.get("source", {}))
                 if source:
                     media_type: str = str(source.get("media_type", "image/png"))
+                    # Restrict to safe image types to prevent XSS via SVG
+                    allowed_media_types = {
+                        "image/png",
+                        "image/jpeg",
+                        "image/gif",
+                        "image/webp",
+                    }
+                    if media_type not in allowed_media_types:
+                        continue
                     data: str = str(source.get("data", ""))
                     if data:
                         data_url = f"data:{media_type};base64,{data}"
@@ -868,15 +877,21 @@ def format_tool_result_content(
 
     # Check if this looks like Bash tool output and process ANSI codes
     # Bash tool results often contain ANSI escape sequences and terminal output
-    if _looks_like_bash_output(raw_content):
-        escaped_content = convert_ansi_to_html(raw_content)
-    else:
-        escaped_content = escape_html(raw_content)
+    is_ansi = _looks_like_bash_output(raw_content)
+    full_html = (
+        convert_ansi_to_html(raw_content) if is_ansi else escape_html(raw_content)
+    )
+    # For preview, always use plain escaped text (don't truncate HTML with tags)
+    preview_html = (
+        escape_html(raw_content[:200]) + "..."
+        if len(raw_content) > 200
+        else escape_html(raw_content)
+    )
 
     # Build final HTML based on content length and presence of images
     if has_images:
         # Combine text and images
-        text_html = f"<pre>{escaped_content}</pre>" if escaped_content else ""
+        text_html = f"<pre>{full_html}</pre>" if full_html else ""
         images_html = "".join(image_html_parts)
         combined_content = f"{text_html}{images_html}"
 
@@ -895,18 +910,17 @@ def format_tool_result_content(
     else:
         # Text-only content (existing behavior)
         # For simple content, show directly without collapsible wrapper
-        if len(escaped_content) <= 200:
-            return f"<pre>{escaped_content}</pre>"
+        if len(raw_content) <= 200:
+            return f"<pre>{full_html}</pre>"
 
         # For longer content, use collapsible details but no extra wrapper
-        preview_text = escaped_content[:200] + "..."
         return f"""
     <details class="collapsible-details">
         <summary>
-            <div class="preview-content"><pre>{preview_text}</pre></div>
+            <div class="preview-content"><pre>{preview_html}</pre></div>
         </summary>
         <div class="details-content">
-            <pre>{escaped_content}</pre>
+            <pre>{full_html}</pre>
         </div>
     </details>
     """
