@@ -51,7 +51,8 @@ class TestTimelineBrowser:
         page.wait_for_selector("#timeline-container", state="attached")
 
         # Wait for vis-timeline to create its DOM elements
-        page.wait_for_selector(".vis-timeline", timeout=10000)
+        # 30s timeout handles CDN cold loads (first load per xdist worker)
+        page.wait_for_selector(".vis-timeline", timeout=30000)
 
         # Wait for timeline items to be rendered (if expected)
         if expect_items:
