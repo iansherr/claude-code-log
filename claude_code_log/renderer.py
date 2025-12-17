@@ -1797,8 +1797,10 @@ def _collect_session_info(
 
             # Get first user message content for preview
             first_user_message = ""
-            if is_user_entry(message) and should_use_as_session_starter(text_content):
-                content = extract_text_content(message.message.content)
+            if (user_entry := is_user_entry(message)) and should_use_as_session_starter(
+                text_content
+            ):
+                content = extract_text_content(user_entry.message.content)
                 first_user_message = create_session_preview(content)
 
             sessions[session_id] = {
@@ -1816,8 +1818,10 @@ def _collect_session_info(
             session_order.append(session_id)
 
         # Update first user message if this is a user message and we don't have one yet
-        elif is_user_entry(message) and not sessions[session_id]["first_user_message"]:
-            first_user_content = extract_text_content(message.message.content)
+        elif (user_entry := is_user_entry(message)) and not sessions[session_id][
+            "first_user_message"
+        ]:
+            first_user_content = extract_text_content(user_entry.message.content)
             if should_use_as_session_starter(first_user_content):
                 sessions[session_id]["first_user_message"] = create_session_preview(
                     first_user_content
@@ -1832,10 +1836,10 @@ def _collect_session_info(
 
         # Extract and accumulate token usage for assistant messages
         # Only count tokens for the first message with each requestId to avoid duplicates
-        if is_assistant_entry(message):
-            assistant_message = message.message
-            request_id = message.requestId
-            message_uuid = message.uuid
+        if assistant_entry := is_assistant_entry(message):
+            assistant_message = assistant_entry.message
+            request_id = assistant_entry.requestId
+            message_uuid = assistant_entry.uuid
 
             if (
                 assistant_message.usage
@@ -2013,9 +2017,9 @@ def _render_messages(
         # Extract token usage for assistant messages
         # Only show token usage for the first message with each requestId to avoid duplicates
         token_usage_str: Optional[str] = None
-        if is_assistant_entry(message):
-            assistant_message = message.message
-            message_uuid = message.uuid
+        if assistant_entry := is_assistant_entry(message):
+            assistant_message = assistant_entry.message
+            message_uuid = assistant_entry.uuid
 
             if assistant_message.usage and message_uuid in show_tokens_for_message:
                 # Only show token usage for messages marked as first occurrence of requestId

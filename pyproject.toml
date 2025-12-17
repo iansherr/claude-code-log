@@ -79,13 +79,6 @@ reportIncompatibleMethodOverride = true
 [tool.ruff]
 target-version = "py310"
 
-[tool.ty.rules]
-# Ignore false positives from TypeGuard not being recognized by ty
-# The is_user_entry() and is_assistant_entry() functions use TypeGuard
-# which pyright handles correctly, but ty doesn't support yet
-"possibly-missing-attribute" = "ignore"
-
-
 [tool.coverage.run]
 source = ["claude_code_log"]
 omit = ["*/tests/*", "*/test/*", "*/__pycache__/*", "*/venv/*", "*/.venv/*"]

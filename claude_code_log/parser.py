@@ -3,7 +3,7 @@
 
 import json
 import re
-from typing import Any, Callable, Optional, Union, cast, TypeGuard
+from typing import Any, Callable, Optional, Union, cast
 from datetime import datetime
 
 from anthropic.types import Message as AnthropicMessage
@@ -477,14 +477,18 @@ def is_warmup_only_session(messages: list[TranscriptEntry], session_id: str) -> 
 # =============================================================================
 
 
-def is_user_entry(entry: TranscriptEntry) -> TypeGuard[UserTranscriptEntry]:
-    """Check if entry is a user transcript entry."""
-    return entry.type == MessageType.USER
+def is_user_entry(entry: TranscriptEntry) -> UserTranscriptEntry | None:
+    """Return entry as UserTranscriptEntry if it is one, else None."""
+    if entry.type == MessageType.USER:
+        return cast(UserTranscriptEntry, entry)
+    return None
 
 
-def is_assistant_entry(entry: TranscriptEntry) -> TypeGuard[AssistantTranscriptEntry]:
-    """Check if entry is an assistant transcript entry."""
-    return entry.type == MessageType.ASSISTANT
+def is_assistant_entry(entry: TranscriptEntry) -> AssistantTranscriptEntry | None:
+    """Return entry as AssistantTranscriptEntry if it is one, else None."""
+    if entry.type == MessageType.ASSISTANT:
+        return cast(AssistantTranscriptEntry, entry)
+    return None
 
 
 # =============================================================================
