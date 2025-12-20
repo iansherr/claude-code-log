@@ -31,11 +31,9 @@ def format_assistant_text_content(
 ) -> str:
     """Format assistant text content as HTML.
 
-    When `items` is set, iterates through the content items preserving order:
+    Iterates through content.items preserving order:
     - TextContent: Rendered as markdown with collapsible support
     - ImageContent: Rendered as inline <img> tag with base64 data URL
-
-    Falls back to legacy text-only behavior when `items` is None.
 
     Args:
         content: AssistantTextContent with text/items to render
