@@ -14,12 +14,12 @@ from claude_code_log.html.user_formatters import (
 )
 from claude_code_log.html.assistant_formatters import format_assistant_text_content
 from claude_code_log.models import (
-    AssistantTextContent,
+    AssistantTextMessage,
     IdeNotificationContent,
     ImageContent,
     ImageSource,
     TextContent,
-    UserTextContent,
+    UserTextMessage,
 )
 
 
@@ -311,8 +311,8 @@ class TestParseUserMessageContent:
 
         content_model = parse_user_message_content(content_list)
 
-        # Should return UserTextContent with items
-        assert isinstance(content_model, UserTextContent)
+        # Should return UserTextMessage with items
+        assert isinstance(content_model, UserTextMessage)
         assert len(content_model.items) == 3  # IDE notification, text, image
 
         # First item should be IDE notification
@@ -349,7 +349,7 @@ class TestContentFormatters:
 
     def test_format_assistant_text_content(self):
         """Test that assistant text is formatted as markdown."""
-        content = AssistantTextContent(
+        content = AssistantTextMessage(
             items=[TextContent(type="text", text="**Bold** response")]
         )
 

@@ -2,19 +2,19 @@
 
 This module formats assistant message content types to HTML.
 Part of the thematic formatter organization:
-- system_formatters.py: SystemContent, HookSummaryContent
-- user_formatters.py: SlashCommandContent, CommandOutputContent, BashInputContent
-- assistant_formatters.py: AssistantTextContent, ThinkingContentModel, ImageContent
+- system_formatters.py: SystemMessage, HookSummaryMessage
+- user_formatters.py: SlashCommandMessage, CommandOutputMessage, BashInputMessage
+- assistant_formatters.py: AssistantTextMessage, ThinkingMessage, ImageContent
 - tool_formatters.py: tool use/result content
 
 Content models are defined in models.py, this module only handles formatting.
 """
 
 from ..models import (
-    AssistantTextContent,
+    AssistantTextMessage,
     ImageContent,
-    ThinkingContentModel,
-    UnknownContent,
+    ThinkingMessage,
+    UnknownMessage,
 )
 from .utils import escape_html, render_markdown_collapsible
 
@@ -25,7 +25,7 @@ from .utils import escape_html, render_markdown_collapsible
 
 
 def format_assistant_text_content(
-    content: AssistantTextContent,
+    content: AssistantTextMessage,
     line_threshold: int = 30,
     preview_line_count: int = 10,
 ) -> str:
@@ -36,7 +36,7 @@ def format_assistant_text_content(
     - ImageContent: Rendered as inline <img> tag with base64 data URL
 
     Args:
-        content: AssistantTextContent with text/items to render
+        content: AssistantTextMessage with text/items to render
         line_threshold: Number of lines before content becomes collapsible
         preview_line_count: Number of preview lines to show when collapsed
 
@@ -60,14 +60,14 @@ def format_assistant_text_content(
 
 
 def format_thinking_content(
-    content: ThinkingContentModel,
+    content: ThinkingMessage,
     line_threshold: int = 20,
     preview_line_count: int = 5,
 ) -> str:
     """Format thinking content as HTML.
 
     Args:
-        content: ThinkingContentModel with the thinking text
+        content: ThinkingMessage with the thinking text
         line_threshold: Number of lines before content becomes collapsible
         preview_line_count: Number of preview lines to show when collapsed
 
@@ -95,11 +95,11 @@ def format_image_content(image: ImageContent) -> str:
     return f'<img src="{data_url}" alt="Uploaded image" class="uploaded-image" />'
 
 
-def format_unknown_content(content: UnknownContent) -> str:
+def format_unknown_content(content: UnknownMessage) -> str:
     """Format unknown content type as HTML.
 
     Args:
-        content: UnknownContent with the type name
+        content: UnknownMessage with the type name
 
     Returns:
         HTML paragraph with escaped type name

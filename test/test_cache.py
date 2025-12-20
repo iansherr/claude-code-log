@@ -19,8 +19,8 @@ from claude_code_log.models import (
     UserTranscriptEntry,
     AssistantTranscriptEntry,
     SummaryTranscriptEntry,
-    UserMessage,
-    AssistantMessage,
+    UserMessageModel,
+    AssistantMessageModel,
     UsageInfo,
     TextContent,
 )
@@ -60,7 +60,7 @@ def sample_entries():
             uuid="user1",
             timestamp="2023-01-01T10:00:00Z",
             type="user",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user", content=[TextContent(type="text", text="Hello")]
             ),
         ),
@@ -74,7 +74,7 @@ def sample_entries():
             uuid="assistant1",
             timestamp="2023-01-01T10:01:00Z",
             type="assistant",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg1",
                 type="message",
                 role="assistant",
@@ -222,7 +222,7 @@ class TestCacheManager:
                 uuid="user1",
                 timestamp="2023-01-01T10:00:00Z",
                 type="user",
-                message=UserMessage(
+                message=UserMessageModel(
                     role="user",
                     content=[TextContent(type="text", text="Early message")],
                 ),
@@ -237,7 +237,7 @@ class TestCacheManager:
                 uuid="user2",
                 timestamp="2023-01-02T10:00:00Z",
                 type="user",
-                message=UserMessage(
+                message=UserMessageModel(
                     role="user",
                     content=[TextContent(type="text", text="Later message")],
                 ),

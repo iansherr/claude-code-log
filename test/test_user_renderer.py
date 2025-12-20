@@ -19,10 +19,10 @@ from claude_code_log.html.user_formatters import (
     format_user_text_model_content,
 )
 from claude_code_log.models import (
-    CompactedSummaryContent,
+    CompactedSummaryMessage,
     TextContent,
-    UserMemoryContent,
-    UserTextContent,
+    UserMemoryMessage,
+    UserTextMessage,
 )
 from claude_code_log.parser import (
     COMPACTED_SUMMARY_PREFIX,
@@ -51,7 +51,7 @@ class TestParseCompactedSummary:
         result = parse_compacted_summary(content_list)
 
         assert result is not None
-        assert isinstance(result, CompactedSummaryContent)
+        assert isinstance(result, CompactedSummaryMessage)
         assert result.summary_text == text
 
     def test_parse_compacted_summary_not_detected(self):
@@ -101,7 +101,7 @@ class TestParseUserMemory:
         result = parse_user_memory(text)
 
         assert result is not None
-        assert isinstance(result, UserMemoryContent)
+        assert isinstance(result, UserMemoryMessage)
         assert result.memory_text == "Memory content from CLAUDE.md"
 
     def test_parse_user_memory_with_surrounding_text(self):
@@ -157,7 +157,7 @@ class TestParseUserMessageContentCompacted:
         content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
-        assert isinstance(content_model, CompactedSummaryContent)
+        assert isinstance(content_model, CompactedSummaryMessage)
         assert content_model.summary_text == text
 
     def test_compacted_summary_multiple_text_items(self):
@@ -174,7 +174,7 @@ class TestParseUserMessageContentCompacted:
         content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
-        assert isinstance(content_model, CompactedSummaryContent)
+        assert isinstance(content_model, CompactedSummaryMessage)
         # All text items should be combined with double newlines
         expected = "\n\n".join([first_text, second_text, third_text])
         assert content_model.summary_text == expected
@@ -191,7 +191,7 @@ class TestParseUserMessageContentMemory:
         content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
-        assert isinstance(content_model, UserMemoryContent)
+        assert isinstance(content_model, UserMemoryMessage)
         assert content_model.memory_text == "CLAUDE.md content here"
 
 
@@ -206,7 +206,7 @@ class TestParseUserMessageContentRegular:
         content_model = parse_user_message_content(content_list)
 
         assert content_model is not None
-        assert isinstance(content_model, UserTextContent)
+        assert isinstance(content_model, UserTextMessage)
         assert len(content_model.items) == 1
         assert isinstance(content_model.items[0], TextContent)
         assert content_model.items[0].text == text
@@ -225,12 +225,12 @@ class TestParseUserMessageContentRegular:
 # =============================================================================
 
 
-class TestFormatCompactedSummaryContent:
+class TestFormatCompactedSummaryMessage:
     """Tests for format_compacted_summary_content() formatter function."""
 
     def test_format_compacted_summary_basic(self):
         """Test basic compacted summary formatting."""
-        content = CompactedSummaryContent(summary_text="Summary:\n- Point 1\n- Point 2")
+        content = CompactedSummaryMessage(summary_text="Summary:\n- Point 1\n- Point 2")
 
         html = format_compacted_summary_content(content)
 
@@ -243,7 +243,7 @@ class TestFormatCompactedSummaryContent:
         """Test that long compacted summaries are collapsible."""
         # Create long content that exceeds threshold
         long_summary = "Summary:\n" + "\n".join([f"- Point {i}" for i in range(50)])
-        content = CompactedSummaryContent(summary_text=long_summary)
+        content = CompactedSummaryMessage(summary_text=long_summary)
 
         html = format_compacted_summary_content(content)
 
@@ -257,12 +257,12 @@ class TestFormatCompactedSummaryContent:
 # =============================================================================
 
 
-class TestFormatUserMemoryContent:
+class TestFormatUserMemoryMessage:
     """Tests for format_user_memory_content() formatter function."""
 
     def test_format_user_memory_basic(self):
         """Test basic user memory formatting."""
-        content = UserMemoryContent(memory_text="CLAUDE.md content")
+        content = UserMemoryMessage(memory_text="CLAUDE.md content")
 
         html = format_user_memory_content(content)
 
@@ -272,7 +272,7 @@ class TestFormatUserMemoryContent:
 
     def test_format_user_memory_escapes_html(self):
         """Test that HTML characters are escaped."""
-        content = UserMemoryContent(memory_text="<script>alert('xss')</script>")
+        content = UserMemoryMessage(memory_text="<script>alert('xss')</script>")
 
         html = format_user_memory_content(content)
 
@@ -290,7 +290,7 @@ class TestFormatUserTextModelContent:
 
     def test_format_user_text_basic(self):
         """Test basic user text formatting."""
-        content = UserTextContent(
+        content = UserTextMessage(
             items=[TextContent(type="text", text="User question here")]
         )
 
@@ -301,7 +301,7 @@ class TestFormatUserTextModelContent:
 
     def test_format_user_text_escapes_html(self):
         """Test that HTML characters are escaped."""
-        content = UserTextContent(
+        content = UserTextMessage(
             items=[TextContent(type="text", text='Test <b>bold</b> & "quotes"')]
         )
 

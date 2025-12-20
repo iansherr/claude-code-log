@@ -23,24 +23,25 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .renderer_code import highlight_code_with_pygments, truncate_highlighted_preview
 from ..models import (
-    AssistantTextContent,
-    BashInputContent,
-    BashOutputContent,
-    CommandOutputContent,
-    CompactedSummaryContent,
-    HookSummaryContent,
+    AssistantTextMessage,
+    BashInputMessage,
+    BashOutputMessage,
+    CommandOutputMessage,
+    CompactedSummaryMessage,
+    HookSummaryMessage,
     MessageContent,
-    SessionHeaderContent,
-    SlashCommandContent,
-    SystemContent,
-    ThinkingContentModel,
-    ToolResultContentModel,
+    SessionHeaderMessage,
+    SlashCommandMessage,
+    SystemMessage,
+    ThinkingMessage,
+    ToolResultMessage,
     ToolUseContent,
-    UnknownContent,
-    UserMemoryContent,
-    UserSlashCommandContent,
-    UserSteeringContent,
-    UserTextContent,
+    ToolUseMessage,
+    UnknownMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserSteeringMessage,
+    UserTextMessage,
 )
 from ..renderer_timings import timing_stat
 
@@ -55,27 +56,28 @@ if TYPE_CHECKING:
 
 CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     # System message types
-    SystemContent: ["system"],  # level added dynamically
-    HookSummaryContent: ["system", "system-hook"],
+    SystemMessage: ["system"],  # level added dynamically
+    HookSummaryMessage: ["system", "system-hook"],
     # User message types
-    UserTextContent: ["user"],
-    UserSteeringContent: ["user", "steering"],
-    SlashCommandContent: ["user", "slash-command"],
-    UserSlashCommandContent: ["user", "slash-command"],
-    UserMemoryContent: ["user"],
-    CompactedSummaryContent: ["user", "compacted"],
-    CommandOutputContent: ["user", "command-output"],
+    UserTextMessage: ["user"],
+    UserSteeringMessage: ["user", "steering"],
+    SlashCommandMessage: ["user", "slash-command"],
+    UserSlashCommandMessage: ["user", "slash-command"],
+    UserMemoryMessage: ["user"],
+    CompactedSummaryMessage: ["user", "compacted"],
+    CommandOutputMessage: ["user", "command-output"],
     # Assistant message types
-    AssistantTextContent: ["assistant"],
+    AssistantTextMessage: ["assistant"],
     # Tool message types
     ToolUseContent: ["tool_use"],
-    ToolResultContentModel: ["tool_result"],  # error added dynamically
+    ToolUseMessage: ["tool_use"],  # Wrapper for specialized formatting
+    ToolResultMessage: ["tool_result"],  # error added dynamically
     # Other message types
-    ThinkingContentModel: ["thinking"],
-    SessionHeaderContent: ["session_header"],
-    BashInputContent: ["bash-input"],
-    BashOutputContent: ["bash-output"],
-    UnknownContent: ["unknown"],
+    ThinkingMessage: ["thinking"],
+    SessionHeaderMessage: ["session_header"],
+    BashInputMessage: ["bash-input"],
+    BashOutputMessage: ["bash-output"],
+    UnknownMessage: ["unknown"],
 }
 
 
@@ -91,9 +93,9 @@ def _get_css_classes_from_content(content: MessageContent) -> list[str]:
         if classes := CSS_CLASS_REGISTRY.get(cls):
             result = list(classes)
             # Dynamic modifiers based on content attributes
-            if isinstance(content, SystemContent):
+            if isinstance(content, SystemMessage):
                 result.append(f"system-{content.level}")
-            elif isinstance(content, ToolResultContentModel) and content.is_error:
+            elif isinstance(content, ToolResultMessage) and content.is_error:
                 result.append("error")
             return result
     return []
@@ -149,7 +151,7 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
         return "📋"
     elif msg_type == "user":
         # Command output has no emoji (neutral - can be from built-in or user command)
-        if isinstance(msg.content, CommandOutputContent):
+        if isinstance(msg.content, CommandOutputMessage):
             return ""
         return "🤷"
     elif msg_type == "bash-input":
@@ -163,7 +165,7 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
     elif msg_type == "tool_use":
         return "🛠️"
     elif msg_type == "tool_result":
-        if isinstance(msg.content, ToolResultContentModel) and msg.content.is_error:
+        if isinstance(msg.content, ToolResultMessage) and msg.content.is_error:
             return "🚨"
         return "🧰"
     elif msg_type == "thinking":

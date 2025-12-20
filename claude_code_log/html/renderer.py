@@ -6,25 +6,26 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
 
 from ..cache import get_library_version
 from ..models import (
-    AssistantTextContent,
-    BashInputContent,
-    BashOutputContent,
-    CommandOutputContent,
-    CompactedSummaryContent,
-    DedupNoticeContent,
-    HookSummaryContent,
-    SessionHeaderContent,
-    SlashCommandContent,
-    SystemContent,
-    ThinkingContentModel,
+    AssistantTextMessage,
+    BashInputMessage,
+    BashOutputMessage,
+    CommandOutputMessage,
+    CompactedSummaryMessage,
+    DedupNoticeMessage,
+    HookSummaryMessage,
+    SessionHeaderMessage,
+    SlashCommandMessage,
+    SystemMessage,
+    ThinkingMessage,
     ToolResultContent,
-    ToolResultContentModel,
+    ToolResultMessage,
     ToolUseContent,
+    ToolUseMessage,
     TranscriptEntry,
-    UnknownContent,
-    UserMemoryContent,
-    UserSlashCommandContent,
-    UserTextContent,
+    UnknownMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserTextMessage,
 )
 from ..renderer import (
     Renderer,
@@ -103,40 +104,54 @@ class HtmlRenderer(Renderer):
         """
         return {
             # System content types
-            SystemContent: format_system_content,
-            HookSummaryContent: format_hook_summary_content,
-            SessionHeaderContent: format_session_header_content,
-            DedupNoticeContent: format_dedup_notice_content,
+            SystemMessage: format_system_content,
+            HookSummaryMessage: format_hook_summary_content,
+            SessionHeaderMessage: format_session_header_content,
+            DedupNoticeMessage: format_dedup_notice_content,
             # User content types
-            SlashCommandContent: format_slash_command_content,
-            CommandOutputContent: format_command_output_content,
-            BashInputContent: format_bash_input_content,
-            BashOutputContent: format_bash_output_content,
-            CompactedSummaryContent: format_compacted_summary_content,
-            UserMemoryContent: format_user_memory_content,
-            UserSlashCommandContent: format_user_slash_command_content,
-            UserTextContent: format_user_text_model_content,
+            SlashCommandMessage: format_slash_command_content,
+            CommandOutputMessage: format_command_output_content,
+            BashInputMessage: format_bash_input_content,
+            BashOutputMessage: format_bash_output_content,
+            CompactedSummaryMessage: format_compacted_summary_content,
+            UserMemoryMessage: format_user_memory_content,
+            UserSlashCommandMessage: format_user_slash_command_content,
+            UserTextMessage: format_user_text_model_content,
             # Assistant content types
-            ThinkingContentModel: partial(format_thinking_content, line_threshold=10),
-            AssistantTextContent: format_assistant_text_content,
-            UnknownContent: format_unknown_content,
+            ThinkingMessage: partial(format_thinking_content, line_threshold=10),
+            AssistantTextMessage: format_assistant_text_content,
+            UnknownMessage: format_unknown_content,
             # Tool content types
             ToolUseContent: format_tool_use_content,
-            ToolResultContentModel: self._format_tool_result_content,
+            ToolUseMessage: self._format_tool_use_message,
+            ToolResultMessage: self._format_tool_result_content,
         }
 
-    def _format_tool_result_content(self, content: ToolResultContentModel) -> str:
-        """Format ToolResultContentModel with associated tool context."""
-        tool_result = ToolResultContent(
-            type="tool_result",
-            tool_use_id=content.tool_use_id,
-            content=content.content,
-            is_error=content.is_error,
-        )
-        return format_tool_result_content(
-            tool_result,
-            content.file_path,
+    def _format_tool_result_content(self, content: ToolResultMessage) -> str:
+        """Format ToolResultMessage with associated tool context."""
+        # output is ToolOutput (either specialized output or ToolResultContent)
+        if isinstance(content.output, ToolResultContent):
+            return format_tool_result_content(
+                content.output,
+                content.file_path,
+                content.tool_name,
+            )
+        # TODO: Handle specialized output types (ReadOutput, EditOutput)
+        # For now, fallback to string representation
+        return f"<pre>{content.output}</pre>"
+
+    def _format_tool_use_message(self, content: ToolUseMessage) -> str:
+        """Format ToolUseMessage with parsed input.
+
+        ToolUseMessage wraps the parsed input for specialized formatting.
+        Falls back to generic formatting using ToolUseContent if needed.
+        """
+        from .tool_formatters import format_tool_use_from_input
+
+        return format_tool_use_from_input(
+            content.input,
             content.tool_name,
+            content.raw_input,
         )
 
     def _flatten_preorder(

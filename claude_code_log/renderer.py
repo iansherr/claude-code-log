@@ -21,25 +21,25 @@ from .models import (
     ContentItem,
     TextContent,
     ToolResultContent,
-    ToolResultContentModel,
+    ToolResultMessage,
     ToolUseContent,
     ThinkingContent,
-    ThinkingContentModel,
+    ThinkingMessage,
     # Structured content types
-    AssistantTextContent,
-    CommandOutputContent,
-    CompactedSummaryContent,
-    DedupNoticeContent,
+    AssistantTextMessage,
+    CommandOutputMessage,
+    CompactedSummaryMessage,
+    DedupNoticeMessage,
     HookInfo,
-    HookSummaryContent,
-    SessionHeaderContent,
-    SlashCommandContent,
-    SystemContent,
-    UnknownContent,
-    UserMemoryContent,
-    UserSlashCommandContent,
-    UserSteeringContent,
-    UserTextContent,
+    HookSummaryMessage,
+    SessionHeaderMessage,
+    SlashCommandMessage,
+    SystemMessage,
+    UnknownMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserSteeringMessage,
+    UserTextMessage,
 )
 from .parser import (
     as_assistant_entry,
@@ -716,28 +716,28 @@ def _process_regular_message(
     # Handle user-specific preprocessing
     if message_type == MessageType.USER:
         # Note: sidechain user messages are skipped before reaching this function
-        # Parse user content (is_meta triggers UserSlashCommandContent creation)
+        # Parse user content (is_meta triggers UserSlashCommandMessage creation)
         content_model = parse_user_message_content(items, is_slash_command=is_meta)
 
         # Determine message_title from content type
-        if isinstance(content_model, UserSlashCommandContent):
+        if isinstance(content_model, UserSlashCommandMessage):
             message_title = "User (slash command)"
-        elif isinstance(content_model, CompactedSummaryContent):
+        elif isinstance(content_model, CompactedSummaryMessage):
             message_title = "User (compacted conversation)"
-        elif isinstance(content_model, UserMemoryContent):
+        elif isinstance(content_model, UserMemoryMessage):
             message_title = "Memory"
 
     elif message_type == MessageType.ASSISTANT:
-        # Create AssistantTextContent directly from items
+        # Create AssistantTextMessage directly from items
         # (empty text already filtered by chunk_message_content)
         if items:
-            content_model = AssistantTextContent(
+            content_model = AssistantTextMessage(
                 items=items  # type: ignore[arg-type]
             )
 
     if is_sidechain:
         # Update message title for display (only non-user types reach here)
-        if not isinstance(content_model, CompactedSummaryContent):
+        if not isinstance(content_model, CompactedSummaryMessage):
             message_title = "Sub-assistant"
 
     return is_sidechain, content_model, message_type, message_title
@@ -773,7 +773,7 @@ def _process_system_message(
             HookInfo(command=info.get("command", "unknown"))
             for info in (message.hookInfos or [])
         ]
-        content = HookSummaryContent(
+        content = HookSummaryMessage(
             has_output=bool(message.hasOutput),
             hook_errors=message.hookErrors or [],
             hook_infos=hook_infos,
@@ -785,7 +785,7 @@ def _process_system_message(
     else:
         # Create structured system content
         level = getattr(message, "level", "info")
-        content = SystemContent(level=level, text=message.content)
+        content = SystemMessage(level=level, text=message.content)
 
     # Store parent UUID for hierarchy rebuild (handled by _build_message_hierarchy)
     parent_uuid = getattr(message, "parentUuid", None)
@@ -800,7 +800,7 @@ def _process_system_message(
         ancestry=[],  # Will be assigned by _build_message_hierarchy
         uuid=message.uuid,
         parent_uuid=parent_uuid,
-        content=content,  # Level info is in SystemContent
+        content=content,  # Level info is in SystemMessage
     )
 
 
@@ -962,9 +962,11 @@ def _process_tool_result_item(
             result_file_path = tool_use_from_ctx.input["file_path"]
 
     # Create content model with rendering context
-    content_model = ToolResultContentModel(
+    # Pass the whole ToolResultContent as output (generic fallback)
+    # TODO: Parse into specialized output types (ReadOutput, EditOutput) when appropriate
+    content_model = ToolResultMessage(
         tool_use_id=tool_result.tool_use_id,
-        content=tool_result.content,
+        output=tool_result,  # ToolResultContent as ToolOutput
         is_error=tool_result.is_error or False,
         tool_name=result_tool_name,
         file_path=result_file_path,
@@ -1017,7 +1019,7 @@ def _process_thinking_item(tool_item: ContentItem) -> Optional[ToolItemResult]:
         signature = None
 
     # Create the content model (formatting happens in HtmlRenderer)
-    thinking_model = ThinkingContentModel(thinking=thinking_text, signature=signature)
+    thinking_model = ThinkingMessage(thinking=thinking_text, signature=signature)
 
     return ToolItemResult(
         message_type="thinking",
@@ -1071,7 +1073,7 @@ def _build_pairing_indices(messages: list[TemplateMessage]) -> PairingIndices:
 
         # Index slash-command user messages by parent_uuid
         if msg.parent_uuid and isinstance(
-            msg.content, (SlashCommandContent, UserSlashCommandContent)
+            msg.content, (SlashCommandMessage, UserSlashCommandMessage)
         ):
             slash_command_by_parent[msg.parent_uuid] = i
 
@@ -1106,8 +1108,8 @@ def _try_pair_adjacent(
     """
     # Slash command + command output (both are user messages)
     if isinstance(
-        current.content, (SlashCommandContent, UserSlashCommandContent)
-    ) and isinstance(next_msg.content, CommandOutputContent):
+        current.content, (SlashCommandMessage, UserSlashCommandMessage)
+    ) and isinstance(next_msg.content, CommandOutputMessage):
         _mark_pair(current, next_msg)
         return True
 
@@ -1231,7 +1233,7 @@ def _reorder_paired_messages(messages: list[TemplateMessage]) -> list[TemplateMe
             msg.is_paired
             and msg.pair_role == "pair_last"
             and msg.parent_uuid
-            and isinstance(msg.content, (SlashCommandContent, UserSlashCommandContent))
+            and isinstance(msg.content, (SlashCommandMessage, UserSlashCommandMessage))
         ):
             slash_command_pair_index[msg.parent_uuid] = i
 
@@ -1333,8 +1335,8 @@ def _get_message_hierarchy_level(msg: TemplateMessage) -> int:
         return 1
 
     # System info/warning at level 3 (tool-related, e.g., hook notifications)
-    # Get level from SystemContent if available
-    system_level = msg.content.level if isinstance(msg.content, SystemContent) else None
+    # Get level from SystemMessage if available
+    system_level = msg.content.level if isinstance(msg.content, SystemMessage) else None
     if (
         msg_type == "system"
         and system_level in ("info", "warning")
@@ -1665,7 +1667,7 @@ def _reorder_sidechain_template_messages(
                         and sidechain_text == task_result_content
                     ):
                         # Replace with note pointing to the Task result
-                        sidechain_msg.content = DedupNoticeContent(
+                        sidechain_msg.content = DedupNoticeMessage(
                             notice_text="Task summary — see result above",
                             target_uuid=message.uuid,
                             original_text=sidechain_text,
@@ -1700,7 +1702,7 @@ def _resolve_dedup_targets(messages: list[TemplateMessage]) -> None:
 
     # Resolve dedup notice targets
     for msg in messages:
-        if isinstance(msg.content, DedupNoticeContent) and msg.content.target_uuid:
+        if isinstance(msg.content, DedupNoticeMessage) and msg.content.target_uuid:
             msg.content.target_message_id = uuid_to_id.get(msg.content.target_uuid)
 
 
@@ -2017,7 +2019,7 @@ def _render_messages(
                 is_session_header=True,
                 message_id=None,
                 ancestry=[],
-                content=SessionHeaderContent(
+                content=SessionHeaderMessage(
                     title=session_title,
                     session_id=session_id,
                     summary=current_session_summary,
@@ -2113,13 +2115,13 @@ def _render_messages(
                         getattr(message, "isMeta", False),
                     )
 
-                    # Convert to UserSteeringContent for queue-operation 'remove' messages
+                    # Convert to UserSteeringMessage for queue-operation 'remove' messages
                     if (
                         isinstance(message, QueueOperationTranscriptEntry)
                         and message.operation == "remove"
-                        and isinstance(content_model, UserTextContent)
+                        and isinstance(content_model, UserTextMessage)
                     ):
-                        content_model = UserSteeringContent(items=content_model.items)
+                        content_model = UserSteeringMessage(items=content_model.items)
                         message_title = "User (steering)"
 
                 # Skip empty chunks
@@ -2139,9 +2141,9 @@ def _render_messages(
                 has_markdown = isinstance(
                     content_model,
                     (
-                        AssistantTextContent,
-                        ThinkingContentModel,
-                        CompactedSummaryContent,
+                        AssistantTextMessage,
+                        ThinkingMessage,
+                        CompactedSummaryMessage,
                     ),
                 )
 
@@ -2194,7 +2196,7 @@ def _render_messages(
                     # Handle unknown content types
                     tool_result = ToolItemResult(
                         message_type="unknown",
-                        content=UnknownContent(type_name=str(type(tool_item))),
+                        content=UnknownMessage(type_name=str(type(tool_item))),
                         message_title="Unknown Content",
                     )
 
@@ -2214,9 +2216,7 @@ def _render_messages(
                 )
 
                 # Thinking content uses markdown
-                tool_has_markdown = isinstance(
-                    tool_result.content, ThinkingContentModel
-                )
+                tool_has_markdown = isinstance(tool_result.content, ThinkingMessage)
 
                 tool_template_message = TemplateMessage(
                     message_type=tool_result.message_type,

@@ -67,7 +67,7 @@ class MessageContent:
 
 
 @dataclass
-class SystemContent(MessageContent):
+class SystemMessage(MessageContent):
     """System message with level indicator.
 
     Used for info, warning, and error system messages.
@@ -86,7 +86,7 @@ class HookInfo:
 
 
 @dataclass
-class HookSummaryContent(MessageContent):
+class HookSummaryMessage(MessageContent):
     """Hook execution summary.
 
     Used for subtype="stop_hook_summary" system messages.
@@ -105,7 +105,7 @@ class HookSummaryContent(MessageContent):
 
 
 @dataclass
-class SlashCommandContent(MessageContent):
+class SlashCommandMessage(MessageContent):
     """Content for slash command invocations (e.g., /context, /model).
 
     These are user messages containing command-name, command-args, and
@@ -118,7 +118,7 @@ class SlashCommandContent(MessageContent):
 
 
 @dataclass
-class CommandOutputContent(MessageContent):
+class CommandOutputMessage(MessageContent):
     """Content for local command output (e.g., output from /context).
 
     These are user messages containing local-command-stdout tags.
@@ -129,7 +129,7 @@ class CommandOutputContent(MessageContent):
 
 
 @dataclass
-class BashInputContent(MessageContent):
+class BashInputMessage(MessageContent):
     """Content for inline bash commands in user messages.
 
     These are user messages containing bash-input tags.
@@ -139,7 +139,7 @@ class BashInputContent(MessageContent):
 
 
 @dataclass
-class BashOutputContent(MessageContent):
+class BashOutputMessage(MessageContent):
     """Content for bash command output.
 
     These are user messages containing bash-stdout and/or bash-stderr tags.
@@ -150,22 +150,37 @@ class BashOutputContent(MessageContent):
 
 
 @dataclass
-class ToolResultContentModel(MessageContent):
-    """Content model for tool results with rendering context.
+class ToolResultMessage(MessageContent):
+    """Message for tool results with rendering context.
 
-    Wraps ToolResultContent with additional context needed for rendering,
-    such as the associated tool name and file path.
+    Wraps ToolResultContent or specialized output with additional context
+    needed for rendering, such as the associated tool name and file path.
     """
 
     tool_use_id: str
-    content: Any  # Union[str, list[dict[str, Any]]]
+    output: (
+        "ToolOutput"  # Specialized (ReadOutput, etc.) or generic (ToolResultContent)
+    )
     is_error: bool = False
     tool_name: Optional[str] = None  # Name of the tool that produced this result
     file_path: Optional[str] = None  # File path for Read/Edit/Write tools
 
 
 @dataclass
-class CompactedSummaryContent(MessageContent):
+class ToolUseMessage(MessageContent):
+    """Message for tool invocations.
+
+    Wraps ToolUseContent with the parsed input for specialized formatting.
+    """
+
+    input: "ToolInput"  # Specialized (BashInput, etc.) or raw dict
+    tool_use_id: str  # From ToolUseContent.id
+    tool_name: str  # From ToolUseContent.name
+    raw_input: Optional[dict[str, Any]] = None  # Original input dict for fallback
+
+
+@dataclass
+class CompactedSummaryMessage(MessageContent):
     """Content for compacted session summaries.
 
     These are user messages that contain previous conversation context
@@ -178,7 +193,7 @@ class CompactedSummaryContent(MessageContent):
 
 
 @dataclass
-class UserMemoryContent(MessageContent):
+class UserMemoryMessage(MessageContent):
     """Content for user memory input.
 
     These are user messages containing user-memory-input tags.
@@ -190,7 +205,7 @@ class UserMemoryContent(MessageContent):
 
 
 @dataclass
-class UserSlashCommandContent(MessageContent):
+class UserSlashCommandMessage(MessageContent):
     """Content for slash command expanded prompts (isMeta=True).
 
     These are LLM-generated instruction text from slash commands.
@@ -270,7 +285,7 @@ class ImageContent(BaseModel):
     """Image content from the Anthropic API.
 
     This represents an image within a content array, not a standalone message.
-    Images are always part of UserTextContent.items or AssistantTextContent.items.
+    Images are always part of UserTextMessage.items or AssistantTextMessage.items.
     """
 
     type: Literal["image"]
@@ -278,7 +293,7 @@ class ImageContent(BaseModel):
 
 
 @dataclass
-class UserTextContent(MessageContent):
+class UserTextMessage(MessageContent):
     """Content for user text with interleaved images and IDE notifications.
 
     The `items` field preserves the original order of content:
@@ -296,11 +311,11 @@ class UserTextContent(MessageContent):
 
 
 @dataclass
-class UserSteeringContent(UserTextContent):
+class UserSteeringMessage(UserTextMessage):
     """Content for user steering prompts (queue-operation "remove").
 
     These are user messages that steer the conversation by removing
-    items from the queue. Inherits from UserTextContent.
+    items from the queue. Inherits from UserTextMessage.
     """
 
     pass
@@ -314,7 +329,7 @@ class UserSteeringContent(UserTextContent):
 
 
 @dataclass
-class AssistantTextContent(MessageContent):
+class AssistantTextMessage(MessageContent):
     """Content for assistant text messages with interleaved images.
 
     These are the text portions of assistant messages that get
@@ -334,8 +349,8 @@ class AssistantTextContent(MessageContent):
 
 
 @dataclass
-class ThinkingContentModel(MessageContent):
-    """Content for assistant thinking/reasoning blocks.
+class ThinkingMessage(MessageContent):
+    """Message for assistant thinking/reasoning blocks.
 
     These are the <thinking> blocks that show the assistant's
     internal reasoning process.
@@ -349,7 +364,7 @@ class ThinkingContentModel(MessageContent):
 
 
 @dataclass
-class UnknownContent(MessageContent):
+class UnknownMessage(MessageContent):
     """Content for unknown/unrecognized content types.
 
     Used as a fallback when encountering content types that don't have
@@ -360,15 +375,15 @@ class UnknownContent(MessageContent):
 
 
 # =============================================================================
-# Tool Output Content Models
+# Tool Output Models
 # =============================================================================
-# Structured content models for tool results (symmetric with Tool Input Models).
-# These provide format-neutral representation of tool outputs that renderers
-# can format appropriately.
+# Typed models for tool outputs (symmetric with Tool Input Models).
+# These are data containers stored inside ToolResultMessage.output,
+# NOT standalone message types (so they don't inherit from MessageContent).
 
 
 @dataclass
-class ReadOutput(MessageContent):
+class ReadOutput:
     """Parsed Read tool output.
 
     Represents the result of reading a file with optional line range.
@@ -385,7 +400,7 @@ class ReadOutput(MessageContent):
 
 
 @dataclass
-class WriteOutput(MessageContent):
+class WriteOutput:
     """Parsed Write tool output.
 
     Symmetric with WriteInput for tool_use → tool_result pairing.
@@ -407,7 +422,7 @@ class EditDiff:
 
 
 @dataclass
-class EditOutput(MessageContent):
+class EditOutput:
     """Parsed Edit tool output.
 
     Contains diff information for file edits.
@@ -422,7 +437,7 @@ class EditOutput(MessageContent):
 
 
 @dataclass
-class BashOutput(MessageContent):
+class BashOutput:
     """Parsed Bash tool output.
 
     Symmetric with BashInput for tool_use → tool_result pairing.
@@ -438,7 +453,7 @@ class BashOutput(MessageContent):
 
 
 @dataclass
-class TaskOutput(MessageContent):
+class TaskOutput:
     """Parsed Task (sub-agent) tool output.
 
     Symmetric with TaskInput for tool_use → tool_result pairing.
@@ -452,7 +467,7 @@ class TaskOutput(MessageContent):
 
 
 @dataclass
-class GlobOutput(MessageContent):
+class GlobOutput:
     """Parsed Glob tool output.
 
     Symmetric with GlobInput for tool_use → tool_result pairing.
@@ -466,7 +481,7 @@ class GlobOutput(MessageContent):
 
 
 @dataclass
-class GrepOutput(MessageContent):
+class GrepOutput:
     """Parsed Grep tool output.
 
     Symmetric with GrepInput for tool_use → tool_result pairing.
@@ -480,6 +495,17 @@ class GrepOutput(MessageContent):
     truncated: bool
 
 
+# Union of all specialized output types + ToolResultContent as generic fallback
+# Note: Uses forward reference for ToolResultContent (defined later with ContentItem types)
+ToolOutput = Union[
+    ReadOutput,
+    EditOutput,
+    # Add more specialized output types as they're implemented:
+    # WriteOutput, BashOutput, TaskOutput, GlobOutput, GrepOutput
+    "ToolResultContent",  # Generic fallback for unparsed results
+]
+
+
 # =============================================================================
 # Renderer Content Models
 # =============================================================================
@@ -488,7 +514,7 @@ class GrepOutput(MessageContent):
 
 
 @dataclass
-class SessionHeaderContent(MessageContent):
+class SessionHeaderMessage(MessageContent):
     """Content for session headers in transcript rendering.
 
     Represents the header displayed at the start of each session
@@ -501,7 +527,7 @@ class SessionHeaderContent(MessageContent):
 
 
 @dataclass
-class DedupNoticeContent(MessageContent):
+class DedupNoticeMessage(MessageContent):
     """Content for deduplication notices.
 
     Displayed when content is deduplicated (e.g., sidechain assistant
@@ -742,13 +768,15 @@ ContentItem = Union[
 ]
 
 
-class UserMessage(BaseModel):
+class UserMessageModel(BaseModel):
     role: Literal["user"]
     content: list[ContentItem]
-    usage: Optional["UsageInfo"] = None  # For type compatibility with AssistantMessage
+    usage: Optional["UsageInfo"] = (
+        None  # For type compatibility with AssistantMessageModel
+    )
 
 
-class AssistantMessage(BaseModel):
+class AssistantMessageModel(BaseModel):
     """Assistant message model."""
 
     id: str
@@ -786,14 +814,14 @@ class BaseTranscriptEntry(BaseModel):
 
 class UserTranscriptEntry(BaseTranscriptEntry):
     type: Literal["user"]
-    message: UserMessage
+    message: UserMessageModel
     toolUseResult: Optional[ToolUseResult] = None
     agentId: Optional[str] = None  # From toolUseResult when present
 
 
 class AssistantTranscriptEntry(BaseTranscriptEntry):
     type: Literal["assistant"]
-    message: AssistantMessage
+    message: AssistantMessageModel
     requestId: Optional[str] = None
 
 

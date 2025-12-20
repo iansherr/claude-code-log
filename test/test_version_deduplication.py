@@ -4,9 +4,9 @@
 from datetime import datetime
 from claude_code_log.models import (
     AssistantTranscriptEntry,
-    AssistantMessage,
+    AssistantMessageModel,
     UserTranscriptEntry,
-    UserMessage,
+    UserMessageModel,
     ToolUseContent,
     ToolResultContent,
 )
@@ -32,7 +32,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg_duplicate",
                 type="message",
                 role="assistant",
@@ -63,7 +63,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg_duplicate",  # SAME message.id
                 type="message",
                 role="assistant",
@@ -112,7 +112,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     ToolResultContent(
@@ -134,7 +134,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     ToolResultContent(
@@ -170,7 +170,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg_full_test",
                 type="message",
                 role="assistant",
@@ -197,7 +197,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     ToolResultContent(
@@ -220,7 +220,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg_full_test",  # SAME
                 type="message",
                 role="assistant",
@@ -247,7 +247,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     ToolResultContent(
@@ -292,7 +292,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     TextContent(
@@ -318,7 +318,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     TextContent(
@@ -340,7 +340,7 @@ class TestVersionDeduplication:
             userType="external",
             cwd="/test",
             sessionId="session-test",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user",
                 content=[
                     TextContent(

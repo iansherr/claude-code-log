@@ -2,28 +2,28 @@
 
 This module formats SystemTranscriptEntry-derived content types to HTML.
 Part of the thematic formatter organization:
-- system_formatters.py: SystemContent, HookSummaryContent
-- user_formatters.py: (future) user message variants
-- assistant_formatters.py: (future) assistant message variants
-- tool_renderers.py: tool use/result content
+- system_formatters.py: SystemMessage, HookSummaryMessage
+- user_formatters.py: SlashCommandMessage, CommandOutputMessage, etc.
+- assistant_formatters.py: AssistantTextMessage, ThinkingMessage, ImageContent
+- tool_formatters.py: tool use/result content
 """
 
 import html
 
 from .ansi_colors import convert_ansi_to_html
 from ..models import (
-    DedupNoticeContent,
-    HookSummaryContent,
-    SessionHeaderContent,
-    SystemContent,
+    DedupNoticeMessage,
+    HookSummaryMessage,
+    SessionHeaderMessage,
+    SystemMessage,
 )
 
 
-def format_system_content(content: SystemContent) -> str:
+def format_system_content(content: SystemMessage) -> str:
     """Format a system message with level-specific icon.
 
     Args:
-        content: SystemContent with level and text
+        content: SystemMessage with level and text
 
     Returns:
         HTML with icon and ANSI-converted text
@@ -33,13 +33,13 @@ def format_system_content(content: SystemContent) -> str:
     return f"<strong>{level_icon}</strong> {html_content}"
 
 
-def format_hook_summary_content(content: HookSummaryContent) -> str:
+def format_hook_summary_content(content: HookSummaryMessage) -> str:
     """Format a hook summary as collapsible details.
 
     Shows a compact summary with expandable hook commands and error output.
 
     Args:
-        content: HookSummaryContent with execution details
+        content: HookSummaryMessage with execution details
 
     Returns:
         HTML with collapsible details section
@@ -79,11 +79,11 @@ def format_hook_summary_content(content: HookSummaryContent) -> str:
 </details>"""
 
 
-def format_session_header_content(content: SessionHeaderContent) -> str:
+def format_session_header_content(content: SessionHeaderMessage) -> str:
     """Format a session header as HTML.
 
     Args:
-        content: SessionHeaderContent with title, session_id, and optional summary
+        content: SessionHeaderMessage with title, session_id, and optional summary
 
     Returns:
         HTML for the session header display
@@ -92,11 +92,11 @@ def format_session_header_content(content: SessionHeaderContent) -> str:
     return escaped_title
 
 
-def format_dedup_notice_content(content: DedupNoticeContent) -> str:
+def format_dedup_notice_content(content: DedupNoticeMessage) -> str:
     """Format a deduplication notice as HTML.
 
     Args:
-        content: DedupNoticeContent with notice text and optional target link
+        content: DedupNoticeMessage with notice text and optional target link
 
     Returns:
         HTML for the dedup notice display with optional anchor link

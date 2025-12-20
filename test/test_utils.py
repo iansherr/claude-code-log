@@ -23,9 +23,9 @@ from claude_code_log.models import (
     TextContent,
     ToolUseContent,
     UserTranscriptEntry,
-    UserMessage,
+    UserMessageModel,
     AssistantTranscriptEntry,
-    AssistantMessage,
+    AssistantMessageModel,
 )
 
 
@@ -621,7 +621,7 @@ class TestWarmupOnlySessionDetection:
             userType="external",
             cwd="/test",
             version="1.0.0",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user", content=[TextContent(type="text", text=content)]
             ),
             uuid=uuid,
@@ -645,7 +645,7 @@ class TestWarmupOnlySessionDetection:
             userType="external",
             cwd="/test",
             version="1.0.0",
-            message=AssistantMessage(
+            message=AssistantMessageModel(
                 id="msg-id",
                 type="message",
                 role="assistant",
@@ -754,7 +754,7 @@ class TestGetWarmupSessionIds:
             userType="external",
             cwd="/test",
             version="1.0.0",
-            message=UserMessage(
+            message=UserMessageModel(
                 role="user", content=[TextContent(type="text", text=content)]
             ),
             uuid=uuid,

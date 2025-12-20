@@ -21,35 +21,35 @@ JSONL Parsing (parser.py)
 │
 ├── UserTranscriptEntry
 │   ├── TextContent → User message variants:
-│   │   ├── UserSlashCommandContent (isMeta) or SlashCommandContent (<command-name> tags)
-│   │   ├── CommandOutputContent (<local-command-stdout> tags)
-│   │   ├── BashInputContent (<bash-input> tags)
-│   │   ├── CompactedSummaryContent (compacted conversation)
-│   │   ├── UserSteeringContent (queue-operation "remove")
+│   │   ├── UserSlashCommandMessage (isMeta) or SlashCommandMessage (<command-name> tags)
+│   │   ├── CommandOutputMessage (<local-command-stdout> tags)
+│   │   ├── BashInputMessage (<bash-input> tags)
+│   │   ├── CompactedSummaryMessage (compacted conversation)
+│   │   ├── UserSteeringMessage (queue-operation "remove")
 │   │   └── Plain user text
-│   ├── ToolResultContent → Tool result messages:
+│   ├── ToolResultContent → ToolResultMessage with output:
 │   │   ├── ReadOutput (cat-n formatted file content)
 │   │   ├── EditOutput (cat-n formatted edit result)
-│   │   └── Generic tool result text
+│   │   └── ToolResultContent (generic fallback)
 │   └── ImageContent → Image messages
 │
 ├── AssistantTranscriptEntry
-│   ├── TextContent → AssistantTextContent
-│   ├── ThinkingContent → ThinkingContentModel
-│   └── ToolUseContent → Tool use messages with parsed inputs:
+│   ├── TextContent → AssistantTextMessage
+│   ├── ThinkingContent → ThinkingMessage
+│   └── ToolUseContent → ToolUseMessage with parsed inputs:
 │       ├── ReadInput, WriteInput, EditInput, MultiEditInput
 │       ├── BashInput, GlobInput, GrepInput
 │       ├── TaskInput, TodoWriteInput, AskUserQuestionInput
 │       └── ExitPlanModeInput
 │
 ├── SystemTranscriptEntry
-│   ├── SystemContent (level: info/warning/error)
-│   └── HookSummaryContent (subtype: stop_hook_summary)
+│   ├── SystemMessage (level: info/warning/error)
+│   └── HookSummaryMessage (subtype: stop_hook_summary)
 │
 ├── SummaryTranscriptEntry → Session metadata (not rendered)
 │
 └── QueueOperationTranscriptEntry
-    └── "remove" operation → UserSteeringContent (rendered as user)
+    └── "remove" operation → UserSteeringMessage (rendered as user)
 ```
 
 ---
@@ -99,22 +99,22 @@ CSS classes are derived from the content type using `CSS_CLASS_REGISTRY` (in `ht
 
 | css_class | Content Type | Dynamic Modifier |
 |-----------|--------------|------------------|
-| `"user"` | `UserTextContent` | — |
-| `"user compacted"` | `CompactedSummaryContent` | — |
-| `"user slash-command"` | `SlashCommandContent`, `UserSlashCommandContent` | — |
-| `"user command-output"` | `CommandOutputContent` | — |
-| `"user steering"` | `UserSteeringContent` | — |
-| `"assistant"` | `AssistantTextContent` | — |
-| `"tool_use"` | `ToolUseContent` | — |
-| `"tool_result"` | `ToolResultContentModel` | — |
-| `"tool_result error"` | `ToolResultContentModel` | `is_error=True` |
-| `"thinking"` | `ThinkingContentModel` | — |
-| `"bash-input"` | `BashInputContent` | — |
-| `"bash-output"` | `BashOutputContent` | — |
-| `"system system-info"` | `SystemContent` | `level="info"` |
-| `"system system-warning"` | `SystemContent` | `level="warning"` |
-| `"system system-error"` | `SystemContent` | `level="error"` |
-| `"system system-hook"` | `HookSummaryContent` | — |
+| `"user"` | `UserTextMessage` | — |
+| `"user compacted"` | `CompactedSummaryMessage` | — |
+| `"user slash-command"` | `SlashCommandMessage`, `UserSlashCommandMessage` | — |
+| `"user command-output"` | `CommandOutputMessage` | — |
+| `"user steering"` | `UserSteeringMessage` | — |
+| `"assistant"` | `AssistantTextMessage` | — |
+| `"tool_use"` | `ToolUseContent`, `ToolUseMessage` | — |
+| `"tool_result"` | `ToolResultMessage` | — |
+| `"tool_result error"` | `ToolResultMessage` | `is_error=True` |
+| `"thinking"` | `ThinkingMessage` | — |
+| `"bash-input"` | `BashInputMessage` | — |
+| `"bash-output"` | `BashOutputMessage` | — |
+| `"system system-info"` | `SystemMessage` | `level="info"` |
+| `"system system-warning"` | `SystemMessage` | `level="warning"` |
+| `"system system-error"` | `SystemMessage` | `level="error"` |
+| `"system system-hook"` | `HookSummaryMessage` | — |
 
 The `sidechain` modifier is added when `msg.is_sidechain=True` (a cross-cutting concern that applies to any message type).
 
@@ -158,7 +158,7 @@ Based on flags and tag patterns in `TextContent`, user text messages are classif
 ### Slash Command (isMeta)
 
 - **Condition**: `isMeta: true` flag
-- **Content Model**: `UserSlashCommandContent` (models.py)
+- **Content Model**: `UserSlashCommandMessage` (models.py)
 - **CSS Class**: `user slash-command`
 - **Files**: [user_slash_command.json](messages/user/user_slash_command.json)
 
@@ -172,7 +172,7 @@ Based on flags and tag patterns in `TextContent`, user text messages are classif
 
 ```python
 @dataclass
-class UserSlashCommandContent(MessageContent):
+class UserSlashCommandMessage(MessageContent):
     text: str  # LLM-generated markdown instruction text
 ```
 
@@ -182,13 +182,13 @@ class UserSlashCommandContent(MessageContent):
 ### Slash Command (Tags)
 
 - **Condition**: Contains `<command-name>` tags
-- **Content Model**: `SlashCommandContent` with parsed name/args/contents
+- **Content Model**: `SlashCommandMessage` with parsed name/args/contents
 - **CSS Class**: `user slash-command`
 - **Files**: [user_command.json](messages/user/user_command.json)
 
 ```python
 @dataclass
-class SlashCommandContent(MessageContent):
+class SlashCommandMessage(MessageContent):
     command_name: str      # e.g., "/model", "/context"
     command_args: str      # Arguments after command
     command_contents: str  # Content inside command
@@ -202,13 +202,13 @@ class SlashCommandContent(MessageContent):
 ### Command Output
 
 - **Condition**: Contains `<local-command-stdout>` tags
-- **Content Model**: `CommandOutputContent`
+- **Content Model**: `CommandOutputMessage`
 - **CSS Class**: `user command-output`
 - **Files**: [command_output.json](messages/user/command_output.json)
 
 ```python
 @dataclass
-class CommandOutputContent(MessageContent):
+class CommandOutputMessage(MessageContent):
     stdout: str        # Command output text
     is_markdown: bool  # True if content appears to be markdown
 ```
@@ -216,13 +216,13 @@ class CommandOutputContent(MessageContent):
 ### Bash Input
 
 - **Condition**: Contains `<bash-input>` tags
-- **Content Model**: `BashInputContent`
+- **Content Model**: `BashInputMessage`
 - **CSS Class**: `bash-input` (filtered by User)
 - **Files**: [bash_input.json](messages/user/bash_input.json)
 
 ```python
 @dataclass
-class BashInputContent(MessageContent):
+class BashInputMessage(MessageContent):
     command: str  # The bash command that was executed
 ```
 
@@ -231,34 +231,34 @@ class BashInputContent(MessageContent):
 The corresponding output uses `<bash-stdout>` and optionally `<bash-stderr>` tags:
 
 - **Condition**: Contains `<bash-stdout>` tags
-- **Content Model**: `BashOutputContent`
+- **Content Model**: `BashOutputMessage`
 - **CSS Class**: `bash-output` (filtered by User)
 - **Files**: [bash_output.json](messages/user/bash_output.json)
 
 ### Compacted Conversation
 
 - **Condition**: Contains "(compacted conversation)" marker
-- **Content Model**: `CompactedSummaryContent`
+- **Content Model**: `CompactedSummaryMessage`
 - **CSS Class**: `user compacted`
 
 ```python
 @dataclass
-class CompactedSummaryContent(MessageContent):
+class CompactedSummaryMessage(MessageContent):
     summary_text: str  # The compacted conversation summary
 ```
 
 ### User Steering (Queue Remove)
 
 - **Condition**: `QueueOperationTranscriptEntry` with `operation: "remove"`
-- **Content Model**: `UserSteeringContent` (extends `UserTextContent`)
+- **Content Model**: `UserSteeringMessage` (extends `UserTextMessage`)
 - **CSS Class**: `user steering`
 - **Title**: "User (steering)"
 
 ```python
 @dataclass
-class UserSteeringContent(UserTextContent):
-    """Content for user steering prompts (queue-operation 'remove')."""
-    pass  # Inherits items from UserTextContent
+class UserSteeringMessage(UserTextMessage):
+    """Message for user steering prompts (queue-operation 'remove')."""
+    pass  # Inherits items from UserTextMessage
 ```
 
 Steering messages represent user interrupts that cancel queued operations.
@@ -381,16 +381,23 @@ class EditOutput(MessageContent):
 
 ### Tool Result Rendering Wrapper
 
-Tool results are wrapped in `ToolResultContentModel` for rendering, which provides additional context:
+Tool results are wrapped in `ToolResultMessage` for rendering, which provides additional context and typed output:
 
 ```python
 @dataclass
-class ToolResultContentModel(MessageContent):
+class ToolResultMessage(MessageContent):
     tool_use_id: str
-    content: Any  # Union[str, List[Dict[str, Any]]]
+    output: ToolOutput  # Specialized (ReadOutput, EditOutput) or ToolResultContent
     is_error: bool = False
     tool_name: Optional[str] = None   # Name of the tool
     file_path: Optional[str] = None   # File path for Read/Edit/Write
+
+# ToolOutput is a union type for tool results
+ToolOutput = Union[
+    ReadOutput,
+    EditOutput,
+    ToolResultContent,  # Generic fallback for unparsed results
+]
 ```
 
 ## 1.4 Images (ImageContent)
@@ -440,16 +447,16 @@ Assistant messages contain `ContentItem` instances that are:
 - **ThinkingContent**: Extended thinking blocks
 - **ToolUseContent**: Tool invocations
 
-## 2.2 Assistant Text → AssistantTextContent
+## 2.2 Assistant Text → AssistantTextMessage
 
-- **Content Model**: `AssistantTextContent` (models.py)
+- **Content Model**: `AssistantTextMessage` (models.py)
 - **CSS Class**: `assistant` (or `assistant sidechain`)
 - **Files**: [assistant.json](messages/assistant/assistant.json)
 
 ```python
 @dataclass
-class AssistantTextContent(MessageContent):
-    text: str  # The assistant's response text
+class AssistantTextMessage(MessageContent):
+    items: list[TextContent | ImageContent]  # Interleaved text and images
 ```
 
 ### Sidechain Assistant
@@ -459,15 +466,15 @@ class AssistantTextContent(MessageContent):
 - **Title**: "Sub-assistant"
 - **Files**: [assistant_sidechain.json](messages/assistant/assistant_sidechain.json)
 
-## 2.3 Thinking Content → ThinkingContentModel
+## 2.3 Thinking Content → ThinkingMessage
 
-- **Content Model**: `ThinkingContentModel` (models.py)
+- **Content Model**: `ThinkingMessage` (models.py)
 - **CSS Class**: `thinking`
 - **Files**: [thinking.json](messages/assistant/thinking.json)
 
 ```python
 @dataclass
-class ThinkingContentModel(MessageContent):
+class ThinkingMessage(MessageContent):
     thinking: str              # The thinking text
     signature: Optional[str]   # Thinking block signature
 ```
@@ -481,14 +488,32 @@ class ThinkingContentModel(MessageContent):
 }
 ```
 
-## 2.4 Tool Use → ToolUseContent with Typed Inputs
+## 2.4 Tool Use → ToolUseMessage with Typed Inputs
 
-Tool invocations contain a `ToolUseContent` item with:
+Tool invocations are parsed from `ToolUseContent` (JSONL) and wrapped in `ToolUseMessage` for rendering:
+
+```python
+@dataclass
+class ToolUseMessage(MessageContent):
+    input: ToolInput  # Specialized (BashInput, etc.) or raw dict
+    tool_use_id: str  # From ToolUseContent.id
+    tool_name: str    # From ToolUseContent.name
+    raw_input: Optional[dict[str, Any]] = None  # Fallback for generic rendering
+
+# ToolInput is a union of typed input models
+ToolInput = Union[
+    BashInput, ReadInput, WriteInput, EditInput, MultiEditInput,
+    GlobInput, GrepInput, TaskInput, TodoWriteInput,
+    AskUserQuestionInput, ExitPlanModeInput,
+    dict[str, Any],  # Fallback for unknown tools
+]
+```
+
+The original `ToolUseContent` (Pydantic model) provides:
 - `name`: The tool name (e.g., "Read", "Bash", "Task")
 - `id`: Unique ID for pairing with results
 - `input`: Raw input dictionary
-
-The `parsed_input` property returns a typed input model via `parse_tool_input()`.
+- `parsed_input` property: Returns typed input model via `parse_tool_input()`
 
 ### Tool Input Models (models.py)
 
@@ -564,18 +589,18 @@ System transcript entries (`type: "system"`) convey notifications and hook summa
 ## 3.1 Content Types for System Messages
 
 System messages are parsed into structured content models in `models.py`:
-- **SystemContent**: For info/warning/error messages
-- **HookSummaryContent**: For hook execution summaries
+- **SystemMessage**: For info/warning/error messages
+- **HookSummaryMessage**: For hook execution summaries
 
-## 3.2 System Info/Warning/Error → SystemContent
+## 3.2 System Info/Warning/Error → SystemMessage
 
-- **Content Model**: `SystemContent` (models.py)
+- **Content Model**: `SystemMessage` (models.py)
 - **CSS Class**: `system system-info`, `system system-warning`, `system system-error`
 - **Files**: [system_info.json](messages/system/system_info.json)
 
 ```python
 @dataclass
-class SystemContent(MessageContent):
+class SystemMessage(MessageContent):
     level: str  # "info", "warning", "error"
     text: str   # Raw text content (may contain ANSI codes)
 ```
@@ -588,9 +613,9 @@ class SystemContent(MessageContent):
 }
 ```
 
-## 3.3 Hook Summary → HookSummaryContent
+## 3.3 Hook Summary → HookSummaryMessage
 
-- **Content Model**: `HookSummaryContent` (models.py)
+- **Content Model**: `HookSummaryMessage` (models.py)
 - **Condition**: `subtype: "stop_hook_summary"`
 - **CSS Class**: `system system-hook`
 
@@ -600,7 +625,7 @@ class HookInfo:
     command: str
 
 @dataclass
-class HookSummaryContent(MessageContent):
+class HookSummaryMessage(MessageContent):
     has_output: bool
     hook_errors: List[str]
     hook_infos: List[HookInfo]
@@ -646,26 +671,28 @@ The `leafUuid` links the summary to the last message of the session.
 
 These models are created during rendering to represent synthesized content not directly from JSONL entries.
 
-## 5.1 SessionHeaderContent
+## 5.1 SessionHeaderMessage
 
 Session headers are rendered at the start of each session:
 
 ```python
 @dataclass
-class SessionHeaderContent(MessageContent):
+class SessionHeaderMessage(MessageContent):
     title: str           # e.g., "Session 2025-12-13 10:30"
     session_id: str      # Session UUID
     summary: Optional[str] = None  # Session summary if available
 ```
 
-## 5.2 DedupNoticeContent
+## 5.2 DedupNoticeMessage
 
 Deduplication notices are shown when content is deduplicated (e.g., sidechain assistant text that duplicates the Task tool result):
 
 ```python
 @dataclass
-class DedupNoticeContent(MessageContent):
+class DedupNoticeMessage(MessageContent):
     notice_text: str  # e.g., "Content omitted (duplicates Task result)"
+    target_uuid: Optional[str] = None  # UUID of target message
+    target_message_id: Optional[str] = None  # Resolved message ID for anchor link
 ```
 
 ---
@@ -678,16 +705,33 @@ Display styling is derived from content types using `CSS_CLASS_REGISTRY` in `htm
 
 ```python
 CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
+    # System message types
+    SystemMessage: ["system"],  # level added dynamically
+    HookSummaryMessage: ["system", "system-hook"],
     # User message types
-    UserTextContent: ["user"],
-    UserSteeringContent: ["user", "steering"],
-    SlashCommandContent: ["user", "slash-command"],
-    CompactedSummaryContent: ["user", "compacted"],
-    # ... more content types
+    UserTextMessage: ["user"],
+    UserSteeringMessage: ["user", "steering"],
+    SlashCommandMessage: ["user", "slash-command"],
+    UserSlashCommandMessage: ["user", "slash-command"],
+    UserMemoryMessage: ["user"],
+    CompactedSummaryMessage: ["user", "compacted"],
+    CommandOutputMessage: ["user", "command-output"],
+    # Assistant message types
+    AssistantTextMessage: ["assistant"],
+    # Tool message types
+    ToolUseContent: ["tool_use"],
+    ToolUseMessage: ["tool_use"],
+    ToolResultMessage: ["tool_result"],  # error added dynamically
+    # Other message types
+    ThinkingMessage: ["thinking"],
+    SessionHeaderMessage: ["session_header"],
+    BashInputMessage: ["bash-input"],
+    BashOutputMessage: ["bash-output"],
+    UnknownMessage: ["unknown"],
 }
 ```
 
-The `_get_css_classes_from_content()` function walks the content type's MRO to find the matching registry entry, then adds dynamic modifiers (e.g., `system-{level}` for `SystemContent`).
+The `_get_css_classes_from_content()` function walks the content type's MRO to find the matching registry entry, then adds dynamic modifiers (e.g., `system-{level}` for `SystemMessage`).
 
 The only cross-cutting modifier is `is_sidechain`, which is stored directly on `TemplateMessage` and appended to CSS classes when true.
 

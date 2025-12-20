@@ -2,27 +2,27 @@
 
 This module formats non-tool user message content types to HTML.
 Part of the thematic formatter organization:
-- system_formatters.py: SystemContent, HookSummaryContent
-- user_formatters.py: SlashCommandContent, CommandOutputContent, etc.
-- assistant_formatters.py: (future) assistant message variants
+- system_formatters.py: SystemMessage, HookSummaryMessage
+- user_formatters.py: SlashCommandMessage, CommandOutputMessage, etc.
+- assistant_formatters.py: AssistantTextMessage, ThinkingMessage, ImageContent
 - tool_formatters.py: tool use/result content
 """
 
 from .ansi_colors import convert_ansi_to_html
 from ..models import (
-    BashInputContent,
-    BashOutputContent,
-    CommandOutputContent,
-    CompactedSummaryContent,
+    BashInputMessage,
+    BashOutputMessage,
+    CommandOutputMessage,
+    CompactedSummaryMessage,
     IdeDiagnostic,
     IdeNotificationContent,
     IdeOpenedFile,
     IdeSelection,
     ImageContent,
-    SlashCommandContent,
-    UserMemoryContent,
-    UserSlashCommandContent,
-    UserTextContent,
+    SlashCommandMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserTextMessage,
 )
 from .tool_formatters import render_params_table
 from .utils import escape_html, render_collapsible_code, render_markdown_collapsible
@@ -33,11 +33,11 @@ from .utils import escape_html, render_collapsible_code, render_markdown_collaps
 # =============================================================================
 
 
-def format_slash_command_content(content: SlashCommandContent) -> str:
+def format_slash_command_content(content: SlashCommandMessage) -> str:
     """Format slash command content as HTML.
 
     Args:
-        content: SlashCommandContent with command name, args, and contents
+        content: SlashCommandMessage with command name, args, and contents
 
     Returns:
         HTML string for the slash command display
@@ -75,11 +75,11 @@ def format_slash_command_content(content: SlashCommandContent) -> str:
     return "<br>".join(content_parts)
 
 
-def format_command_output_content(content: CommandOutputContent) -> str:
+def format_command_output_content(content: CommandOutputMessage) -> str:
     """Format command output content as HTML.
 
     Args:
-        content: CommandOutputContent with stdout and is_markdown flag
+        content: CommandOutputMessage with stdout and is_markdown flag
 
     Returns:
         HTML string for the command output display
@@ -96,11 +96,11 @@ def format_command_output_content(content: CommandOutputContent) -> str:
         return f"<pre class='command-output-content'>{html_content}</pre>"
 
 
-def format_bash_input_content(content: BashInputContent) -> str:
+def format_bash_input_content(content: BashInputMessage) -> str:
     """Format bash input content as HTML.
 
     Args:
-        content: BashInputContent with the bash command
+        content: BashInputMessage with the bash command
 
     Returns:
         HTML string for the bash input display
@@ -113,14 +113,14 @@ def format_bash_input_content(content: BashInputContent) -> str:
 
 
 def format_bash_output_content(
-    content: BashOutputContent,
+    content: BashOutputMessage,
     collapse_threshold: int = 10,
     preview_lines: int = 3,
 ) -> str:
     """Format bash output content as HTML.
 
     Args:
-        content: BashOutputContent with stdout and/or stderr
+        content: BashOutputMessage with stdout and/or stderr
         collapse_threshold: Number of lines before output becomes collapsible
         preview_lines: Number of preview lines to show when collapsed
 
@@ -191,8 +191,8 @@ def format_user_text_content(text: str) -> str:
     return f"<pre>{escaped_text}</pre>"
 
 
-def format_user_text_model_content(content: UserTextContent) -> str:
-    """Format UserTextContent model as HTML.
+def format_user_text_model_content(content: UserTextMessage) -> str:
+    """Format UserTextMessage model as HTML.
 
     Handles user text with optional IDE notifications, compacted summaries,
     memory input markers, and inline images.
@@ -202,10 +202,8 @@ def format_user_text_model_content(content: UserTextContent) -> str:
     - ImageContent: Rendered as inline <img> tag with base64 data URL
     - IdeNotificationContent: Rendered as IDE notification blocks
 
-    Falls back to legacy text-only behavior when `items` is None.
-
     Args:
-        content: UserTextContent with text/items and optional flags/notifications
+        content: UserTextMessage with text/items and optional flags/notifications
 
     Returns:
         HTML string combining all content items
@@ -229,14 +227,14 @@ def format_user_text_model_content(content: UserTextContent) -> str:
     return "\n".join(parts)
 
 
-def format_compacted_summary_content(content: CompactedSummaryContent) -> str:
+def format_compacted_summary_content(content: CompactedSummaryMessage) -> str:
     """Format compacted session summary content as HTML.
 
     Compacted summaries are rendered as collapsible markdown since they
     contain structured summary text generated by Claude.
 
     Args:
-        content: CompactedSummaryContent with summary text
+        content: CompactedSummaryMessage with summary text
 
     Returns:
         HTML string with collapsible markdown rendering
@@ -249,14 +247,14 @@ def format_compacted_summary_content(content: CompactedSummaryContent) -> str:
     )
 
 
-def format_user_memory_content(content: UserMemoryContent) -> str:
+def format_user_memory_content(content: UserMemoryMessage) -> str:
     """Format user memory input content as HTML.
 
     User memory content (from CLAUDE.md etc.) is rendered as preformatted text
     to preserve the original formatting.
 
     Args:
-        content: UserMemoryContent with memory text
+        content: UserMemoryMessage with memory text
 
     Returns:
         HTML string with escaped text in a pre tag
@@ -265,14 +263,14 @@ def format_user_memory_content(content: UserMemoryContent) -> str:
     return f"<pre>{escaped_text}</pre>"
 
 
-def format_user_slash_command_content(content: UserSlashCommandContent) -> str:
+def format_user_slash_command_content(content: UserSlashCommandMessage) -> str:
     """Format slash command expanded prompt (isMeta) as HTML.
 
     These are LLM-generated instruction text from slash commands,
     rendered as collapsible markdown.
 
     Args:
-        content: UserSlashCommandContent with markdown text
+        content: UserSlashCommandMessage with markdown text
 
     Returns:
         HTML string with collapsible markdown rendering

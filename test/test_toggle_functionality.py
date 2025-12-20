@@ -3,7 +3,7 @@
 from typing import Any, Dict, List
 from claude_code_log.models import (
     AssistantTranscriptEntry,
-    AssistantMessage,
+    AssistantMessageModel,
     UsageInfo,
 )
 from claude_code_log.parser import parse_content_item
@@ -20,8 +20,8 @@ class TestToggleFunctionality:
         # Convert raw content items to proper ContentItem objects
         parsed_content = [parse_content_item(item) for item in content_items]
 
-        # Create AssistantMessage with proper types
-        message = AssistantMessage(
+        # Create AssistantMessageModel with proper types
+        message = AssistantMessageModel(
             id="msg_001",
             type="message",
             role="assistant",

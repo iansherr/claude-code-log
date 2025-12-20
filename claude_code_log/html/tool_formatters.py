@@ -37,6 +37,7 @@ from ..models import (
     ReadOutput,
     TaskInput,
     TodoWriteInput,
+    ToolInput,
     ToolResultContent,
     ToolUseContent,
     WriteInput,
@@ -738,6 +739,61 @@ def format_tool_use_content(tool_use: ToolUseContent) -> str:
     return render_params_table(tool_use.input)
 
 
+def format_tool_use_from_input(
+    parsed_input: "ToolInput",
+    tool_name: str,
+    raw_input: Optional[dict[str, Any]] = None,
+) -> str:
+    """Format tool use from pre-parsed input.
+
+    This is the dispatcher for ToolUseMessage which already has parsed input.
+    Falls back to rendering the raw input dict if parsing was incomplete.
+
+    Args:
+        parsed_input: The parsed ToolInput (specialized type or dict fallback)
+        tool_name: Name of the tool for context
+        raw_input: Original input dict for fallback rendering
+
+    Returns:
+        HTML string for the tool use content
+    """
+    # Dispatch based on parsed type
+    if isinstance(parsed_input, TodoWriteInput):
+        return format_todowrite_content(parsed_input)
+
+    if isinstance(parsed_input, BashInput):
+        return format_bash_tool_content(parsed_input)
+
+    if isinstance(parsed_input, EditInput):
+        return format_edit_tool_content(parsed_input)
+
+    if isinstance(parsed_input, MultiEditInput):
+        return format_multiedit_tool_content(parsed_input)
+
+    if isinstance(parsed_input, WriteInput):
+        return format_write_tool_content(parsed_input)
+
+    if isinstance(parsed_input, TaskInput):
+        return format_task_tool_content(parsed_input)
+
+    if isinstance(parsed_input, ReadInput):
+        return format_read_tool_content(parsed_input)
+
+    if isinstance(parsed_input, AskUserQuestionInput):
+        return format_askuserquestion_content(parsed_input)
+
+    if isinstance(parsed_input, ExitPlanModeInput):
+        return format_exitplanmode_content(parsed_input)
+
+    # Default: render as key/value table
+    if isinstance(parsed_input, dict):
+        return render_params_table(parsed_input)
+    if raw_input is not None:
+        return render_params_table(raw_input)
+    # Last resort: string representation
+    return f"<pre>{parsed_input}</pre>"
+
+
 # -- Tool Result Content Formatter -------------------------------------------
 
 
@@ -966,6 +1022,7 @@ __all__ = [
     "render_params_table",
     # Dispatcher
     "format_tool_use_content",
+    "format_tool_use_from_input",
     # Tool result
     "format_tool_result_content",
 ]

@@ -17,14 +17,14 @@ from .models import (
     ToolResultContent,
     ImageContent,
     # User message content models
-    SlashCommandContent,
-    CommandOutputContent,
-    BashInputContent,
-    BashOutputContent,
-    CompactedSummaryContent,
-    UserMemoryContent,
-    UserSlashCommandContent,
-    UserTextContent,
+    SlashCommandMessage,
+    CommandOutputMessage,
+    BashInputMessage,
+    BashOutputMessage,
+    CompactedSummaryMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserTextMessage,
     IdeNotificationContent,
     IdeOpenedFile,
     IdeSelection,
@@ -93,14 +93,14 @@ def parse_timestamp(timestamp_str: str) -> Optional[datetime]:
 # =============================================================================
 
 
-def parse_slash_command(text: str) -> Optional[SlashCommandContent]:
+def parse_slash_command(text: str) -> Optional[SlashCommandMessage]:
     """Parse slash command tags from text.
 
     Args:
         text: Raw text that may contain command-name, command-args, command-contents tags
 
     Returns:
-        SlashCommandContent if tags found, None otherwise
+        SlashCommandMessage if tags found, None otherwise
     """
     command_name_match = re.search(r"<command-name>([^<]+)</command-name>", text)
     if not command_name_match:
@@ -130,21 +130,21 @@ def parse_slash_command(text: str) -> Optional[SlashCommandContent]:
         except json.JSONDecodeError:
             command_contents = contents_text
 
-    return SlashCommandContent(
+    return SlashCommandMessage(
         command_name=command_name,
         command_args=command_args,
         command_contents=command_contents,
     )
 
 
-def parse_command_output(text: str) -> Optional[CommandOutputContent]:
+def parse_command_output(text: str) -> Optional[CommandOutputMessage]:
     """Parse command output tags from text.
 
     Args:
         text: Raw text that may contain local-command-stdout tags
 
     Returns:
-        CommandOutputContent if tags found, None otherwise
+        CommandOutputMessage if tags found, None otherwise
     """
     stdout_match = re.search(
         r"<local-command-stdout>(.*?)</local-command-stdout>",
@@ -158,33 +158,33 @@ def parse_command_output(text: str) -> Optional[CommandOutputContent]:
     # Check if content looks like markdown (starts with markdown headers)
     is_markdown = bool(re.match(r"^#+\s+", stdout_content, re.MULTILINE))
 
-    return CommandOutputContent(stdout=stdout_content, is_markdown=is_markdown)
+    return CommandOutputMessage(stdout=stdout_content, is_markdown=is_markdown)
 
 
-def parse_bash_input(text: str) -> Optional[BashInputContent]:
+def parse_bash_input(text: str) -> Optional[BashInputMessage]:
     """Parse bash input tags from text.
 
     Args:
         text: Raw text that may contain bash-input tags
 
     Returns:
-        BashInputContent if tags found, None otherwise
+        BashInputMessage if tags found, None otherwise
     """
     bash_match = re.search(r"<bash-input>(.*?)</bash-input>", text, re.DOTALL)
     if not bash_match:
         return None
 
-    return BashInputContent(command=bash_match.group(1).strip())
+    return BashInputMessage(command=bash_match.group(1).strip())
 
 
-def parse_bash_output(text: str) -> Optional[BashOutputContent]:
+def parse_bash_output(text: str) -> Optional[BashOutputMessage]:
     """Parse bash output tags from text.
 
     Args:
         text: Raw text that may contain bash-stdout/bash-stderr tags
 
     Returns:
-        BashOutputContent if tags found, None otherwise
+        BashOutputMessage if tags found, None otherwise
     """
     stdout_match = re.search(r"<bash-stdout>(.*?)</bash-stdout>", text, re.DOTALL)
     stderr_match = re.search(r"<bash-stderr>(.*?)</bash-stderr>", text, re.DOTALL)
@@ -201,7 +201,7 @@ def parse_bash_output(text: str) -> Optional[BashOutputContent]:
     if stderr == "":
         stderr = None
 
-    return BashOutputContent(stdout=stdout, stderr=stderr)
+    return BashOutputMessage(stdout=stdout, stderr=stderr)
 
 
 # Shared regex patterns for IDE notification tags
@@ -286,20 +286,20 @@ COMPACTED_SUMMARY_PREFIX = "This session is being continued from a previous conv
 
 def parse_compacted_summary(
     content_list: list[ContentItem],
-) -> Optional[CompactedSummaryContent]:
+) -> Optional[CompactedSummaryMessage]:
     """Parse compacted session summary from content list.
 
     Compacted summaries are generated when a session runs out of context and
     needs to be continued. They contain a summary of the previous conversation.
 
     If the first text item starts with the compacted summary prefix, all text
-    items are combined into a single CompactedSummaryContent.
+    items are combined into a single CompactedSummaryMessage.
 
     Args:
         content_list: List of ContentItem from user message
 
     Returns:
-        CompactedSummaryContent if first text is a compacted summary, None otherwise
+        CompactedSummaryMessage if first text is a compacted summary, None otherwise
     """
     if not content_list or not hasattr(content_list[0], "text"):
         return None
@@ -315,7 +315,7 @@ def parse_compacted_summary(
         [item.text for item in content_list if hasattr(item, "text")],  # type: ignore[union-attr]
     )
     all_text = "\n\n".join(texts)
-    return CompactedSummaryContent(summary_text=all_text)
+    return CompactedSummaryMessage(summary_text=all_text)
 
 
 # Pattern for user memory input tag
@@ -324,7 +324,7 @@ USER_MEMORY_PATTERN = re.compile(
 )
 
 
-def parse_user_memory(text: str) -> Optional[UserMemoryContent]:
+def parse_user_memory(text: str) -> Optional[UserMemoryMessage]:
     """Parse user memory input tag from text.
 
     User memory input contains context that the user has provided from
@@ -334,18 +334,18 @@ def parse_user_memory(text: str) -> Optional[UserMemoryContent]:
         text: Raw text that may contain user memory input tag
 
     Returns:
-        UserMemoryContent if tag found, None otherwise
+        UserMemoryMessage if tag found, None otherwise
     """
     match = USER_MEMORY_PATTERN.search(text)
     if match:
         memory_content = match.group(1).strip()
-        return UserMemoryContent(memory_text=memory_content)
+        return UserMemoryMessage(memory_text=memory_content)
     return None
 
 
 # Type alias for content models returned by parse_user_message_content
 UserMessageContent = Union[
-    CompactedSummaryContent, UserMemoryContent, UserSlashCommandContent, UserTextContent
+    CompactedSummaryMessage, UserMemoryMessage, UserSlashCommandMessage, UserTextMessage
 ]
 
 
@@ -357,10 +357,10 @@ def parse_user_message_content(
 
     Returns a content model for HtmlRenderer to format. The caller can use
     isinstance() checks to determine the content type:
-    - UserSlashCommandContent: Slash command expanded prompts (isMeta=True)
-    - CompactedSummaryContent: Session continuation summaries
-    - UserMemoryContent: User memory input from CLAUDE.md
-    - UserTextContent: Normal user text with optional IDE notifications and images
+    - UserSlashCommandMessage: Slash command expanded prompts (isMeta=True)
+    - CompactedSummaryMessage: Session continuation summaries
+    - UserMemoryMessage: User memory input from CLAUDE.md
+    - UserTextMessage: Normal user text with optional IDE notifications and images
 
     This function processes content items preserving their original order:
     - TextContent items have IDE notifications extracted, producing
@@ -382,7 +382,7 @@ def parse_user_message_content(
         all_text = "\n\n".join(
             getattr(item, "text", "") for item in content_list if hasattr(item, "text")
         )
-        return UserSlashCommandContent(text=all_text) if all_text else None
+        return UserSlashCommandMessage(text=all_text) if all_text else None
 
     # Get first text item for special case detection
     first_text_item = next(
@@ -427,8 +427,8 @@ def parse_user_message_content(
             # Anthropic ImageContent - convert to our model
             items.append(ImageContent.model_validate(item.model_dump()))  # type: ignore[union-attr]
 
-    # Return UserTextContent with items list
-    return UserTextContent(items=items)
+    # Return UserTextMessage with items list
+    return UserTextMessage(items=items)
 
 
 # =============================================================================
