@@ -37,6 +37,7 @@ from ..models import (
     ReadOutput,
     TaskInput,
     TodoWriteInput,
+    ToolInput,
     ToolResultContent,
     ToolUseContent,
     ToolUseMessage,
@@ -550,14 +551,15 @@ def format_task_tool_content(task_input: TaskInput) -> str:
 # -- Tool Summary and Title ---------------------------------------------------
 
 
-def get_tool_summary(tool_use: ToolUseContent) -> Optional[str]:
-    """Extract a one-line summary from tool parameters for display in header.
+def get_tool_summary(parsed: Optional[ToolInput]) -> Optional[str]:
+    """Extract a one-line summary from parsed tool input for display in header.
 
     Returns a brief description or filename that can be shown in the message header
-    to save vertical space. Uses parsed_input for type-safe access.
-    """
-    parsed = tool_use.parsed_input
+    to save vertical space.
 
+    Args:
+        parsed: Parsed tool input, or None if parsing failed/not available
+    """
     if isinstance(parsed, BashInput):
         return parsed.description
 
@@ -567,22 +569,25 @@ def get_tool_summary(tool_use: ToolUseContent) -> Optional[str]:
     if isinstance(parsed, TaskInput):
         return parsed.description if parsed.description else None
 
-    # No summary for other tools
+    # No summary for other tools or unparsed input
     return None
 
 
-def format_tool_use_title(tool_use: ToolUseContent) -> str:
+def format_tool_use_title(tool_name: str, parsed: Optional[ToolInput]) -> str:
     """Generate the title HTML for a tool use message.
 
     Returns HTML string for the message header, with tool name, icon,
-    and optional summary/metadata. Uses parsed_input for type-safe access.
+    and optional summary/metadata.
+
+    Args:
+        tool_name: The tool name (e.g., "Bash", "Read", "Edit")
+        parsed: Parsed tool input, or None if parsing failed/not available
     """
-    escaped_name = escape_html(tool_use.name)
-    parsed = tool_use.parsed_input
-    summary = get_tool_summary(tool_use)
+    escaped_name = escape_html(tool_name)
+    summary = get_tool_summary(parsed)
 
     # TodoWrite: fixed title
-    if tool_use.name == "TodoWrite":
+    if tool_name == "TodoWrite":
         return "📝 Todo List"
 
     # Task: show subagent_type and description

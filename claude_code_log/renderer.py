@@ -72,7 +72,7 @@ from .html import (
     parse_command_output,
     parse_slash_command,
 )
-from .parser import parse_user_message_content
+from .parser import parse_tool_input, parse_user_message_content
 
 
 # -- Content Formatters -------------------------------------------------------
@@ -889,8 +889,11 @@ def _process_tool_use_item(
     else:
         tool_use = tool_item
 
+    # Parse tool input once, use for both title and message content
+    parsed = parse_tool_input(tool_use.name, tool_use.input)
+
     # Title is computed here but content formatting happens in HtmlRenderer
-    tool_message_title = format_tool_use_title(tool_use)
+    tool_message_title = format_tool_use_title(tool_use.name, parsed)
     escaped_id = escape_html(tool_use.id)
     item_tool_use_id = tool_use.id
     tool_title_hint = f"ID: {escaped_id}"
@@ -900,7 +903,6 @@ def _process_tool_use_item(
 
     # Create ToolUseMessage wrapper with parsed input for specialized formatting
     # Use ToolUseContent as fallback when no specialized parser exists
-    parsed = tool_use.parsed_input
     tool_use_message = ToolUseMessage(
         input=parsed if parsed is not None else tool_use,
         tool_use_id=tool_use.id,
