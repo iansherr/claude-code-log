@@ -23,6 +23,7 @@ from .models import (
     ToolResultContent,
     ToolResultMessage,
     ToolUseContent,
+    ToolUseMessage,
     ThinkingContent,
     ThinkingMessage,
     # Structured content types
@@ -916,10 +917,18 @@ def _process_tool_use_item(
     # Populate tool_use_context for later use when processing tool results
     tool_use_context[item_tool_use_id] = tool_use
 
+    # Create ToolUseMessage wrapper with parsed input for specialized formatting
+    tool_use_message = ToolUseMessage(
+        input=tool_use.parsed_input,
+        tool_use_id=tool_use.id,
+        tool_name=tool_use.name,
+        raw_input=tool_use.input if isinstance(tool_use.input, dict) else None,
+    )
+
     return ToolItemResult(
         message_type="tool_use",
         message_title=tool_message_title,
-        content=tool_use,  # ToolUseContent is the model
+        content=tool_use_message,
         tool_use_id=item_tool_use_id,
         title_hint=tool_title_hint,
     )

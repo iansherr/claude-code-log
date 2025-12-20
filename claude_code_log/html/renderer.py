@@ -19,7 +19,6 @@ from ..models import (
     ThinkingMessage,
     ToolResultContent,
     ToolResultMessage,
-    ToolUseContent,
     ToolUseMessage,
     TranscriptEntry,
     UnknownMessage,
@@ -56,7 +55,7 @@ from .assistant_formatters import (
     format_thinking_content,
     format_unknown_content,
 )
-from .tool_formatters import format_tool_result_content, format_tool_use_content
+from .tool_formatters import format_tool_result_content
 from .utils import css_class_from_message, get_message_emoji, get_template_environment
 
 if TYPE_CHECKING:
@@ -122,7 +121,6 @@ class HtmlRenderer(Renderer):
             AssistantTextMessage: format_assistant_text_content,
             UnknownMessage: format_unknown_content,
             # Tool content types
-            ToolUseContent: format_tool_use_content,
             ToolUseMessage: self._format_tool_use_message,
             ToolResultMessage: self._format_tool_result_content,
         }

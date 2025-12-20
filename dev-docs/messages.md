@@ -864,9 +864,9 @@ Sub-agent messages (from `Task` tool):
 - [models.py](../claude_code_log/models.py) - Pydantic models for transcript data
 - [renderer.py](../claude_code_log/renderer.py) - Main rendering module
 - [html/](../claude_code_log/html/) - HTML-specific formatters (formatting only, content models in models.py)
-  - [system_formatters.py](../claude_code_log/html/system_formatters.py) - SystemContent, HookSummaryContent formatting
+  - [system_formatters.py](../claude_code_log/html/system_formatters.py) - SystemMessage, HookSummaryMessage formatting
   - [user_formatters.py](../claude_code_log/html/user_formatters.py) - User message formatting
-  - [assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) - AssistantText, Thinking, Image formatting
+  - [assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) - AssistantTextMessage, ThinkingMessage, ImageContent formatting
   - [tool_formatters.py](../claude_code_log/html/tool_formatters.py) - Tool use/result formatting
 - [parser.py](../claude_code_log/parser.py) - JSONL parsing module
 - [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) - Tree architecture exploration

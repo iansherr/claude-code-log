@@ -35,7 +35,6 @@ from ..models import (
     SystemMessage,
     ThinkingMessage,
     ToolResultMessage,
-    ToolUseContent,
     ToolUseMessage,
     UnknownMessage,
     UserMemoryMessage,
@@ -69,8 +68,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     # Assistant message types
     AssistantTextMessage: ["assistant"],
     # Tool message types
-    ToolUseContent: ["tool_use"],
-    ToolUseMessage: ["tool_use"],  # Wrapper for specialized formatting
+    ToolUseMessage: ["tool_use"],
     ToolResultMessage: ["tool_result"],  # error added dynamically
     # Other message types
     ThinkingMessage: ["thinking"],
