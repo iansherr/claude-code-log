@@ -10,6 +10,27 @@ from .system_factory import (
     # System message creation
     create_system_message,
 )
+from .user_factory import (
+    # User message type detection
+    is_bash_input,
+    is_bash_output,
+    is_command_message,
+    is_local_command_output,
+    # User message creation
+    create_bash_input_message,
+    create_bash_output_message,
+    create_command_output_message,
+    create_compacted_summary_message,
+    create_ide_notification_content,
+    create_slash_command_message,
+    create_user_memory_message,
+    create_user_message,
+    # Patterns and constants
+    COMPACTED_SUMMARY_PREFIX,
+    IDE_DIAGNOSTICS_PATTERN,
+    IDE_OPENED_FILE_PATTERN,
+    IDE_SELECTION_PATTERN,
+)
 from .transcript_factory import (
     # Content type constants
     ASSISTANT_CONTENT_TYPES,
@@ -46,4 +67,23 @@ __all__ = [
     "is_system_message",
     # System message creation
     "create_system_message",
+    # User message type detection
+    "is_bash_input",
+    "is_bash_output",
+    "is_command_message",
+    "is_local_command_output",
+    # User message creation
+    "create_bash_input_message",
+    "create_bash_output_message",
+    "create_command_output_message",
+    "create_compacted_summary_message",
+    "create_ide_notification_content",
+    "create_slash_command_message",
+    "create_user_memory_message",
+    "create_user_message",
+    # Patterns and constants
+    "COMPACTED_SUMMARY_PREFIX",
+    "IDE_DIAGNOSTICS_PATTERN",
+    "IDE_OPENED_FILE_PATTERN",
+    "IDE_SELECTION_PATTERN",
 ]

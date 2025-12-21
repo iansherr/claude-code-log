@@ -1,6 +1,6 @@
-"""Parser for user transcript entries.
+"""Factory for user transcript entries.
 
-This module handles parsing of UserTranscriptEntry content into MessageContent subclasses:
+This module handles creation of MessageContent from user transcript entries:
 - SlashCommandMessage: Slash command invocations
 - CommandOutputMessage: Local command output
 - BashInputMessage: Bash command input
@@ -10,13 +10,19 @@ This module handles parsing of UserTranscriptEntry content into MessageContent s
 - CompactedSummaryMessage: Compacted conversation summaries
 - UserMemoryMessage: User memory content
 - UserSteeringMessage: User steering prompts (queue-operation 'remove')
+
+Also provides:
+- is_command_message: Check if text is a slash command
+- is_local_command_output: Check if text is local command output
+- is_bash_input: Check if text is bash input
+- is_bash_output: Check if text is bash output
 """
 
 import json
 import re
 from typing import Any, Optional, Union, cast
 
-from .models import (
+from ..models import (
     BashInputMessage,
     BashOutputMessage,
     CommandOutputMessage,
@@ -27,6 +33,7 @@ from .models import (
     IdeOpenedFile,
     IdeSelection,
     ImageContent,
+    MessageMeta,
     SlashCommandMessage,
     TextContent,
     UserMemoryMessage,
@@ -61,15 +68,19 @@ def is_bash_output(text_content: str) -> bool:
 
 
 # =============================================================================
-# Slash Command Parsing
+# Slash Command Creation
 # =============================================================================
 
 
-def parse_slash_command(text: str) -> Optional[SlashCommandMessage]:
-    """Parse slash command tags from text.
+def create_slash_command_message(
+    text: str,
+    meta: Optional[MessageMeta] = None,
+) -> Optional[SlashCommandMessage]:
+    """Create SlashCommandMessage from text containing command tags.
 
     Args:
         text: Raw text that may contain command-name, command-args, command-contents tags
+        meta: Message metadata
 
     Returns:
         SlashCommandMessage if tags found, None otherwise
@@ -106,14 +117,19 @@ def parse_slash_command(text: str) -> Optional[SlashCommandMessage]:
         command_name=command_name,
         command_args=command_args,
         command_contents=command_contents,
+        meta=meta,
     )
 
 
-def parse_command_output(text: str) -> Optional[CommandOutputMessage]:
-    """Parse command output tags from text.
+def create_command_output_message(
+    text: str,
+    meta: Optional[MessageMeta] = None,
+) -> Optional[CommandOutputMessage]:
+    """Create CommandOutputMessage from text containing local-command-stdout tags.
 
     Args:
         text: Raw text that may contain local-command-stdout tags
+        meta: Message metadata
 
     Returns:
         CommandOutputMessage if tags found, None otherwise
@@ -130,19 +146,25 @@ def parse_command_output(text: str) -> Optional[CommandOutputMessage]:
     # Check if content looks like markdown (starts with markdown headers)
     is_markdown = bool(re.match(r"^#+\s+", stdout_content, re.MULTILINE))
 
-    return CommandOutputMessage(stdout=stdout_content, is_markdown=is_markdown)
+    return CommandOutputMessage(
+        stdout=stdout_content, is_markdown=is_markdown, meta=meta
+    )
 
 
 # =============================================================================
-# Bash Input/Output Parsing
+# Bash Input/Output Creation
 # =============================================================================
 
 
-def parse_bash_input(text: str) -> Optional[BashInputMessage]:
-    """Parse bash input tags from text.
+def create_bash_input_message(
+    text: str,
+    meta: Optional[MessageMeta] = None,
+) -> Optional[BashInputMessage]:
+    """Create BashInputMessage from text containing bash-input tags.
 
     Args:
         text: Raw text that may contain bash-input tags
+        meta: Message metadata
 
     Returns:
         BashInputMessage if tags found, None otherwise
@@ -151,14 +173,18 @@ def parse_bash_input(text: str) -> Optional[BashInputMessage]:
     if not bash_match:
         return None
 
-    return BashInputMessage(command=bash_match.group(1).strip())
+    return BashInputMessage(command=bash_match.group(1).strip(), meta=meta)
 
 
-def parse_bash_output(text: str) -> Optional[BashOutputMessage]:
-    """Parse bash output tags from text.
+def create_bash_output_message(
+    text: str,
+    meta: Optional[MessageMeta] = None,
+) -> Optional[BashOutputMessage]:
+    """Create BashOutputMessage from text containing bash-stdout/bash-stderr tags.
 
     Args:
         text: Raw text that may contain bash-stdout/bash-stderr tags
+        meta: Message metadata
 
     Returns:
         BashOutputMessage if tags found, None otherwise
@@ -178,11 +204,11 @@ def parse_bash_output(text: str) -> Optional[BashOutputMessage]:
     if stderr == "":
         stderr = None
 
-    return BashOutputMessage(stdout=stdout, stderr=stderr)
+    return BashOutputMessage(stdout=stdout, stderr=stderr, meta=meta)
 
 
 # =============================================================================
-# IDE Notification Parsing
+# IDE Notification Creation
 # =============================================================================
 
 # Shared regex patterns for IDE notification tags
@@ -196,8 +222,8 @@ IDE_DIAGNOSTICS_PATTERN = re.compile(
 )
 
 
-def parse_ide_notifications(text: str) -> Optional[IdeNotificationContent]:
-    """Parse IDE notification tags from text.
+def create_ide_notification_content(text: str) -> Optional[IdeNotificationContent]:
+    """Create IdeNotificationContent from text containing IDE tags.
 
     Handles:
     - <ide_opened_file>: Simple file open notifications
@@ -262,17 +288,18 @@ def parse_ide_notifications(text: str) -> Optional[IdeNotificationContent]:
 
 
 # =============================================================================
-# Compacted Summary and User Memory Parsing
+# Compacted Summary and User Memory Creation
 # =============================================================================
 
 # Pattern for compacted session summary detection
 COMPACTED_SUMMARY_PREFIX = "This session is being continued from a previous conversation that ran out of context"
 
 
-def parse_compacted_summary(
+def create_compacted_summary_message(
     content_list: list[ContentItem],
+    meta: Optional[MessageMeta] = None,
 ) -> Optional[CompactedSummaryMessage]:
-    """Parse compacted session summary from content list.
+    """Create CompactedSummaryMessage from content list.
 
     Compacted summaries are generated when a session runs out of context and
     needs to be continued. They contain a summary of the previous conversation.
@@ -282,6 +309,7 @@ def parse_compacted_summary(
 
     Args:
         content_list: List of ContentItem from user message
+        meta: Message metadata
 
     Returns:
         CompactedSummaryMessage if first text is a compacted summary, None otherwise
@@ -300,7 +328,7 @@ def parse_compacted_summary(
         [item.text for item in content_list if hasattr(item, "text")],  # type: ignore[union-attr]
     )
     all_text = "\n\n".join(texts)
-    return CompactedSummaryMessage(summary_text=all_text)
+    return CompactedSummaryMessage(summary_text=all_text, meta=meta)
 
 
 # Pattern for user memory input tag
@@ -309,14 +337,18 @@ USER_MEMORY_PATTERN = re.compile(
 )
 
 
-def parse_user_memory(text: str) -> Optional[UserMemoryMessage]:
-    """Parse user memory input tag from text.
+def create_user_memory_message(
+    text: str,
+    meta: Optional[MessageMeta] = None,
+) -> Optional[UserMemoryMessage]:
+    """Create UserMemoryMessage from text containing user-memory-input tag.
 
     User memory input contains context that the user has provided from
     their CLAUDE.md or other memory sources.
 
     Args:
         text: Raw text that may contain user memory input tag
+        meta: Message metadata
 
     Returns:
         UserMemoryMessage if tag found, None otherwise
@@ -324,41 +356,51 @@ def parse_user_memory(text: str) -> Optional[UserMemoryMessage]:
     match = USER_MEMORY_PATTERN.search(text)
     if match:
         memory_content = match.group(1).strip()
-        return UserMemoryMessage(memory_text=memory_content)
+        return UserMemoryMessage(memory_text=memory_content, meta=meta)
     return None
 
 
 # =============================================================================
-# User Message Content Parsing
+# User Message Content Creation
 # =============================================================================
 
-# Type alias for content models returned by parse_user_message_content
+# Type alias for content models returned by create_user_message
 UserMessageContent = Union[
-    CompactedSummaryMessage, UserMemoryMessage, UserSlashCommandMessage, UserTextMessage
+    SlashCommandMessage,
+    CommandOutputMessage,
+    BashInputMessage,
+    BashOutputMessage,
+    CompactedSummaryMessage,
+    UserMemoryMessage,
+    UserSlashCommandMessage,
+    UserTextMessage,
 ]
 
 
-def parse_user_message_content(
+def create_user_message(
     content_list: list[ContentItem],
+    text_content: str,
     is_slash_command: bool = False,
+    meta: Optional[MessageMeta] = None,
 ) -> Optional[UserMessageContent]:
-    """Parse user message content into a structured content model.
+    """Create a user message content model from content items.
 
-    Returns a content model for HtmlRenderer to format. The caller can use
-    isinstance() checks to determine the content type:
-    - UserSlashCommandMessage: Slash command expanded prompts (isMeta=True)
-    - CompactedSummaryMessage: Session continuation summaries
-    - UserMemoryMessage: User memory input from CLAUDE.md
-    - UserTextMessage: Normal user text with optional IDE notifications and images
-
-    This function processes content items preserving their original order:
-    - TextContent items have IDE notifications extracted, producing
-      [IdeNotificationContent, TextContent] pairs
-    - ImageContent items are preserved as-is
+    This is the main entry point for creating user message content.
+    It handles all user message types by detecting patterns in the text:
+    - Slash commands (<command-name>, <command-message>)
+    - Local command output (<local-command-stdout>)
+    - Bash input (<bash-input>)
+    - Bash output (<bash-stdout>, <bash-stderr>)
+    - Compacted summaries (special prefix)
+    - User memory (<user-memory-input>)
+    - Slash command expanded prompts (isMeta=True)
+    - Regular user text with IDE notifications
 
     Args:
         content_list: List of ContentItem from user message
+        text_content: Pre-extracted text content for pattern detection
         is_slash_command: True for slash command expanded prompts (isMeta=True)
+        meta: Message metadata
 
     Returns:
         A content model, or None if content_list is empty.
@@ -366,12 +408,25 @@ def parse_user_message_content(
     if not content_list:
         return None
 
+    # Check for special message patterns first (before generic parsing)
+    if is_command_message(text_content):
+        return create_slash_command_message(text_content, meta=meta)
+
+    if is_local_command_output(text_content):
+        return create_command_output_message(text_content, meta=meta)
+
+    if is_bash_input(text_content):
+        return create_bash_input_message(text_content, meta=meta)
+
+    if is_bash_output(text_content):
+        return create_bash_output_message(text_content, meta=meta)
+
     # Slash command expanded prompts - combine all text as markdown
     if is_slash_command:
         all_text = "\n\n".join(
             getattr(item, "text", "") for item in content_list if hasattr(item, "text")
         )
-        return UserSlashCommandMessage(text=all_text) if all_text else None
+        return UserSlashCommandMessage(text=all_text, meta=meta) if all_text else None
 
     # Get first text item for special case detection
     first_text_item = next(
@@ -381,12 +436,12 @@ def parse_user_message_content(
     first_text = getattr(first_text_item, "text", "") if first_text_item else ""
 
     # Check for compacted session summary first (handles text combining internally)
-    compacted = parse_compacted_summary(content_list)
+    compacted = create_compacted_summary_message(content_list, meta=meta)
     if compacted:
         return compacted
 
     # Check for user memory input
-    user_memory = parse_user_memory(first_text)
+    user_memory = create_user_memory_message(first_text, meta=meta)
     if user_memory:
         return user_memory
 
@@ -397,7 +452,7 @@ def parse_user_message_content(
         # Check for text content
         if hasattr(item, "text"):
             item_text: str = getattr(item, "text")  # type: ignore[assignment]
-            ide_content = parse_ide_notifications(item_text)
+            ide_content = create_ide_notification_content(item_text)
 
             if ide_content:
                 # Add IDE notification item first
@@ -417,4 +472,4 @@ def parse_user_message_content(
             items.append(ImageContent.model_validate(item.model_dump()))  # type: ignore[union-attr]
 
     # Return UserTextMessage with items list
-    return UserTextMessage(items=items)
+    return UserTextMessage(items=items, meta=meta)

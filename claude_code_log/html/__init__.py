@@ -59,12 +59,12 @@ from ..models import (
     UserMemoryMessage,
     UserTextMessage,
 )
-from ..user_parser import (
-    parse_bash_input,
-    parse_bash_output,
-    parse_command_output,
-    parse_ide_notifications,
-    parse_slash_command,
+from ..factories import (
+    create_bash_input_message,
+    create_bash_output_message,
+    create_command_output_message,
+    create_ide_notification_content,
+    create_slash_command_message,
 )
 from .user_formatters import (
     format_bash_input_content,
@@ -146,12 +146,12 @@ __all__ = [
     "format_user_text_content",
     "format_user_text_model_content",
     "format_ide_notification_content",
-    # user_formatters (parsing)
-    "parse_slash_command",
-    "parse_command_output",
-    "parse_bash_input",
-    "parse_bash_output",
-    "parse_ide_notifications",
+    # user_factory (message creation)
+    "create_slash_command_message",
+    "create_command_output_message",
+    "create_bash_input_message",
+    "create_bash_output_message",
+    "create_ide_notification_content",
     # assistant_formatters (content models)
     "AssistantTextMessage",
     "ThinkingMessage",

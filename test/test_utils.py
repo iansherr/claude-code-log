@@ -2,12 +2,12 @@
 """Test cases for the utils module functions."""
 
 import pytest
-from claude_code_log.factories import is_system_message
-from claude_code_log.user_parser import (
+from claude_code_log.factories import (
     is_bash_input,
     is_bash_output,
     is_command_message,
     is_local_command_output,
+    is_system_message,
 )
 from claude_code_log.utils import (
     should_skip_message,

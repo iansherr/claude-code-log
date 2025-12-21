@@ -1,16 +1,17 @@
 """Tests for IDE tag parsing and formatting in user messages.
 
 Split into:
-- Parsing tests: test parse_ide_notifications() from user_parser.py
+- Parsing tests: test create_ide_notification_content() from factories
 - Formatting tests: test format_ide_notification_content() from user_formatters.py
-- User message tests: test parse_user_message_content() and formatters
+- User message tests: test create_user_message() and formatters
 - Assistant text tests: test format_assistant_text_content()
 """
 
-from claude_code_log.user_parser import (
-    parse_ide_notifications,
-    parse_user_message_content,
+from claude_code_log.factories import (
+    create_ide_notification_content,
+    create_user_message,
 )
+from claude_code_log.parser import extract_text_content
 from claude_code_log.html.user_formatters import (
     format_ide_notification_content,
     format_user_text_content,
@@ -27,12 +28,12 @@ from claude_code_log.models import (
 
 
 # =============================================================================
-# Parsing Tests - parse_ide_notifications()
+# Parsing Tests - create_ide_notification_content()
 # =============================================================================
 
 
 class TestParseIdeNotifications:
-    """Tests for parse_ide_notifications() parser function."""
+    """Tests for create_ide_notification_content() parser function."""
 
     def test_parse_ide_opened_file_tag(self):
         """Test that <ide_opened_file> tags are parsed correctly."""
@@ -43,7 +44,7 @@ class TestParseIdeNotifications:
             "Here is my actual question."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.opened_files) == 1
@@ -58,7 +59,7 @@ class TestParseIdeNotifications:
             "<ide_opened_file>Second file opened.</ide_opened_file>"
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.opened_files) == 2
@@ -71,7 +72,7 @@ class TestParseIdeNotifications:
         """Test that messages without IDE tags return None."""
         text = "This is a regular user message without any IDE tags."
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is None
 
@@ -84,7 +85,7 @@ class TestParseIdeNotifications:
             "User question follows."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.opened_files) == 1
@@ -103,7 +104,7 @@ class TestParseIdeNotifications:
             "Here is my question."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.diagnostics) == 1
@@ -125,7 +126,7 @@ class TestParseIdeNotifications:
             "Can you explain this?"
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.selections) == 1
@@ -144,7 +145,7 @@ class TestParseIdeNotifications:
             "Please help."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
 
         assert result is not None
         assert len(result.opened_files) == 1
@@ -173,7 +174,7 @@ class TestFormatIdeNotificationContent:
             "Question here."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -189,7 +190,7 @@ class TestFormatIdeNotificationContent:
             "<ide_opened_file>Second file opened.</ide_opened_file>"
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -200,7 +201,7 @@ class TestFormatIdeNotificationContent:
         """Test that special HTML characters are escaped in IDE tag content."""
         text = '<ide_opened_file>File with <special> & "characters" in path.</ide_opened_file>'
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -220,7 +221,7 @@ class TestFormatIdeNotificationContent:
             "Question."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -239,7 +240,7 @@ class TestFormatIdeNotificationContent:
             "Question."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -253,7 +254,7 @@ class TestFormatIdeNotificationContent:
         long_selection = "The user selected lines 1 to 50:\n" + ("line content\n" * 30)
         text = f"<ide_selection>{long_selection}</ide_selection>\nQuestion."
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -273,7 +274,7 @@ class TestFormatIdeNotificationContent:
             "Please review."
         )
 
-        result = parse_ide_notifications(text)
+        result = create_ide_notification_content(text)
         assert result is not None
         notifications = format_ide_notification_content(result)
 
@@ -285,12 +286,12 @@ class TestFormatIdeNotificationContent:
 
 
 # =============================================================================
-# User Message Content Tests - parse_user_message_content()
+# User Message Content Tests - create_user_message()
 # =============================================================================
 
 
 class TestParseUserMessageContent:
-    """Tests for parse_user_message_content() function."""
+    """Tests for create_user_message() function."""
 
     def test_parse_user_message_with_multi_item_content(self):
         """Test parsing user message with multiple content items (text + image)."""
@@ -312,7 +313,9 @@ class TestParseUserMessageContent:
             image_item,
         ]
 
-        content_model = parse_user_message_content(content_list)
+        content_model = create_user_message(
+            content_list, extract_text_content(content_list)
+        )
 
         # Should return UserTextMessage with items
         assert isinstance(content_model, UserTextMessage)

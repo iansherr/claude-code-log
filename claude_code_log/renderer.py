@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 from datetime import datetime
 
 from .models import (
+    BaseTranscriptEntry,
     MessageType,
     TranscriptEntry,
     AssistantTranscriptEntry,
@@ -41,17 +42,8 @@ from .parser import extract_text_content
 from .factories import (
     as_assistant_entry,
     as_user_entry,
-)
-from .user_parser import (
-    is_bash_input,
-    is_bash_output,
-    is_command_message,
-    is_local_command_output,
-    parse_bash_input,
-    parse_bash_output,
-    parse_command_output,
-    parse_slash_command,
-    parse_user_message_content,
+    create_meta,
+    create_user_message,
 )
 from .assistant_parser import (
     parse_assistant_message_content,
@@ -1693,6 +1685,20 @@ def _render_messages(
         if not chunks:
             continue
 
+        # Create meta once for all chunks from this message
+        # (QueueOperationTranscriptEntry doesn't have BaseTranscriptEntry fields)
+        if isinstance(message, BaseTranscriptEntry):
+            meta = create_meta(message)
+        else:
+            meta = None
+
+        # Determine effective_type for dispatching to user/assistant parsers
+        # (queue-operation 'remove' messages are treated as user messages)
+        if isinstance(message, QueueOperationTranscriptEntry):
+            effective_type = "user"
+        else:
+            effective_type = message_type
+
         # Get session info
         session_id = getattr(message, "sessionId", "unknown")
         session_summary = getattr(message, "_session_summary", None)
@@ -1764,48 +1770,32 @@ def _render_messages(
                 # Extract text for pattern detection
                 chunk_text = extract_text_content(chunk)
 
-                # Check for special message patterns
-                is_command = is_command_message(chunk_text)
-                is_local_output = is_local_command_output(chunk_text)
-                is_bash_cmd = is_bash_input(chunk_text)
-                is_bash_result = is_bash_output(chunk_text)
-
                 # Determine is_sidechain and content based on message type
                 content_model: Optional[MessageContent] = None
                 chunk_message_type = message_type
                 chunk_is_sidechain = getattr(message, "isSidechain", False)
 
-                if is_command:
-                    content_model = parse_slash_command(chunk_text)
-                elif is_local_output:
-                    content_model = parse_command_output(chunk_text)
-                elif is_bash_cmd:
-                    content_model = parse_bash_input(chunk_text)
-                elif is_bash_result:
-                    content_model = parse_bash_output(chunk_text)
-                else:
-                    # For queue-operation messages, treat them as user messages
-                    if isinstance(message, QueueOperationTranscriptEntry):
-                        effective_type = "user"
-                    else:
-                        effective_type = message_type
+                # Dispatch to user or assistant parser based on effective_type
+                # (user message parsing handles all type detection internally)
+                if effective_type == "user":
+                    content_model = create_user_message(
+                        chunk,  # Pass the chunk items
+                        chunk_text,  # Pre-extracted text for pattern detection
+                        is_slash_command=getattr(message, "isMeta", False),
+                        meta=meta,
+                    )
+                elif effective_type == "assistant":
+                    content_model = parse_assistant_message_content(chunk)
 
-                    # Dispatch to user or assistant parser based on message type
-                    if effective_type == MessageType.USER:
-                        content_model = parse_user_message_content(
-                            chunk,  # Pass the chunk items
-                            is_slash_command=getattr(message, "isMeta", False),
-                        )
-                    elif effective_type == MessageType.ASSISTANT:
-                        content_model = parse_assistant_message_content(chunk)
-
-                    # Convert to UserSteeringMessage for queue-operation 'remove' messages
-                    if (
-                        isinstance(message, QueueOperationTranscriptEntry)
-                        and message.operation == "remove"
-                        and isinstance(content_model, UserTextMessage)
-                    ):
-                        content_model = UserSteeringMessage(items=content_model.items)
+                # Convert to UserSteeringMessage for queue-operation 'remove' messages
+                if (
+                    isinstance(message, QueueOperationTranscriptEntry)
+                    and message.operation == "remove"
+                    and isinstance(content_model, UserTextMessage)
+                ):
+                    content_model = UserSteeringMessage(
+                        items=content_model.items, meta=meta
+                    )
 
                 # Get message_type and message_title from content_model
                 if content_model is not None:
