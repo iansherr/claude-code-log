@@ -117,30 +117,32 @@ def report_timing_statistics(
     """Report timing statistics for message rendering.
 
     Args:
-        message_timings: List of (duration, message_type, index, uuid) tuples
+        message_timings: List of (duration, message_type, index, uuid) tuples.
+                        Can be empty if only operation timings are being reported.
         operation_timings: List of (name, timings) tuples where timings is a list of (duration, uuid)
                           e.g., [("Markdown", markdown_timings), ("Pygments", pygments_timings)]
     """
-    if not message_timings:
-        return
+    # Report message loop statistics if available
+    if message_timings:
+        # Sort by duration descending
+        sorted_timings = sorted(message_timings, key=lambda x: x[0], reverse=True)
 
-    # Sort by duration descending
-    sorted_timings = sorted(message_timings, key=lambda x: x[0], reverse=True)
+        # Calculate statistics
+        total_msg_time = sum(t[0] for t in message_timings)
+        avg_time = total_msg_time / len(message_timings)
 
-    # Calculate statistics
-    total_msg_time = sum(t[0] for t in message_timings)
-    avg_time = total_msg_time / len(message_timings)
-
-    # Report slowest messages
-    print("\n[TIMING] Loop statistics:", flush=True)
-    print(f"[TIMING]   Total messages: {len(message_timings)}", flush=True)
-    print(f"[TIMING]   Average time per message: {avg_time * 1000:.1f}ms", flush=True)
-    print("[TIMING]   Slowest 10 messages:", flush=True)
-    for duration, msg_type, idx, uuid in sorted_timings[:10]:
+        # Report slowest messages
+        print("\n[TIMING] Loop statistics:", flush=True)
+        print(f"[TIMING]   Total messages: {len(message_timings)}", flush=True)
         print(
-            f"[TIMING]     Message {uuid} (#{idx}, {msg_type}): {duration * 1000:.1f}ms",
-            flush=True,
+            f"[TIMING]   Average time per message: {avg_time * 1000:.1f}ms", flush=True
         )
+        print("[TIMING]   Slowest 10 messages:", flush=True)
+        for duration, msg_type, idx, uuid in sorted_timings[:10]:
+            print(
+                f"[TIMING]     Message {uuid} (#{idx}, {msg_type}): {duration * 1000:.1f}ms",
+                flush=True,
+            )
 
     # Report operation-specific statistics
     for operation_name, timings in operation_timings:

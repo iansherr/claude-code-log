@@ -68,9 +68,6 @@ from .utils import (
     create_session_preview,
 )
 from .renderer_timings import (
-    DEBUG_TIMING,
-    report_timing_statistics,
-    set_timing_var,
     log_timing,
 )
 
@@ -1803,27 +1800,8 @@ def _render_messages(
     # Process messages into template-friendly format
     template_messages: list[TemplateMessage] = []
 
-    # Per-message timing tracking
-    message_timings: list[
-        tuple[float, str, int, str]
-    ] = []  # (duration, message_type, index, uuid)
-
-    # Track expensive operations
-    markdown_timings: list[tuple[float, str]] = []  # (duration, context_uuid)
-    pygments_timings: list[tuple[float, str]] = []  # (duration, context_uuid)
-
-    # Initialize timing tracking
-    set_timing_var("_markdown_timings", markdown_timings)
-    set_timing_var("_pygments_timings", pygments_timings)
-    set_timing_var("_current_msg_uuid", "")
-
-    for msg_idx, message in enumerate(messages):
-        msg_start_time = time.time() if DEBUG_TIMING else 0.0
+    for message in messages:
         message_type = message.type
-        msg_uuid = getattr(message, "uuid", f"no-uuid-{msg_idx}")
-
-        # Update current message UUID for timing tracking
-        set_timing_var("_current_msg_uuid", msg_uuid)
 
         # Handle system messages separately (already filtered in pass 1)
         if isinstance(message, SystemTranscriptEntry):
@@ -2077,10 +2055,11 @@ def _render_messages(
 
                 # Generate unique UUID for this tool message
                 # Use tool_use_id if available, otherwise fall back to msg UUID + index
+                message_uuid = getattr(message, "uuid", "no-uuid")
                 tool_uuid = (
                     tool_result.tool_use_id
                     if tool_result.tool_use_id
-                    else f"{msg_uuid}-tool-{len(template_messages)}"
+                    else f"{message_uuid}-tool-{len(template_messages)}"
                 )
 
                 # Thinking content uses markdown
@@ -2109,18 +2088,6 @@ def _render_messages(
                     tool_template_message.raw_text_content = tool_result.pending_dedup
 
                 template_messages.append(tool_template_message)
-
-        # Track message timing
-        if DEBUG_TIMING:
-            msg_duration = time.time() - msg_start_time
-            message_timings.append((msg_duration, message_type, msg_idx, msg_uuid))
-
-    # Report loop statistics
-    if DEBUG_TIMING:
-        report_timing_statistics(
-            message_timings,
-            [("Markdown", markdown_timings), ("Pygments", pygments_timings)],
-        )
 
     return template_messages
 

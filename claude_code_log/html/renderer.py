@@ -33,7 +33,12 @@ from ..renderer import (
     prepare_projects_index,
     title_for_projects_index,
 )
-from ..renderer_timings import log_timing
+from ..renderer_timings import (
+    DEBUG_TIMING,
+    log_timing,
+    report_timing_statistics,
+    set_timing_var,
+)
 from ..utils import format_timestamp
 from .system_formatters import (
     format_dedup_notice_content,
@@ -141,21 +146,37 @@ class HtmlRenderer(Renderer):
 
     def _flatten_preorder(
         self, roots: list[TemplateMessage]
-    ) -> list[Tuple[TemplateMessage, str, str]]:
+    ) -> Tuple[
+        list[Tuple[TemplateMessage, str, str]],
+        list[Tuple[str, list[Tuple[float, str]]]],
+    ]:
         """Flatten message tree via pre-order traversal, formatting each message.
 
         Traverses the tree depth-first (pre-order), formats each message's
         content to HTML, and builds a flat list of (message, html, timestamp) tuples.
 
+        Also tracks timing statistics for Markdown and Pygments operations when
+        DEBUG_TIMING is enabled.
+
         Args:
             roots: Root messages (typically session headers) with children populated
 
         Returns:
-            Flat list of (message, html_content, formatted_timestamp) tuples in pre-order
+            Tuple of:
+            - Flat list of (message, html_content, formatted_timestamp) tuples in pre-order
+            - Operation timing data for reporting: [("Markdown", timings), ("Pygments", timings)]
         """
         flat: list[Tuple[TemplateMessage, str, str]] = []
 
+        # Initialize timing tracking for expensive operations
+        markdown_timings: list[Tuple[float, str]] = []
+        pygments_timings: list[Tuple[float, str]] = []
+        set_timing_var("_markdown_timings", markdown_timings)
+        set_timing_var("_pygments_timings", pygments_timings)
+
         def visit(msg: TemplateMessage) -> None:
+            # Update current message UUID for timing tracking
+            set_timing_var("_current_msg_uuid", msg.uuid)
             html = self.format_content(msg)
             formatted_ts = format_timestamp(msg.raw_timestamp)
             flat.append((msg, html, formatted_ts))
@@ -165,7 +186,13 @@ class HtmlRenderer(Renderer):
         for root in roots:
             visit(root)
 
-        return flat
+        # Return timing data for reporting
+        operation_timings: list[Tuple[str, list[Tuple[float, str]]]] = [
+            ("Markdown", markdown_timings),
+            ("Pygments", pygments_timings),
+        ]
+
+        return flat, operation_timings
 
     def generate(
         self,
@@ -186,7 +213,11 @@ class HtmlRenderer(Renderer):
 
         # Flatten tree via pre-order traversal, formatting content along the way
         with log_timing("Content formatting (pre-order)", t_start):
-            template_messages = self._flatten_preorder(root_messages)
+            template_messages, operation_timings = self._flatten_preorder(root_messages)
+
+        # Report timing statistics for Markdown/Pygments operations
+        if DEBUG_TIMING:
+            report_timing_statistics([], operation_timings)
 
         # Render template
         with log_timing("Template environment setup", t_start):
