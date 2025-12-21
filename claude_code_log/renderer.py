@@ -21,9 +21,7 @@ from .models import (
     ContentItem,
     TextContent,
     ToolResultContent,
-    ToolResultMessage,
     ToolUseContent,
-    ToolUseMessage,
     ThinkingContent,
     ThinkingMessage,
     # Structured content types
@@ -71,11 +69,11 @@ from .renderer_timings import (
     log_timing,
 )
 
-from .html import (
-    escape_html,
-    format_tool_use_title,
+from .tool_parser import (
+    ToolItemResult,
+    parse_tool_use_item,
+    parse_tool_result_item,
 )
-from .parser import parse_tool_input
 
 
 # -- Content Formatters -------------------------------------------------------
@@ -744,151 +742,6 @@ def chunk_message_content(content: list[ContentItem]) -> list[ContentChunk]:
         chunks.append(accumulated)
 
     return chunks
-
-
-@dataclass
-class ToolItemResult:
-    """Result of processing a single tool/thinking/image item."""
-
-    message_type: str
-    message_title: str
-    content: Optional["MessageContent"] = None  # Structured content for rendering
-    tool_use_id: Optional[str] = None
-    title_hint: Optional[str] = None
-    pending_dedup: Optional[str] = None  # For Task result deduplication
-    is_error: bool = False  # For tool_result error state
-
-
-def _process_tool_use_item(
-    tool_item: ContentItem,
-    tool_use_context: dict[str, ToolUseContent],
-) -> Optional[ToolItemResult]:
-    """Process a tool_use content item.
-
-    Args:
-        tool_item: The tool use content item
-        tool_use_context: Dict to populate with tool_use_id -> ToolUseContent mapping
-
-    Returns:
-        ToolItemResult with tool_use content model, or None if item should be skipped
-    """
-    # Convert Anthropic type to our format if necessary
-    if not isinstance(tool_item, ToolUseContent):
-        tool_use = ToolUseContent(
-            type="tool_use",
-            id=getattr(tool_item, "id", ""),
-            name=getattr(tool_item, "name", ""),
-            input=getattr(tool_item, "input", {}),
-        )
-    else:
-        tool_use = tool_item
-
-    # Parse tool input once, use for both title and message content
-    parsed = parse_tool_input(tool_use.name, tool_use.input)
-
-    # Title is computed here but content formatting happens in HtmlRenderer
-    tool_message_title = format_tool_use_title(tool_use.name, parsed)
-    escaped_id = escape_html(tool_use.id)
-    item_tool_use_id = tool_use.id
-    tool_title_hint = f"ID: {escaped_id}"
-
-    # Populate tool_use_context for later use when processing tool results
-    tool_use_context[item_tool_use_id] = tool_use
-
-    # Create ToolUseMessage wrapper with parsed input for specialized formatting
-    # Use ToolUseContent as fallback when no specialized parser exists
-    tool_use_message = ToolUseMessage(
-        input=parsed if parsed is not None else tool_use,
-        tool_use_id=tool_use.id,
-        tool_name=tool_use.name,
-    )
-
-    return ToolItemResult(
-        message_type="tool_use",
-        message_title=tool_message_title,
-        content=tool_use_message,
-        tool_use_id=item_tool_use_id,
-        title_hint=tool_title_hint,
-    )
-
-
-def _process_tool_result_item(
-    tool_item: ContentItem,
-    tool_use_context: dict[str, ToolUseContent],
-) -> Optional[ToolItemResult]:
-    """Process a tool_result content item.
-
-    Args:
-        tool_item: The tool result content item
-        tool_use_context: Dict with tool_use_id -> ToolUseContent mapping
-
-    Returns:
-        ToolItemResult with tool_result content model, or None if item should be skipped
-    """
-    # Convert Anthropic type to our format if necessary
-    if not isinstance(tool_item, ToolResultContent):
-        tool_result = ToolResultContent(
-            type="tool_result",
-            tool_use_id=getattr(tool_item, "tool_use_id", ""),
-            content=getattr(tool_item, "content", ""),
-            is_error=getattr(tool_item, "is_error", False),
-        )
-    else:
-        tool_result = tool_item
-
-    # Get file_path and tool_name from tool_use context for specialized rendering
-    result_file_path: Optional[str] = None
-    result_tool_name: Optional[str] = None
-    if tool_result.tool_use_id in tool_use_context:
-        tool_use_from_ctx = tool_use_context[tool_result.tool_use_id]
-        result_tool_name = tool_use_from_ctx.name
-        if (
-            result_tool_name in ("Read", "Edit", "Write")
-            and "file_path" in tool_use_from_ctx.input
-        ):
-            result_file_path = tool_use_from_ctx.input["file_path"]
-
-    # Create content model with rendering context
-    # Pass the whole ToolResultContent as output (generic fallback)
-    # TODO: Parse into specialized output types (ReadOutput, EditOutput) when appropriate
-    content_model = ToolResultMessage(
-        tool_use_id=tool_result.tool_use_id,
-        output=tool_result,  # ToolResultContent as ToolOutput
-        is_error=tool_result.is_error or False,
-        tool_name=result_tool_name,
-        file_path=result_file_path,
-    )
-
-    # Retroactive deduplication: if Task result, extract content for later matching
-    pending_dedup: Optional[str] = None
-    if result_tool_name == "Task":
-        # Extract text content from tool result
-        # Note: tool_result.content can be str or list[dict[str, Any]]
-        if isinstance(tool_result.content, str):
-            task_result_content = tool_result.content.strip()
-        else:
-            # Handle list of dicts (tool result format)
-            content_parts: list[str] = []
-            for item in tool_result.content:
-                text_val = item.get("text", "")
-                if isinstance(text_val, str):
-                    content_parts.append(text_val)
-            task_result_content = "\n".join(content_parts).strip()
-        pending_dedup = task_result_content if task_result_content else None
-
-    escaped_id = escape_html(tool_result.tool_use_id)
-    tool_title_hint = f"ID: {escaped_id}"
-    tool_message_title = "Error" if tool_result.is_error else ""
-
-    return ToolItemResult(
-        message_type="tool_result",
-        message_title=tool_message_title,
-        content=content_model,
-        tool_use_id=tool_result.tool_use_id,
-        title_hint=tool_title_hint,
-        pending_dedup=pending_dedup,
-        is_error=tool_result.is_error or False,
-    )
 
 
 # -- Message Pairing ----------------------------------------------------------
@@ -2025,12 +1878,12 @@ def _render_messages(
                 # Dispatch to appropriate handler based on item type
                 tool_result: Optional[ToolItemResult] = None
                 if isinstance(tool_item, ToolUseContent) or item_type == "tool_use":
-                    tool_result = _process_tool_use_item(tool_item, tool_use_context)
+                    tool_result = parse_tool_use_item(tool_item, tool_use_context)
                 elif (
                     isinstance(tool_item, ToolResultContent)
                     or item_type == "tool_result"
                 ):
-                    tool_result = _process_tool_result_item(tool_item, tool_use_context)
+                    tool_result = parse_tool_result_item(tool_item, tool_use_context)
                 elif isinstance(tool_item, ThinkingContent) or item_type == "thinking":
                     content = parse_thinking_item(tool_item)
                     tool_result = ToolItemResult(
