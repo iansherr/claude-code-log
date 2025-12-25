@@ -2,7 +2,7 @@
 """Test cases for ExitPlanMode tool rendering."""
 
 from claude_code_log.html import (
-    format_exitplanmode_content,
+    format_exitplanmode_input,
     format_exitplanmode_result,
 )
 from claude_code_log.models import ExitPlanModeInput
@@ -17,7 +17,7 @@ class TestExitPlanModeRendering:
             plan="# My Plan\n\n## Overview\n\nThis is the plan.\n\n## Steps\n\n1. First step\n2. Second step"
         )
 
-        html = format_exitplanmode_content(exit_input)
+        html = format_exitplanmode_input(exit_input)
 
         # Should render as markdown in a plan-content div
         assert 'class="plan-content' in html
@@ -33,7 +33,7 @@ class TestExitPlanModeRendering:
         )
         exit_input = ExitPlanModeInput(plan=long_plan)
 
-        html = format_exitplanmode_content(exit_input)
+        html = format_exitplanmode_input(exit_input)
 
         # Should be collapsible due to length
         assert "collapsible" in html.lower() or "details" in html.lower()
@@ -43,7 +43,7 @@ class TestExitPlanModeRendering:
         """Test ExitPlanMode with empty plan shows 'No plan' message."""
         exit_input = ExitPlanModeInput()  # Empty plan
 
-        html = format_exitplanmode_content(exit_input)
+        html = format_exitplanmode_input(exit_input)
 
         # Should show 'No plan' message
         assert "plan-content" in html

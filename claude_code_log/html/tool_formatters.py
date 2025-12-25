@@ -18,7 +18,7 @@ import base64
 import binascii
 import json
 import re
-from typing import Any, Callable, Optional, cast
+from typing import Any, Optional, cast
 
 from .utils import (
     escape_html,
@@ -43,9 +43,6 @@ from ..models import (
     TodoWriteInput,
     ToolInput,
     ToolResultContent,
-    ToolResultMessage,
-    ToolUseContent,
-    ToolUseMessage,
     WriteInput,
     WriteOutput,
 )
@@ -89,7 +86,7 @@ def _render_question_item(q: AskUserQuestionItem) -> str:
     return "".join(html_parts)
 
 
-def format_askuserquestion_content(ask_input: AskUserQuestionInput) -> str:
+def format_askuserquestion_input(ask_input: AskUserQuestionInput) -> str:
     """Format AskUserQuestion tool use content with prominent question display.
 
     Args:
@@ -169,7 +166,7 @@ def format_askuserquestion_result(content: str) -> str:
 # -- ExitPlanMode Tool --------------------------------------------------------
 
 
-def format_exitplanmode_content(exit_input: ExitPlanModeInput) -> str:
+def format_exitplanmode_input(exit_input: ExitPlanModeInput) -> str:
     """Format ExitPlanMode tool use content with collapsible plan markdown.
 
     Args:
@@ -210,7 +207,7 @@ def format_exitplanmode_result(content: str) -> str:
 # -- TodoWrite Tool -----------------------------------------------------------
 
 
-def format_todowrite_content(todo_input: TodoWriteInput) -> str:
+def format_todowrite_input(todo_input: TodoWriteInput) -> str:
     """Format TodoWrite tool use content as a todo list.
 
     Args:
@@ -259,7 +256,7 @@ def format_todowrite_content(todo_input: TodoWriteInput) -> str:
 # -- File Tools (Read/Write) --------------------------------------------------
 
 
-def format_read_tool_content(read_input: ReadInput) -> str:  # noqa: ARG001
+def format_read_input(read_input: ReadInput) -> str:  # noqa: ARG001
     """Format Read tool use content showing file path.
 
     Args:
@@ -276,7 +273,7 @@ def format_read_tool_content(read_input: ReadInput) -> str:  # noqa: ARG001
 # Parsing (parse_read_output, parse_edit_output) is now in factories/tool_factory.py
 
 
-def format_read_tool_result(output: ReadOutput) -> str:
+def format_read_output(output: ReadOutput) -> str:
     """Format Read tool result as HTML with syntax highlighting.
 
     Args:
@@ -302,7 +299,7 @@ def format_read_tool_result(output: ReadOutput) -> str:
     )
 
 
-def format_edit_tool_result(output: EditOutput) -> str:
+def format_edit_output(output: EditOutput) -> str:
     """Format Edit tool result as HTML with syntax highlighting.
 
     Args:
@@ -319,7 +316,7 @@ def format_edit_tool_result(output: EditOutput) -> str:
     )
 
 
-def format_write_tool_result(output: WriteOutput) -> str:
+def format_write_output(output: WriteOutput) -> str:
     """Format Write tool result as HTML.
 
     Args:
@@ -332,7 +329,7 @@ def format_write_tool_result(output: WriteOutput) -> str:
     return f"<pre>{escaped_message} ...</pre>"
 
 
-def format_bash_tool_result(output: BashOutput) -> str:
+def format_bash_output(output: BashOutput) -> str:
     """Format Bash tool result as HTML with ANSI color support.
 
     Args:
@@ -365,7 +362,7 @@ def format_bash_tool_result(output: BashOutput) -> str:
     """
 
 
-def format_task_tool_result(output: TaskOutput) -> str:
+def format_task_output(output: TaskOutput) -> str:
     """Format Task tool result as HTML with markdown rendering.
 
     Args:
@@ -415,7 +412,7 @@ def format_exitplanmode_output(output: ExitPlanModeOutput) -> str:
     return f"<pre>{escaped_content}</pre>"
 
 
-def format_write_tool_content(write_input: WriteInput) -> str:
+def format_write_input(write_input: WriteInput) -> str:
     """Format Write tool use content with Pygments syntax highlighting.
 
     Args:
@@ -430,7 +427,7 @@ def format_write_tool_content(write_input: WriteInput) -> str:
 # -- Edit Tools (Edit/Multiedit) ----------------------------------------------
 
 
-def format_edit_tool_content(edit_input: EditInput) -> str:
+def format_edit_input(edit_input: EditInput) -> str:
     """Format Edit tool use content as a diff view with intra-line highlighting.
 
     Args:
@@ -451,7 +448,7 @@ def format_edit_tool_content(edit_input: EditInput) -> str:
     return "".join(html_parts)
 
 
-def format_multiedit_tool_content(multiedit_input: MultiEditInput) -> str:
+def format_multiedit_input(multiedit_input: MultiEditInput) -> str:
     """Format Multiedit tool use content showing multiple diffs.
 
     Args:
@@ -482,7 +479,7 @@ def format_multiedit_tool_content(multiedit_input: MultiEditInput) -> str:
 # -- Bash Tool ----------------------------------------------------------------
 
 
-def format_bash_tool_content(bash_input: BashInput) -> str:
+def format_bash_input(bash_input: BashInput) -> str:
     """Format Bash tool use content in VS Code extension style.
 
     Args:
@@ -501,7 +498,7 @@ def format_bash_tool_content(bash_input: BashInput) -> str:
 # -- Task Tool ----------------------------------------------------------------
 
 
-def format_task_tool_content(task_input: TaskInput) -> str:
+def format_task_input(task_input: TaskInput) -> str:
     """Format Task tool content with markdown-rendered prompt.
 
     Args:
@@ -669,55 +666,10 @@ def render_params_table(params: dict[str, Any]) -> str:
     return "".join(html_parts)
 
 
-# -- Tool Use Dispatcher ------------------------------------------------------
-
-# Registry mapping input types to their formatters
-TOOL_USE_FORMATTERS: dict[type, Callable[[Any], str]] = {
-    TodoWriteInput: format_todowrite_content,
-    BashInput: format_bash_tool_content,
-    EditInput: format_edit_tool_content,
-    MultiEditInput: format_multiedit_tool_content,
-    WriteInput: format_write_tool_content,
-    TaskInput: format_task_tool_content,
-    ReadInput: format_read_tool_content,
-    AskUserQuestionInput: format_askuserquestion_content,
-    ExitPlanModeInput: format_exitplanmode_content,
-}
+# -- Tool Result Content Fallback Formatter -----------------------------------
 
 
-def format_tool_use_content(content: ToolUseMessage) -> str:
-    """Format ToolUseMessage as HTML.
-
-    Dispatches to specialized formatters based on the parsed input type.
-    Falls back to rendering the raw input dict if parsing was incomplete.
-
-    Args:
-        content: ToolUseMessage with parsed input and metadata
-
-    Returns:
-        HTML string for the tool use content
-    """
-    parsed_input = content.input
-
-    # Dispatch based on parsed type via registry
-    if formatter := TOOL_USE_FORMATTERS.get(type(parsed_input)):
-        return formatter(parsed_input)
-
-    # Fallback: ToolUseContent - render its input dict as params table
-    if isinstance(parsed_input, ToolUseContent):
-        return render_params_table(parsed_input.input)
-
-    # Last resort: string representation (shouldn't happen with ToolInput union)
-    return f"<pre>{parsed_input}</pre>"
-
-
-# -- Tool Result Content Formatter -------------------------------------------
-
-
-def _format_raw_tool_result(
-    tool_result: ToolResultContent,
-    tool_name: Optional[str] = None,  # noqa: ARG001
-) -> str:
+def format_tool_result_content_raw(tool_result: ToolResultContent) -> str:
     """Format raw ToolResultContent as HTML (fallback formatter).
 
     This handles tool results that don't have specialized output types,
@@ -725,7 +677,6 @@ def _format_raw_tool_result(
 
     Args:
         tool_result: The raw tool result content
-        tool_name: Unused (kept for API compatibility)
     """
     # Handle both string and structured content
     if isinstance(tool_result.content, str):
@@ -830,71 +781,35 @@ def _format_raw_tool_result(
     """
 
 
-# Registry mapping output types to their formatters
-TOOL_RESULT_FORMATTERS: dict[type, Callable[[Any], str]] = {
-    ReadOutput: format_read_tool_result,
-    EditOutput: format_edit_tool_result,
-    WriteOutput: format_write_tool_result,
-    BashOutput: format_bash_tool_result,
-    TaskOutput: format_task_tool_result,
-    AskUserQuestionOutput: format_askuserquestion_output,
-    ExitPlanModeOutput: format_exitplanmode_output,
-}
-
-
-def format_tool_result_content(content: ToolResultMessage) -> str:
-    """Format ToolResultMessage as HTML.
-
-    Dispatches to specialized formatters based on the parsed output type.
-    Falls back to _format_raw_tool_result if output is unparsed ToolResultContent.
-
-    Args:
-        content: ToolResultMessage with parsed output and metadata
-
-    Returns:
-        HTML string for the tool result content
-    """
-    output = content.output
-
-    # Dispatch based on parsed output type via registry
-    if formatter := TOOL_RESULT_FORMATTERS.get(type(output)):
-        return formatter(output)
-
-    # Fallback: raw ToolResultContent (cast is safe - registry handles other types)
-    return _format_raw_tool_result(cast(ToolResultContent, output), content.tool_name)
-
-
 # -- Public Exports -----------------------------------------------------------
 
 __all__ = [
-    # AskUserQuestion
-    "format_askuserquestion_content",
+    # Tool input formatters (called by HtmlRenderer.format_{InputClass})
+    "format_askuserquestion_input",
+    "format_exitplanmode_input",
+    "format_todowrite_input",
+    "format_read_input",
+    "format_write_input",
+    "format_edit_input",
+    "format_multiedit_input",
+    "format_bash_input",
+    "format_task_input",
+    # Tool output formatters (called by HtmlRenderer.format_{OutputClass})
+    "format_read_output",
+    "format_write_output",
+    "format_edit_output",
+    "format_bash_output",
+    "format_task_output",
+    "format_askuserquestion_output",
+    "format_exitplanmode_output",
+    # Fallback for ToolResultContent
+    "format_tool_result_content_raw",
+    # Legacy formatters (still used)
     "format_askuserquestion_result",
-    # ExitPlanMode
-    "format_exitplanmode_content",
     "format_exitplanmode_result",
-    # TodoWrite
-    "format_todowrite_content",
-    # File tools (input)
-    "format_read_tool_content",
-    "format_write_tool_content",
-    # File tools (output/result) - parsing now in factories/tool_factory.py
-    "format_read_tool_result",
-    "format_edit_tool_result",
-    # Edit tools
-    "format_edit_tool_content",
-    "format_multiedit_tool_content",
-    # Bash
-    "format_bash_tool_content",
-    # Task
-    "format_task_tool_content",
     # Tool summary and title
     "get_tool_summary",
     "format_tool_use_title",
     # Generic
     "render_params_table",
-    # Dispatcher
-    "format_tool_use_content",
-    # Tool result
-    "format_tool_result_content",
 ]

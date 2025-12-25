@@ -16,13 +16,31 @@ from ..models import (
     SlashCommandMessage,
     SystemMessage,
     ThinkingMessage,
-    ToolResultMessage,
-    ToolUseMessage,
     TranscriptEntry,
     UnknownMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserTextMessage,
+    # Tool input types
+    AskUserQuestionInput,
+    BashInput,
+    EditInput,
+    ExitPlanModeInput,
+    MultiEditInput,
+    ReadInput,
+    TaskInput,
+    TodoWriteInput,
+    ToolUseContent,
+    WriteInput,
+    # Tool output types
+    AskUserQuestionOutput,
+    BashOutput,
+    EditOutput,
+    ExitPlanModeOutput,
+    ReadOutput,
+    TaskOutput,
+    ToolResultContent,
+    WriteOutput,
 )
 from ..renderer import (
     Renderer,
@@ -59,7 +77,26 @@ from .assistant_formatters import (
     format_thinking_content,
     format_unknown_content,
 )
-from .tool_formatters import format_tool_result_content, format_tool_use_content
+from .tool_formatters import (
+    format_askuserquestion_input,
+    format_askuserquestion_output,
+    format_bash_input,
+    format_bash_output,
+    format_edit_input,
+    format_edit_output,
+    format_exitplanmode_input,
+    format_exitplanmode_output,
+    format_multiedit_input,
+    format_read_input,
+    format_read_output,
+    format_task_input,
+    format_task_output,
+    format_todowrite_input,
+    format_tool_result_content_raw,
+    format_write_input,
+    format_write_output,
+    render_params_table,
+)
 from .utils import (
     css_class_from_message,
     get_message_emoji,
@@ -161,14 +198,66 @@ class HtmlRenderer(Renderer):
         return format_unknown_content(message)
 
     # -------------------------------------------------------------------------
-    # Tool Content Formatters
+    # Tool Input Formatters
     # -------------------------------------------------------------------------
 
-    def format_ToolUseMessage(self, message: ToolUseMessage) -> str:
-        return format_tool_use_content(message)
+    def format_BashInput(self, input: BashInput) -> str:
+        return format_bash_input(input)
 
-    def format_ToolResultMessage(self, message: ToolResultMessage) -> str:
-        return format_tool_result_content(message)
+    def format_ReadInput(self, input: ReadInput) -> str:
+        return format_read_input(input)
+
+    def format_WriteInput(self, input: WriteInput) -> str:
+        return format_write_input(input)
+
+    def format_EditInput(self, input: EditInput) -> str:
+        return format_edit_input(input)
+
+    def format_MultiEditInput(self, input: MultiEditInput) -> str:
+        return format_multiedit_input(input)
+
+    def format_TaskInput(self, input: TaskInput) -> str:
+        return format_task_input(input)
+
+    def format_TodoWriteInput(self, input: TodoWriteInput) -> str:
+        return format_todowrite_input(input)
+
+    def format_AskUserQuestionInput(self, input: AskUserQuestionInput) -> str:
+        return format_askuserquestion_input(input)
+
+    def format_ExitPlanModeInput(self, input: ExitPlanModeInput) -> str:
+        return format_exitplanmode_input(input)
+
+    def format_ToolUseContent(self, input: ToolUseContent) -> str:
+        return render_params_table(input.input)
+
+    # -------------------------------------------------------------------------
+    # Tool Output Formatters
+    # -------------------------------------------------------------------------
+
+    def format_ReadOutput(self, output: ReadOutput) -> str:
+        return format_read_output(output)
+
+    def format_WriteOutput(self, output: WriteOutput) -> str:
+        return format_write_output(output)
+
+    def format_EditOutput(self, output: EditOutput) -> str:
+        return format_edit_output(output)
+
+    def format_BashOutput(self, output: BashOutput) -> str:
+        return format_bash_output(output)
+
+    def format_TaskOutput(self, output: TaskOutput) -> str:
+        return format_task_output(output)
+
+    def format_AskUserQuestionOutput(self, output: AskUserQuestionOutput) -> str:
+        return format_askuserquestion_output(output)
+
+    def format_ExitPlanModeOutput(self, output: ExitPlanModeOutput) -> str:
+        return format_exitplanmode_output(output)
+
+    def format_ToolResultContent(self, output: ToolResultContent) -> str:
+        return format_tool_result_content_raw(output)
 
     def _flatten_preorder(
         self, roots: list[TemplateMessage]

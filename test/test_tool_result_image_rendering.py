@@ -1,6 +1,6 @@
 """Test image rendering within tool results."""
 
-from claude_code_log.html.tool_formatters import _format_raw_tool_result
+from claude_code_log.html.tool_formatters import format_tool_result_content_raw
 from claude_code_log.models import ToolResultContent
 
 
@@ -27,7 +27,7 @@ def test_tool_result_with_image():
         is_error=False,
     )
 
-    html = _format_raw_tool_result(tool_result)
+    html = format_tool_result_content_raw(tool_result)
 
     # Should be collapsible when images are present
     assert '<details class="collapsible-details">' in html
@@ -66,7 +66,7 @@ def test_tool_result_with_only_image():
         is_error=False,
     )
 
-    html = _format_raw_tool_result(tool_result)
+    html = format_tool_result_content_raw(tool_result)
 
     # Should be collapsible
     assert '<details class="collapsible-details">' in html
@@ -106,7 +106,7 @@ def test_tool_result_with_multiple_images():
         is_error=False,
     )
 
-    html = _format_raw_tool_result(tool_result)
+    html = format_tool_result_content_raw(tool_result)
 
     # Should contain both images
     assert html.count("<img src=") == 2
@@ -126,7 +126,7 @@ def test_tool_result_text_only_unchanged():
         is_error=False,
     )
 
-    html = _format_raw_tool_result(tool_result)
+    html = format_tool_result_content_raw(tool_result)
 
     # Short text should not be collapsible
     assert '<details class="collapsible-details">' not in html
@@ -145,7 +145,7 @@ def test_tool_result_structured_text_only():
         is_error=False,
     )
 
-    html = _format_raw_tool_result(tool_result)
+    html = format_tool_result_content_raw(tool_result)
 
     # Should contain both text lines
     assert "First line" in html

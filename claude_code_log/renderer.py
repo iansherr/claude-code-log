@@ -18,6 +18,26 @@ if TYPE_CHECKING:
         HookSummaryMessage,
         ThinkingMessage,
         UserMemoryMessage,
+        # Tool input types
+        BashInput,
+        ReadInput,
+        WriteInput,
+        EditInput,
+        MultiEditInput,
+        GlobInput,
+        GrepInput,
+        TaskInput,
+        TodoWriteInput,
+        AskUserQuestionInput,
+        ExitPlanModeInput,
+        # Tool output types
+        ReadOutput,
+        WriteOutput,
+        EditOutput,
+        BashOutput,
+        TaskOutput,
+        AskUserQuestionOutput,
+        ExitPlanModeOutput,
     )
 from datetime import datetime
 
@@ -2195,14 +2215,174 @@ class Renderer:
     def format_ToolUseMessage(self, message: "ToolUseMessage") -> str:
         """Format ToolUseMessage content (tool invocations).
 
-        Fallback: None (standalone content type).
+        Dispatches to format_{InputClass} methods based on message.input type.
+        Walks the input type's MRO to find the most specific format method.
         """
+        for cls in type(message.input).__mro__:
+            if cls is object:
+                break
+            if method := getattr(self, f"format_{cls.__name__}", None):
+                return method(message.input)
         return ""
 
     def format_ToolResultMessage(self, message: "ToolResultMessage") -> str:
         """Format ToolResultMessage content (tool results).
 
-        Fallback: None (standalone content type).
+        Dispatches to format_{OutputClass} methods based on message.output type.
+        Walks the output type's MRO to find the most specific format method.
+        """
+        for cls in type(message.output).__mro__:
+            if cls is object:
+                break
+            if method := getattr(self, f"format_{cls.__name__}", None):
+                return method(message.output)
+        return ""
+
+    # -------------------------------------------------------------------------
+    # Tool Input Formatters
+    # -------------------------------------------------------------------------
+
+    def format_BashInput(self, input: "BashInput") -> str:
+        """Format BashInput (bash command invocation).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_ReadInput(self, input: "ReadInput") -> str:
+        """Format ReadInput (file read request).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_WriteInput(self, input: "WriteInput") -> str:
+        """Format WriteInput (file write request).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_EditInput(self, input: "EditInput") -> str:
+        """Format EditInput (file edit request).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_MultiEditInput(self, input: "MultiEditInput") -> str:
+        """Format MultiEditInput (multi-file edit request).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_GlobInput(self, input: "GlobInput") -> str:
+        """Format GlobInput (file glob search).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_GrepInput(self, input: "GrepInput") -> str:
+        """Format GrepInput (content search).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_TaskInput(self, input: "TaskInput") -> str:
+        """Format TaskInput (sub-agent invocation).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_TodoWriteInput(self, input: "TodoWriteInput") -> str:
+        """Format TodoWriteInput (todo list update).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_AskUserQuestionInput(self, input: "AskUserQuestionInput") -> str:
+        """Format AskUserQuestionInput (user question prompt).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_ExitPlanModeInput(self, input: "ExitPlanModeInput") -> str:
+        """Format ExitPlanModeInput (plan mode exit).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_ToolUseContent(self, input: "ToolUseContent") -> str:
+        """Format ToolUseContent (generic/unknown tool invocation).
+
+        Fallback: None (base handler for unknown tools).
+        """
+        return ""
+
+    # -------------------------------------------------------------------------
+    # Tool Output Formatters
+    # -------------------------------------------------------------------------
+
+    def format_ReadOutput(self, output: "ReadOutput") -> str:
+        """Format ReadOutput (file read result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_WriteOutput(self, output: "WriteOutput") -> str:
+        """Format WriteOutput (file write result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_EditOutput(self, output: "EditOutput") -> str:
+        """Format EditOutput (file edit result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_BashOutput(self, output: "BashOutput") -> str:
+        """Format BashOutput (bash command result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_TaskOutput(self, output: "TaskOutput") -> str:
+        """Format TaskOutput (sub-agent result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_AskUserQuestionOutput(self, output: "AskUserQuestionOutput") -> str:
+        """Format AskUserQuestionOutput (user question result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_ExitPlanModeOutput(self, output: "ExitPlanModeOutput") -> str:
+        """Format ExitPlanModeOutput (plan mode exit result).
+
+        Fallback: None.
+        """
+        return ""
+
+    def format_ToolResultContent(self, output: "ToolResultContent") -> str:
+        """Format ToolResultContent (generic/unknown tool result).
+
+        Fallback: None (base handler for unknown tools).
         """
         return ""
 

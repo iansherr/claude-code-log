@@ -16,22 +16,31 @@ from .utils import (
     starts_with_emoji,
 )
 from .tool_formatters import (
-    format_askuserquestion_content,
+    # Tool input formatters (called by HtmlRenderer.format_{InputClass})
+    format_askuserquestion_input,
+    format_bash_input,
+    format_edit_input,
+    format_exitplanmode_input,
+    format_multiedit_input,
+    format_read_input,
+    format_task_input,
+    format_todowrite_input,
+    format_write_input,
+    # Tool output formatters (called by HtmlRenderer.format_{OutputClass})
+    format_askuserquestion_output,
+    format_bash_output,
+    format_edit_output,
+    format_exitplanmode_output,
+    format_read_output,
+    format_task_output,
+    format_write_output,
+    # Fallback formatter
+    format_tool_result_content_raw,
+    # Legacy formatters (still used)
     format_askuserquestion_result,
-    format_bash_tool_content,
-    format_edit_tool_content,
-    format_edit_tool_result,
-    format_exitplanmode_content,
     format_exitplanmode_result,
-    format_multiedit_tool_content,
-    format_read_tool_content,
-    format_read_tool_result,
-    format_task_tool_content,
-    format_todowrite_content,
-    format_tool_result_content,
-    format_tool_use_content,
+    # Tool summary and title
     format_tool_use_title,
-    format_write_tool_content,
     get_tool_summary,
     render_params_table,
 )
@@ -94,26 +103,33 @@ __all__ = [
     "render_markdown",
     "render_markdown_collapsible",
     "starts_with_emoji",
-    # tool_formatters (input)
-    "format_askuserquestion_content",
+    # tool_formatters (input) - called by HtmlRenderer.format_{InputClass}
+    "format_askuserquestion_input",
+    "format_bash_input",
+    "format_edit_input",
+    "format_exitplanmode_input",
+    "format_multiedit_input",
+    "format_read_input",
+    "format_task_input",
+    "format_todowrite_input",
+    "format_write_input",
+    # tool_formatters (output) - called by HtmlRenderer.format_{OutputClass}
+    "format_askuserquestion_output",
+    "format_bash_output",
+    "format_edit_output",
+    "format_exitplanmode_output",
+    "format_read_output",
+    "format_task_output",
+    "format_write_output",
+    # Fallback formatter
+    "format_tool_result_content_raw",
+    # Legacy formatters (still used)
     "format_askuserquestion_result",
-    "format_bash_tool_content",
-    "format_edit_tool_content",
-    "format_exitplanmode_content",
     "format_exitplanmode_result",
-    "format_multiedit_tool_content",
-    "format_read_tool_content",
-    "format_task_tool_content",
-    "format_todowrite_content",
-    "format_tool_use_content",
+    # Tool summary and title
     "format_tool_use_title",
-    "format_write_tool_content",
     "get_tool_summary",
     "render_params_table",
-    # tool_formatters (output/result) - parse functions now in factories/tool_factory.py
-    "format_read_tool_result",
-    "format_edit_tool_result",
-    "format_tool_result_content",
     # system_formatters
     "format_dedup_notice_content",
     "format_hook_summary_content",

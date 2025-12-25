@@ -6,7 +6,8 @@ import tempfile
 from pathlib import Path
 import pytest
 from claude_code_log.converter import convert_jsonl_to_html
-from claude_code_log.html import format_todowrite_content, format_tool_use_content
+from claude_code_log.html import format_todowrite_input
+from claude_code_log.html.renderer import HtmlRenderer
 from claude_code_log.models import (
     EditInput,
     MessageMeta,
@@ -44,7 +45,7 @@ class TestTodoWriteRendering:
             ]
         )
 
-        html = format_todowrite_content(todo_input)
+        html = format_todowrite_input(todo_input)
 
         # Check overall structure (TodoWrite now has streamlined format)
         assert 'class="todo-list"' in html
@@ -75,7 +76,7 @@ class TestTodoWriteRendering:
         """Test TodoWrite formatting with no todos."""
         todo_input = TodoWriteInput(todos=[])
 
-        html = format_todowrite_content(todo_input)
+        html = format_todowrite_input(todo_input)
 
         assert 'class="todo-content"' in html
         # Title and ID are now in the message header, not in content
@@ -94,7 +95,7 @@ class TestTodoWriteRendering:
             ]
         )
 
-        html = format_todowrite_content(todo_input)
+        html = format_todowrite_input(todo_input)
 
         # Check that HTML is escaped
         assert "&lt;script&gt;" in html
@@ -116,7 +117,7 @@ class TestTodoWriteRendering:
             ]
         )
 
-        html = format_todowrite_content(todo_input)
+        html = format_todowrite_input(todo_input)
 
         # Should use default emojis for unknown values
         assert "⏳" in html  # default status emoji
@@ -227,9 +228,10 @@ class TestTodoWriteRendering:
             tool_name="TodoWrite",
         )
 
-        # Test both through the main format function
-        regular_html = format_tool_use_content(regular_tool)
-        todowrite_html = format_tool_use_content(todowrite_tool)
+        # Test both through the HtmlRenderer
+        renderer = HtmlRenderer()
+        regular_html = renderer.format_ToolUseMessage(regular_tool)
+        todowrite_html = renderer.format_ToolUseMessage(todowrite_tool)
 
         # Edit tool should use diff formatting (not table)
         assert "edit-diff" in regular_html

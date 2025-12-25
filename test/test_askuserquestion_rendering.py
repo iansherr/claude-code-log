@@ -2,7 +2,7 @@
 """Test cases for AskUserQuestion tool rendering."""
 
 from claude_code_log.html import (
-    format_askuserquestion_content,
+    format_askuserquestion_input,
     format_askuserquestion_result,
 )
 from claude_code_log.models import (
@@ -52,7 +52,7 @@ class TestAskUserQuestionRendering:
             ]
         )
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Check overall structure
         assert 'class="askuserquestion-content"' in html
@@ -104,7 +104,7 @@ class TestAskUserQuestionRendering:
             ]
         )
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Check structure
         assert 'class="askuserquestion-content"' in html
@@ -132,7 +132,7 @@ class TestAskUserQuestionRendering:
             ]
         )
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Check multi-select hint
         assert "(select multiple)" in html
@@ -144,7 +144,7 @@ class TestAskUserQuestionRendering:
         """Test backwards compatibility with single 'question' key format."""
         ask_input = AskUserQuestionInput(question="What is your preference?")
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Should still render the question
         assert 'class="askuserquestion-content"' in html
@@ -162,7 +162,7 @@ class TestAskUserQuestionRendering:
             ]
         )
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Should render without options list
         assert "Please describe the issue in detail." in html
@@ -175,7 +175,7 @@ class TestAskUserQuestionRendering:
         """Test AskUserQuestion with empty questions returns 'No question' message."""
         ask_input = AskUserQuestionInput()  # Empty questions list
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # Should show 'No question' message
         assert "askuserquestion-content" in html
@@ -197,7 +197,7 @@ class TestAskUserQuestionRendering:
             ]
         )
 
-        html = format_askuserquestion_content(ask_input)
+        html = format_askuserquestion_input(ask_input)
 
         # HTML entities should be escaped
         assert "&lt;script&gt;" in html
