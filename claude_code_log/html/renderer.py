@@ -1,8 +1,7 @@
 """HTML renderer implementation for Claude Code transcripts."""
 
-from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from ..cache import get_library_version
 from ..models import (
@@ -104,36 +103,72 @@ def check_html_version(html_file_path: Path) -> Optional[str]:
 class HtmlRenderer(Renderer):
     """HTML renderer for Claude Code transcripts."""
 
-    def _build_dispatcher(self) -> dict[type, Callable[..., str]]:
-        """Build content type to HTML formatter mapping.
+    # -------------------------------------------------------------------------
+    # System Content Formatters
+    # -------------------------------------------------------------------------
 
-        Maps MessageContent subclasses to their HTML formatting functions.
-        Handlers receive the content directly (not the full TemplateMessage).
-        The cast to the correct type happens in format_content().
-        """
-        return {
-            # System content types
-            SystemMessage: format_system_content,
-            HookSummaryMessage: format_hook_summary_content,
-            SessionHeaderMessage: format_session_header_content,
-            DedupNoticeMessage: format_dedup_notice_content,
-            # User content types
-            SlashCommandMessage: format_slash_command_content,
-            CommandOutputMessage: format_command_output_content,
-            BashInputMessage: format_bash_input_content,
-            BashOutputMessage: format_bash_output_content,
-            CompactedSummaryMessage: format_compacted_summary_content,
-            UserMemoryMessage: format_user_memory_content,
-            UserSlashCommandMessage: format_user_slash_command_content,
-            UserTextMessage: format_user_text_model_content,
-            # Assistant content types
-            ThinkingMessage: partial(format_thinking_content, line_threshold=10),
-            AssistantTextMessage: format_assistant_text_content,
-            UnknownMessage: format_unknown_content,
-            # Tool content types
-            ToolUseMessage: format_tool_use_content,
-            ToolResultMessage: format_tool_result_content,
-        }
+    def format_SystemMessage(self, message: SystemMessage) -> str:
+        return format_system_content(message)
+
+    def format_HookSummaryMessage(self, message: HookSummaryMessage) -> str:
+        return format_hook_summary_content(message)
+
+    def format_SessionHeaderMessage(self, message: SessionHeaderMessage) -> str:
+        return format_session_header_content(message)
+
+    def format_DedupNoticeMessage(self, message: DedupNoticeMessage) -> str:
+        return format_dedup_notice_content(message)
+
+    # -------------------------------------------------------------------------
+    # User Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_UserTextMessage(self, message: UserTextMessage) -> str:
+        return format_user_text_model_content(message)
+
+    def format_UserSlashCommandMessage(self, message: UserSlashCommandMessage) -> str:
+        return format_user_slash_command_content(message)
+
+    def format_SlashCommandMessage(self, message: SlashCommandMessage) -> str:
+        return format_slash_command_content(message)
+
+    def format_CommandOutputMessage(self, message: CommandOutputMessage) -> str:
+        return format_command_output_content(message)
+
+    def format_BashInputMessage(self, message: BashInputMessage) -> str:
+        return format_bash_input_content(message)
+
+    def format_BashOutputMessage(self, message: BashOutputMessage) -> str:
+        return format_bash_output_content(message)
+
+    def format_CompactedSummaryMessage(self, message: CompactedSummaryMessage) -> str:
+        return format_compacted_summary_content(message)
+
+    def format_UserMemoryMessage(self, message: UserMemoryMessage) -> str:
+        return format_user_memory_content(message)
+
+    # -------------------------------------------------------------------------
+    # Assistant Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_AssistantTextMessage(self, message: AssistantTextMessage) -> str:
+        return format_assistant_text_content(message)
+
+    def format_ThinkingMessage(self, message: ThinkingMessage) -> str:
+        return format_thinking_content(message, line_threshold=10)
+
+    def format_UnknownMessage(self, message: UnknownMessage) -> str:
+        return format_unknown_content(message)
+
+    # -------------------------------------------------------------------------
+    # Tool Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_ToolUseMessage(self, message: ToolUseMessage) -> str:
+        return format_tool_use_content(message)
+
+    def format_ToolResultMessage(self, message: ToolResultMessage) -> str:
+        return format_tool_result_content(message)
 
     def _flatten_preorder(
         self, roots: list[TemplateMessage]

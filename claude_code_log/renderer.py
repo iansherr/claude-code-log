@@ -5,11 +5,20 @@ import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple, TYPE_CHECKING, cast
+from typing import Any, Optional, Tuple, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .cache import CacheManager
-    from .models import MessageContent
+    from .models import (
+        MessageContent,
+        # For formatter method type hints
+        BashInputMessage,
+        BashOutputMessage,
+        CompactedSummaryMessage,
+        HookSummaryMessage,
+        ThinkingMessage,
+        UserMemoryMessage,
+    )
 from datetime import datetime
 
 from .models import (
@@ -2028,34 +2037,19 @@ class Renderer:
 
     Subclasses implement format-specific rendering (HTML, Markdown, etc.).
 
-    The dispatcher pattern enables automatic content formatting based on type:
-    - Subclasses override _build_dispatcher() to map content types to formatters
-    - format_content() walks the MRO to find the most specific handler
-    - Fallback to parent class handlers if no specific handler exists
+    The method-based dispatcher pattern:
+    - Base class defines format_xyz_message() methods for each content type
+    - Each method documents its fallback chain (which method it delegates to)
+    - format_content() walks the MRO to find the most specific method
+    - Subclasses override methods to implement format-specific rendering
     """
 
-    def __init__(self):
-        self._dispatcher = self._build_dispatcher()
-
-    def _build_dispatcher(
-        self,
-    ) -> dict[type, Callable[..., str]]:
-        """Build the content type to formatter mapping.
-
-        Override in subclasses to register format-specific handlers.
-        The dict maps MessageContent subclasses to formatter functions.
-        Each formatter receives the content directly (cast to the matched type).
-
-        Returns:
-            Dict mapping content types to formatter functions.
-        """
-        return {}
-
     def format_content(self, message: "TemplateMessage") -> str:
-        """Format message content by dispatching to type-specific handler.
+        """Format message content by dispatching to type-specific method.
 
-        Walks the content type's MRO to find the most specific registered
-        handler. This allows handlers for parent classes to serve as fallbacks.
+        Looks for a method named format_{ClassName} (e.g., format_SystemMessage).
+        Walks the content type's MRO to find the most specific format method.
+        This allows methods for parent classes to serve as fallbacks.
 
         Args:
             message: TemplateMessage with content to format.
@@ -2066,9 +2060,155 @@ class Renderer:
         for cls in type(message.content).__mro__:
             if cls is object:
                 break
-            if fmt := self._dispatcher.get(cls):
-                return fmt(message.content)
+            if method := getattr(self, f"format_{cls.__name__}", None):
+                return method(message.content)
         return ""
+
+    # -------------------------------------------------------------------------
+    # System Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_SystemMessage(self, message: "SystemMessage") -> str:
+        """Format SystemMessage content.
+
+        Fallback: None (base handler for system messages).
+        """
+        return ""
+
+    def format_HookSummaryMessage(self, message: "HookSummaryMessage") -> str:
+        """Format HookSummaryMessage content (hook execution results).
+
+        Fallback: format_SystemMessage (HookSummaryMessage is system-related).
+        """
+        return self.format_SystemMessage(message)  # type: ignore[arg-type]
+
+    def format_SessionHeaderMessage(self, message: "SessionHeaderMessage") -> str:
+        """Format SessionHeaderMessage content (session start markers).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_DedupNoticeMessage(self, message: "DedupNoticeMessage") -> str:
+        """Format DedupNoticeMessage content (duplicate content notices).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    # -------------------------------------------------------------------------
+    # User Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_UserTextMessage(self, message: "UserTextMessage") -> str:
+        """Format UserTextMessage content (user input with text/images).
+
+        Fallback: None (base handler for user text messages).
+        """
+        return ""
+
+    def format_UserSteeringMessage(self, message: "UserSteeringMessage") -> str:
+        """Format UserSteeringMessage content (out-of-band steering input).
+
+        Fallback: format_UserTextMessage (UserSteeringMessage extends UserTextMessage).
+        """
+        return self.format_UserTextMessage(message)
+
+    def format_UserSlashCommandMessage(self, message: "UserSlashCommandMessage") -> str:
+        """Format UserSlashCommandMessage content (user slash commands).
+
+        Fallback: format_UserTextMessage (similar content structure).
+        """
+        return self.format_UserTextMessage(message)  # type: ignore[arg-type]
+
+    def format_SlashCommandMessage(self, message: "SlashCommandMessage") -> str:
+        """Format SlashCommandMessage content (system slash commands).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_CommandOutputMessage(self, message: "CommandOutputMessage") -> str:
+        """Format CommandOutputMessage content (slash command output).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_BashInputMessage(self, message: "BashInputMessage") -> str:
+        """Format BashInputMessage content (bash command input).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_BashOutputMessage(self, message: "BashOutputMessage") -> str:
+        """Format BashOutputMessage content (bash command output).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_CompactedSummaryMessage(self, message: "CompactedSummaryMessage") -> str:
+        """Format CompactedSummaryMessage content (context summaries).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_UserMemoryMessage(self, message: "UserMemoryMessage") -> str:
+        """Format UserMemoryMessage content (memory/context updates).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    # -------------------------------------------------------------------------
+    # Assistant Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_AssistantTextMessage(self, message: "AssistantTextMessage") -> str:
+        """Format AssistantTextMessage content (assistant responses).
+
+        Fallback: None (base handler for assistant messages).
+        """
+        return ""
+
+    def format_ThinkingMessage(self, message: "ThinkingMessage") -> str:
+        """Format ThinkingMessage content (assistant reasoning).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_UnknownMessage(self, message: "UnknownMessage") -> str:
+        """Format UnknownMessage content (unrecognized content types).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    # -------------------------------------------------------------------------
+    # Tool Content Formatters
+    # -------------------------------------------------------------------------
+
+    def format_ToolUseMessage(self, message: "ToolUseMessage") -> str:
+        """Format ToolUseMessage content (tool invocations).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    def format_ToolResultMessage(self, message: "ToolResultMessage") -> str:
+        """Format ToolResultMessage content (tool results).
+
+        Fallback: None (standalone content type).
+        """
+        return ""
+
+    # -------------------------------------------------------------------------
+    # Rendering Entry Points
+    # -------------------------------------------------------------------------
 
     def generate(
         self,
