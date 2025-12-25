@@ -12,9 +12,7 @@ from ..models import (
     CommandOutputMessage,
     CompactedSummaryMessage,
     DedupNoticeMessage,
-    EditOutput,
     HookSummaryMessage,
-    ReadOutput,
     SessionHeaderMessage,
     SlashCommandMessage,
     SystemMessage,
@@ -134,27 +132,8 @@ class HtmlRenderer(Renderer):
             UnknownMessage: format_unknown_content,
             # Tool content types
             ToolUseMessage: format_tool_use_content,
-            ToolResultMessage: self._format_tool_result_content,
+            ToolResultMessage: format_tool_result_content,
         }
-
-    def _format_tool_result_content(self, content: ToolResultMessage) -> str:
-        """Format ToolResultMessage with associated tool context."""
-        # output is ToolOutput (either specialized or ToolResultContent fallback)
-        from .tool_formatters import (
-            format_read_tool_result,
-            format_edit_tool_result,
-        )
-
-        if isinstance(content.output, ReadOutput):
-            return format_read_tool_result(content.output)
-        if isinstance(content.output, EditOutput):
-            return format_edit_tool_result(content.output)
-        # ToolResultContent fallback (the only remaining type in ToolOutput union)
-        return format_tool_result_content(
-            content.output,
-            content.file_path,
-            content.tool_name,
-        )
 
     def _flatten_preorder(
         self, roots: list[TemplateMessage]

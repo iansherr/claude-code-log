@@ -338,7 +338,7 @@ def test_bash_ansi_color_rendering():
 def test_bash_tool_result_ansi_processing():
     """Test that Bash tool results have ANSI codes processed."""
     from claude_code_log.html.tool_formatters import (
-        format_tool_result_content,
+        _format_raw_tool_result,
         _looks_like_bash_output,
     )
     from claude_code_log.models import ToolResultContent
@@ -355,7 +355,7 @@ def test_bash_tool_result_ansi_processing():
         type="tool_result", tool_use_id="bash_123", content=bash_content, is_error=False
     )
 
-    html = format_tool_result_content(tool_result)
+    html = _format_raw_tool_result(tool_result)
 
     # Should contain colored output
     assert '<span class="ansi-green">✔ Build completed</span>' in html
@@ -367,7 +367,7 @@ def test_bash_tool_result_ansi_processing():
 
 def test_bash_tool_result_cursor_stripping():
     """Test that cursor movement codes are stripped from Bash tool results."""
-    from claude_code_log.html import format_tool_result_content
+    from claude_code_log.html.tool_formatters import _format_raw_tool_result
     from claude_code_log.models import ToolResultContent
 
     # Content with cursor movement codes
@@ -380,7 +380,7 @@ def test_bash_tool_result_cursor_stripping():
         is_error=False,
     )
 
-    html = format_tool_result_content(tool_result)
+    html = _format_raw_tool_result(tool_result)
 
     # Should have colors but no cursor codes
     assert '<span class="ansi-green">✔ Done!</span>' in html

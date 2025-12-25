@@ -39,6 +39,7 @@ from ..models import (
     TodoWriteInput,
     ToolInput,
     ToolResultContent,
+    ToolResultMessage,
     ToolUseContent,
     ToolUseMessage,
     WriteInput,
@@ -656,20 +657,17 @@ def _looks_like_bash_output(content: str) -> bool:
     return False
 
 
-def format_tool_result_content(
+def _format_raw_tool_result(
     tool_result: ToolResultContent,
-    _file_path: Optional[str] = None,
     tool_name: Optional[str] = None,
 ) -> str:
-    """Format tool result content as HTML, including images.
+    """Format raw ToolResultContent as HTML (fallback formatter).
 
-    This is the fallback formatter for tool results that don't have specialized
-    output types (ReadOutput, EditOutput). Those are dispatched directly to
-    format_read_tool_result/format_edit_tool_result from renderer.py.
+    This handles tool results that don't have specialized output types.
+    Called by format_tool_result_content for the ToolResultContent fallback case.
 
     Args:
-        tool_result: The tool result content
-        _file_path: Unused (kept for API compatibility)
+        tool_result: The raw tool result content
         tool_name: Optional tool name for specialized rendering (e.g., "Write", "Task")
     """
     # Handle both string and structured content
@@ -808,6 +806,31 @@ def format_tool_result_content(
         </div>
     </details>
     """
+
+
+def format_tool_result_content(content: ToolResultMessage) -> str:
+    """Format ToolResultMessage as HTML.
+
+    Dispatches to specialized formatters based on the parsed output type.
+    Falls back to _format_raw_tool_result if output is unparsed ToolResultContent.
+
+    Args:
+        content: ToolResultMessage with parsed output and metadata
+
+    Returns:
+        HTML string for the tool result content
+    """
+    output = content.output
+
+    # Dispatch based on parsed output type
+    if isinstance(output, ReadOutput):
+        return format_read_tool_result(output)
+
+    if isinstance(output, EditOutput):
+        return format_edit_tool_result(output)
+
+    # Fallback: raw ToolResultContent
+    return _format_raw_tool_result(output, content.tool_name)
 
 
 # -- Public Exports -----------------------------------------------------------
