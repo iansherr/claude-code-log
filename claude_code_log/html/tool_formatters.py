@@ -18,7 +18,7 @@ import base64
 import binascii
 import json
 import re
-from typing import Any, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 from .utils import (
     escape_html,
@@ -570,6 +570,19 @@ def render_params_table(params: dict[str, Any]) -> str:
 
 # -- Tool Use Dispatcher ------------------------------------------------------
 
+# Registry mapping input types to their formatters
+TOOL_USE_FORMATTERS: dict[type, Callable[[Any], str]] = {
+    TodoWriteInput: format_todowrite_content,
+    BashInput: format_bash_tool_content,
+    EditInput: format_edit_tool_content,
+    MultiEditInput: format_multiedit_tool_content,
+    WriteInput: format_write_tool_content,
+    TaskInput: format_task_tool_content,
+    ReadInput: format_read_tool_content,
+    AskUserQuestionInput: format_askuserquestion_content,
+    ExitPlanModeInput: format_exitplanmode_content,
+}
+
 
 def format_tool_use_content(content: ToolUseMessage) -> str:
     """Format ToolUseMessage as HTML.
@@ -585,33 +598,9 @@ def format_tool_use_content(content: ToolUseMessage) -> str:
     """
     parsed_input = content.input
 
-    # Dispatch based on parsed type
-    if isinstance(parsed_input, TodoWriteInput):
-        return format_todowrite_content(parsed_input)
-
-    if isinstance(parsed_input, BashInput):
-        return format_bash_tool_content(parsed_input)
-
-    if isinstance(parsed_input, EditInput):
-        return format_edit_tool_content(parsed_input)
-
-    if isinstance(parsed_input, MultiEditInput):
-        return format_multiedit_tool_content(parsed_input)
-
-    if isinstance(parsed_input, WriteInput):
-        return format_write_tool_content(parsed_input)
-
-    if isinstance(parsed_input, TaskInput):
-        return format_task_tool_content(parsed_input)
-
-    if isinstance(parsed_input, ReadInput):
-        return format_read_tool_content(parsed_input)
-
-    if isinstance(parsed_input, AskUserQuestionInput):
-        return format_askuserquestion_content(parsed_input)
-
-    if isinstance(parsed_input, ExitPlanModeInput):
-        return format_exitplanmode_content(parsed_input)
+    # Dispatch based on parsed type via registry
+    if formatter := TOOL_USE_FORMATTERS.get(type(parsed_input)):
+        return formatter(parsed_input)
 
     # Fallback: ToolUseContent - render its input dict as params table
     if isinstance(parsed_input, ToolUseContent):
@@ -808,6 +797,13 @@ def _format_raw_tool_result(
     """
 
 
+# Registry mapping output types to their formatters
+TOOL_RESULT_FORMATTERS: dict[type, Callable[[Any], str]] = {
+    ReadOutput: format_read_tool_result,
+    EditOutput: format_edit_tool_result,
+}
+
+
 def format_tool_result_content(content: ToolResultMessage) -> str:
     """Format ToolResultMessage as HTML.
 
@@ -822,15 +818,12 @@ def format_tool_result_content(content: ToolResultMessage) -> str:
     """
     output = content.output
 
-    # Dispatch based on parsed output type
-    if isinstance(output, ReadOutput):
-        return format_read_tool_result(output)
+    # Dispatch based on parsed output type via registry
+    if formatter := TOOL_RESULT_FORMATTERS.get(type(output)):
+        return formatter(output)
 
-    if isinstance(output, EditOutput):
-        return format_edit_tool_result(output)
-
-    # Fallback: raw ToolResultContent
-    return _format_raw_tool_result(output, content.tool_name)
+    # Fallback: raw ToolResultContent (cast is safe - registry handles other types)
+    return _format_raw_tool_result(cast(ToolResultContent, output), content.tool_name)
 
 
 # -- Public Exports -----------------------------------------------------------
