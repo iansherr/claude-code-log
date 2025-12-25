@@ -33,7 +33,7 @@ class TestTemplateMessage:
             uuid="test-uuid",
         )
         content = UserTextMessage(meta=meta)
-        msg = TemplateMessage(content, meta)
+        msg = TemplateMessage(content)
         renderer = Renderer()
 
         assert msg.type == "user"
@@ -47,19 +47,19 @@ class TestTemplateMessage:
 
         # Test UserTextMessage
         user_content = UserTextMessage(meta=meta)
-        user_msg = TemplateMessage(user_content, meta)
+        user_msg = TemplateMessage(user_content)
         assert renderer.title_content(user_msg) == "User"
 
         # Test AssistantTextMessage
         assistant_content = AssistantTextMessage(meta=meta)
-        assistant_msg = TemplateMessage(assistant_content, meta)
+        assistant_msg = TemplateMessage(assistant_content)
         assert renderer.title_content(assistant_msg) == "Assistant"
 
         # Test SessionHeaderMessage - fallback to type-based title
         session_content = SessionHeaderMessage(
             meta=meta, title="Test Session", session_id="test-id"
         )
-        session_msg = TemplateMessage(session_content, meta)
+        session_msg = TemplateMessage(session_content)
         assert renderer.title_content(session_msg) == "Session Header"
 
 
@@ -423,7 +423,7 @@ class TestTemplateMessageTree:
             # Fallback to UserTextMessage for unknown types
             content = UserTextMessage(meta=meta)
 
-        msg = TemplateMessage(content, meta, message_id=msg_id, ancestry=ancestry)
+        msg = TemplateMessage(content, message_id=msg_id, ancestry=ancestry)
         return msg
 
     def test_children_field_default_empty(self):

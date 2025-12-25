@@ -27,7 +27,6 @@ from .models import (
     ThinkingContent,
     UsageInfo,
     # Structured content types
-    AssistantTextMessage,
     CommandOutputMessage,
     DedupNoticeMessage,
     SessionHeaderMessage,
@@ -84,21 +83,20 @@ class TemplateMessage:
     def __init__(
         self,
         content: "MessageContent",
-        meta: "MessageMeta",
         *,  # Force keyword arguments after this
         message_id: Optional[str] = None,
         ancestry: Optional[list[str]] = None,
         uuid: Optional[str] = None,
     ):
-        # Required: content and meta
+        # Content carries its own meta
         self.content = content
-        self.meta = meta
+        self.meta = content.meta
 
         # Rendering metadata
         self.message_id = message_id
         self.ancestry = ancestry or []
-        # uuid can differ from meta.uuid (e.g., for chunks: "{uuid}-chunk-{idx}")
-        self.uuid = uuid if uuid is not None else meta.uuid
+        # uuid can differ from content.meta.uuid (e.g., for chunks: "{uuid}-chunk-{idx}")
+        self.uuid = uuid if uuid is not None else self.meta.uuid
 
         # Fold/unfold counts
         self.immediate_children_count = 0  # Direct children only
@@ -1700,9 +1698,7 @@ def _render_messages(
         if isinstance(message, SystemTranscriptEntry):
             system_content = create_system_message(message)
             if system_content:
-                template_messages.append(
-                    TemplateMessage(system_content, system_content.meta)
-                )
+                template_messages.append(TemplateMessage(system_content))
             continue
 
         # Skip summary messages (should be filtered in pass 1, but be defensive)
@@ -1768,10 +1764,7 @@ def _render_messages(
                 session_id=session_id,
                 summary=current_session_summary,
             )
-            session_header = TemplateMessage(
-                session_header_content,
-                session_header_meta,
-            )
+            session_header = TemplateMessage(session_header_content)
             template_messages.append(session_header)
 
         # Extract token usage for assistant messages
@@ -1824,7 +1817,7 @@ def _render_messages(
                 if not chunk or content_model is None:
                     continue
 
-                template_messages.append(TemplateMessage(content_model, meta))
+                template_messages.append(TemplateMessage(content_model))
 
             else:
                 # Special chunk: single tool_use/tool_result/thinking item
@@ -1870,7 +1863,7 @@ def _render_messages(
                     continue
 
                 template_messages.append(
-                    TemplateMessage(tool_result.content, meta, uuid=tool_uuid)
+                    TemplateMessage(tool_result.content, uuid=tool_uuid)
                 )
 
     return template_messages
