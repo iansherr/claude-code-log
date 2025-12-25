@@ -965,13 +965,11 @@ class WriteOutput:
     """Parsed Write tool output.
 
     Symmetric with WriteInput for tool_use → tool_result pairing.
-
-    TODO: Not currently used - tool results handled as raw strings.
     """
 
     file_path: str
     success: bool
-    message: str  # Success or error message
+    message: str  # First line acknowledgment (truncated from full output)
 
 
 @dataclass
@@ -1002,15 +1000,11 @@ class BashOutput:
     """Parsed Bash tool output.
 
     Symmetric with BashInput for tool_use → tool_result pairing.
-
-    TODO: Not currently used - tool results handled as raw strings.
+    Contains the output with ANSI flag for terminal formatting.
     """
 
-    stdout: str
-    stderr: str
-    exit_code: Optional[int]
-    interrupted: bool
-    is_image: bool  # True if output contains image data
+    content: str  # Output content (stdout/stderr combined)
+    has_ansi: bool  # True if content contains ANSI escape sequences
 
 
 @dataclass
@@ -1018,13 +1012,10 @@ class TaskOutput:
     """Parsed Task (sub-agent) tool output.
 
     Symmetric with TaskInput for tool_use → tool_result pairing.
-
-    TODO: Not currently used - tool results handled as raw strings.
+    Contains the agent's final response as markdown.
     """
 
-    agent_id: Optional[str]
-    result: str  # Agent's response
-    is_background: bool
+    result: str  # Agent's response (markdown)
 
 
 @dataclass
@@ -1056,12 +1047,48 @@ class GrepOutput:
     truncated: bool
 
 
+@dataclass
+class AskUserQuestionAnswer:
+    """Single Q&A pair from AskUserQuestion result."""
+
+    question: str
+    answer: str
+
+
+@dataclass
+class AskUserQuestionOutput:
+    """Parsed AskUserQuestion tool output.
+
+    Symmetric with AskUserQuestionInput for tool_use → tool_result pairing.
+    Contains the Q&A pairs extracted from the result message.
+    """
+
+    answers: list[AskUserQuestionAnswer]  # Q&A pairs
+    raw_message: str  # Original message for fallback
+
+
+@dataclass
+class ExitPlanModeOutput:
+    """Parsed ExitPlanMode tool output.
+
+    Symmetric with ExitPlanModeInput for tool_use → tool_result pairing.
+    Truncates redundant plan echo on success.
+    """
+
+    message: str  # Truncated message (without redundant plan)
+    approved: bool  # Whether the plan was approved
+
+
 # Union of all specialized output types + ToolResultContent as generic fallback
-# Note: Uses forward reference for ToolResultContent (defined later with ContentItem types)
 ToolOutput = Union[
     ReadOutput,
+    WriteOutput,
     EditOutput,
-    # Add more specialized output types as they're implemented:
-    # WriteOutput, BashOutput, TaskOutput, GlobOutput, GrepOutput
+    BashOutput,
+    TaskOutput,
+    AskUserQuestionOutput,
+    ExitPlanModeOutput,
+    # TODO: Add as parsers are implemented:
+    # GlobOutput, GrepOutput
     ToolResultContent,  # Generic fallback for unparsed results
 ]

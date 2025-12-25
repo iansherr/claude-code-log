@@ -42,9 +42,15 @@ from ..models import (
     ToolUseMessage,
     WriteInput,
     # Tool output models
+    AskUserQuestionAnswer,
+    AskUserQuestionOutput,
+    BashOutput,
     EditOutput,
+    ExitPlanModeOutput,
     ReadOutput,
+    TaskOutput,
     ToolOutput,
+    WriteOutput,
 )
 from ..html import escape_html, format_tool_use_title
 
@@ -394,17 +400,198 @@ def parse_edit_output(content: str, file_path: Optional[str]) -> Optional[EditOu
     )
 
 
+def parse_write_output(content: str, file_path: Optional[str]) -> Optional[WriteOutput]:
+    """Parse Write tool result into structured content.
+
+    Write tool results contain an acknowledgment on the first line.
+    We extract just the first line for display.
+
+    Args:
+        content: Raw tool result string
+        file_path: Path to the file that was written (required for WriteOutput)
+
+    Returns:
+        WriteOutput if parsing succeeds, None otherwise
+    """
+    if not file_path:
+        return None
+
+    lines = content.split("\n")
+    if not lines:
+        return None
+
+    first_line = lines[0]
+    return WriteOutput(
+        file_path=file_path,
+        success=True,  # If we got content, write succeeded
+        message=first_line,
+    )
+
+
+def parse_task_output(content: str, file_path: Optional[str]) -> Optional[TaskOutput]:
+    """Parse Task tool result into structured content.
+
+    Task tool results contain the agent's response as markdown.
+
+    Args:
+        content: Raw tool result string (agent's response)
+        file_path: Unused for Task tool
+
+    Returns:
+        TaskOutput with the agent's response
+    """
+    del file_path  # Unused
+    if not content:
+        return None
+
+    return TaskOutput(result=content)
+
+
+def _looks_like_bash_output(content: str) -> bool:
+    """Check if content looks like it's from a Bash tool based on common patterns."""
+    if not content:
+        return False
+
+    # Check for ANSI escape sequences
+    if "\x1b[" in content:
+        return True
+
+    # Check for common bash/terminal patterns
+    bash_indicators = [
+        "$ ",  # Shell prompt
+        "❯ ",  # Modern shell prompt
+        "> ",  # Shell continuation
+        "\n+ ",  # Bash -x output
+        "bash: ",  # Bash error messages
+        "/bin/bash",  # Bash path
+        "command not found",  # Common bash error
+        "Permission denied",  # Common bash error
+        "No such file or directory",  # Common bash error
+    ]
+
+    # Check for file path patterns that suggest command output
+    if re.search(r"/[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*", content):  # Unix-style paths
+        return True
+
+    # Check for common command output patterns
+    if any(indicator in content for indicator in bash_indicators):
+        return True
+
+    return False
+
+
+def parse_bash_output(content: str, file_path: Optional[str]) -> Optional[BashOutput]:
+    """Parse Bash tool result into structured content.
+
+    Detects ANSI escape sequences for terminal formatting.
+
+    Args:
+        content: Raw tool result string
+        file_path: Unused for Bash tool
+
+    Returns:
+        BashOutput with content and ANSI flag
+    """
+    del file_path  # Unused
+    if not content:
+        return None
+
+    has_ansi = _looks_like_bash_output(content)
+    return BashOutput(content=content, has_ansi=has_ansi)
+
+
+def parse_askuserquestion_output(
+    content: str, file_path: Optional[str]
+) -> Optional[AskUserQuestionOutput]:
+    """Parse AskUserQuestion tool result into structured content.
+
+    Parses the result format:
+    'User has answered your questions: "Q1"="A1", "Q2"="A2". You can now continue...'
+
+    Args:
+        content: Raw tool result string
+        file_path: Unused for AskUserQuestion tool
+
+    Returns:
+        AskUserQuestionOutput with Q&A pairs
+    """
+    del file_path  # Unused
+    if not content:
+        return None
+
+    # Check if this is a successful answer
+    if not content.startswith("User has answered your question"):
+        return None
+
+    # Extract the Q&A portion between the colon and the final sentence
+    match = re.match(
+        r"User has answered your questions?: (.+)\. You can now continue",
+        content,
+        re.DOTALL,
+    )
+    if not match:
+        return None
+
+    qa_portion = match.group(1)
+
+    # Parse "Question"="Answer" pairs
+    qa_pattern = re.compile(r'"([^"]+)"="([^"]+)"')
+    pairs = qa_pattern.findall(qa_portion)
+
+    if not pairs:
+        return None
+
+    answers = [AskUserQuestionAnswer(question=q, answer=a) for q, a in pairs]
+    return AskUserQuestionOutput(answers=answers, raw_message=content)
+
+
+def parse_exitplanmode_output(
+    content: str, file_path: Optional[str]
+) -> Optional[ExitPlanModeOutput]:
+    """Parse ExitPlanMode tool result into structured content.
+
+    Truncates redundant plan echo on success.
+    When a plan is approved, the result contains:
+    1. A confirmation message
+    2. Path to saved plan file
+    3. "## Approved Plan:" followed by full plan text (redundant)
+
+    Args:
+        content: Raw tool result string
+        file_path: Unused for ExitPlanMode tool
+
+    Returns:
+        ExitPlanModeOutput with truncated message
+    """
+    del file_path  # Unused
+    if not content:
+        return None
+
+    approved = "User has approved your plan" in content
+
+    if approved:
+        # Truncate at "## Approved Plan:"
+        marker = "## Approved Plan:"
+        marker_pos = content.find(marker)
+        if marker_pos > 0:
+            message = content[:marker_pos].rstrip()
+        else:
+            message = content
+    else:
+        message = content
+
+    return ExitPlanModeOutput(message=message, approved=approved)
+
+
 # Registry of tool output parsers: tool_name -> parser(content, file_path) -> Optional[ToolOutput]
-# Add more parsers as specialized output types are implemented.
 TOOL_OUTPUT_PARSERS: dict[str, Callable[[str, Optional[str]], Optional[ToolOutput]]] = {
     "Read": parse_read_output,
     "Edit": parse_edit_output,
-    # TODO: Add more specialized output parsers:
-    # "Write": parse_write_output,
-    # "Bash": parse_bash_output,
-    # "Task": parse_task_output,
-    # "Glob": parse_glob_output,
-    # "Grep": parse_grep_output,
+    "Write": parse_write_output,
+    "Bash": parse_bash_output,
+    "Task": parse_task_output,
+    "AskUserQuestion": parse_askuserquestion_output,
+    "ExitPlanMode": parse_exitplanmode_output,
 }
 
 

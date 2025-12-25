@@ -337,11 +337,9 @@ def test_bash_ansi_color_rendering():
 
 def test_bash_tool_result_ansi_processing():
     """Test that Bash tool results have ANSI codes processed."""
-    from claude_code_log.html.tool_formatters import (
-        _format_raw_tool_result,
-        _looks_like_bash_output,
-    )
-    from claude_code_log.models import ToolResultContent
+    from claude_code_log.factories.tool_factory import _looks_like_bash_output
+    from claude_code_log.html.tool_formatters import format_bash_tool_result
+    from claude_code_log.models import BashOutput
 
     # Test the detection function
     bash_content = "❯ npm run build\n\x1b[32m✔ Build completed\x1b[0m"
@@ -350,12 +348,9 @@ def test_bash_tool_result_ansi_processing():
     regular_content = "This is just regular text output"
     assert not _looks_like_bash_output(regular_content)
 
-    # Test tool result processing with ANSI codes
-    tool_result = ToolResultContent(
-        type="tool_result", tool_use_id="bash_123", content=bash_content, is_error=False
-    )
-
-    html = _format_raw_tool_result(tool_result)
+    # Test BashOutput formatting with ANSI codes
+    bash_output = BashOutput(content=bash_content, has_ansi=True)
+    html = format_bash_tool_result(bash_output)
 
     # Should contain colored output
     assert '<span class="ansi-green">✔ Build completed</span>' in html
@@ -367,20 +362,14 @@ def test_bash_tool_result_ansi_processing():
 
 def test_bash_tool_result_cursor_stripping():
     """Test that cursor movement codes are stripped from Bash tool results."""
-    from claude_code_log.html.tool_formatters import _format_raw_tool_result
-    from claude_code_log.models import ToolResultContent
+    from claude_code_log.html.tool_formatters import format_bash_tool_result
+    from claude_code_log.models import BashOutput
 
     # Content with cursor movement codes
     content_with_cursor = "Building...\x1b[1A\x1b[2K\x1b[32m✔ Done!\x1b[0m"
 
-    tool_result = ToolResultContent(
-        type="tool_result",
-        tool_use_id="bash_456",
-        content=content_with_cursor,
-        is_error=False,
-    )
-
-    html = _format_raw_tool_result(tool_result)
+    bash_output = BashOutput(content=content_with_cursor, has_ansi=True)
+    html = format_bash_tool_result(bash_output)
 
     # Should have colors but no cursor codes
     assert '<span class="ansi-green">✔ Done!</span>' in html

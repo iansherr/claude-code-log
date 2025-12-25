@@ -314,14 +314,16 @@ Tool results appear as `ToolResultContent` items in user messages, linked to the
 |------|--------------|------------|-------|
 | Read | `ReadOutput` | file_path, content, start_line, num_lines, is_truncated | [tool_result](messages/tools/Read-tool_result.json) |
 | Edit | `EditOutput` | file_path, success, diffs, message, start_line | [tool_result](messages/tools/Edit-tool_result.json) |
-| Write | `WriteOutput` *(TODO)* | file_path, success, message | [tool_result](messages/tools/Write-tool_result.json) |
-| Bash | `BashOutput` *(TODO)* | stdout, stderr, exit_code, interrupted, is_image | [tool_result](messages/tools/Bash-tool_result.json) |
+| Write | `WriteOutput` | file_path, success, message | [tool_result](messages/tools/Write-tool_result.json) |
+| Bash | `BashOutput` | content, has_ansi | [tool_result](messages/tools/Bash-tool_result.json) |
+| Task | `TaskOutput` | result | [tool_result](messages/tools/Task-tool_result.json) |
+| AskUserQuestion | `AskUserQuestionOutput` | answers, raw_message | [tool_result](messages/tools/AskUserQuestion-tool_result.json) |
+| ExitPlanMode | `ExitPlanModeOutput` | message, approved | [tool_result](messages/tools/ExitPlanMode-tool_result.json) |
 | Glob | `GlobOutput` *(TODO)* | pattern, files, truncated | [tool_result](messages/tools/Glob-tool_result.json) |
 | Grep | `GrepOutput` *(TODO)* | pattern, matches, output_mode, truncated | [tool_result](messages/tools/Grep-tool_result.json) |
-| Task | `TaskOutput` *(TODO)* | agent_id, result, is_background | [tool_result](messages/tools/Task-tool_result.json) |
 | (error) | — | is_error: true | [Bash error](messages/tools/Bash-tool_result_error.json) |
 
-**(TODO)**: Output model defined in models.py but not yet used - tool results currently handled as raw strings.
+**(TODO)**: Glob and Grep output models defined in models.py but not yet used.
 
 ### Generic Tool Result
 

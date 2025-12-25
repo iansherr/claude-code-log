@@ -28,14 +28,18 @@ from .utils import (
 from ..models import (
     AskUserQuestionInput,
     AskUserQuestionItem,
+    AskUserQuestionOutput,
     BashInput,
+    BashOutput,
     EditInput,
     EditOutput,
     ExitPlanModeInput,
+    ExitPlanModeOutput,
     MultiEditInput,
     ReadInput,
     ReadOutput,
     TaskInput,
+    TaskOutput,
     TodoWriteInput,
     ToolInput,
     ToolResultContent,
@@ -43,6 +47,7 @@ from ..models import (
     ToolUseContent,
     ToolUseMessage,
     WriteInput,
+    WriteOutput,
 )
 from .ansi_colors import convert_ansi_to_html
 from .renderer_code import render_single_diff
@@ -312,6 +317,102 @@ def format_edit_tool_result(output: EditOutput) -> str:
         "edit-tool-result",
         linenostart=output.start_line,
     )
+
+
+def format_write_tool_result(output: WriteOutput) -> str:
+    """Format Write tool result as HTML.
+
+    Args:
+        output: Parsed WriteOutput with first line acknowledgment
+
+    Returns:
+        HTML string with the acknowledgment message
+    """
+    escaped_message = escape_html(output.message)
+    return f"<pre>{escaped_message} ...</pre>"
+
+
+def format_bash_tool_result(output: BashOutput) -> str:
+    """Format Bash tool result as HTML with ANSI color support.
+
+    Args:
+        output: Parsed BashOutput with content and ANSI flag
+
+    Returns:
+        HTML string with ANSI colors converted or plain text
+    """
+    content = output.content
+    if output.has_ansi:
+        full_html = convert_ansi_to_html(content)
+    else:
+        full_html = escape_html(content)
+
+    # For short content, show directly
+    if len(content) <= 200:
+        return f"<pre>{full_html}</pre>"
+
+    # For longer content, use collapsible details
+    preview_html = escape_html(content[:200]) + "..."
+    return f"""
+    <details class="collapsible-details">
+        <summary>
+            <div class="preview-content"><pre>{preview_html}</pre></div>
+        </summary>
+        <div class="details-content">
+            <pre>{full_html}</pre>
+        </div>
+    </details>
+    """
+
+
+def format_task_tool_result(output: TaskOutput) -> str:
+    """Format Task tool result as HTML with markdown rendering.
+
+    Args:
+        output: Parsed TaskOutput with agent's response
+
+    Returns:
+        HTML string with markdown rendered in collapsible section
+    """
+    return render_markdown_collapsible(output.result, "task-result")
+
+
+def format_askuserquestion_output(output: AskUserQuestionOutput) -> str:
+    """Format AskUserQuestion tool result with styled Q&A pairs.
+
+    Args:
+        output: Parsed AskUserQuestionOutput with Q&A pairs
+
+    Returns:
+        HTML string with styled question/answer blocks
+    """
+    html_parts: list[str] = [
+        '<div class="askuserquestion-content askuserquestion-result">'
+    ]
+
+    for qa in output.answers:
+        escaped_q = escape_html(qa.question)
+        escaped_a = escape_html(qa.answer)
+        html_parts.append('<div class="question-block answered">')
+        html_parts.append(f'<div class="question-text">❓ {escaped_q}</div>')
+        html_parts.append(f'<div class="answer-text">✅ {escaped_a}</div>')
+        html_parts.append("</div>")
+
+    html_parts.append("</div>")
+    return "".join(html_parts)
+
+
+def format_exitplanmode_output(output: ExitPlanModeOutput) -> str:
+    """Format ExitPlanMode tool result as HTML.
+
+    Args:
+        output: Parsed ExitPlanModeOutput with truncated message
+
+    Returns:
+        HTML string with the (truncated) result message
+    """
+    escaped_content = escape_html(output.message)
+    return f"<pre>{escaped_content}</pre>"
 
 
 def format_write_tool_content(write_input: WriteInput) -> str:
@@ -613,51 +714,18 @@ def format_tool_use_content(content: ToolUseMessage) -> str:
 # -- Tool Result Content Formatter -------------------------------------------
 
 
-def _looks_like_bash_output(content: str) -> bool:
-    """Check if content looks like it's from a Bash tool based on common patterns."""
-    if not content:
-        return False
-
-    # Check for ANSI escape sequences
-    if "\x1b[" in content:
-        return True
-
-    # Check for common bash/terminal patterns
-    bash_indicators = [
-        "$ ",  # Shell prompt
-        "❯ ",  # Modern shell prompt
-        "> ",  # Shell continuation
-        "\n+ ",  # Bash -x output
-        "bash: ",  # Bash error messages
-        "/bin/bash",  # Bash path
-        "command not found",  # Common bash error
-        "Permission denied",  # Common bash error
-        "No such file or directory",  # Common bash error
-    ]
-
-    # Check for file path patterns that suggest command output
-    if re.search(r"/[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*", content):  # Unix-style paths
-        return True
-
-    # Check for common command output patterns
-    if any(indicator in content for indicator in bash_indicators):
-        return True
-
-    return False
-
-
 def _format_raw_tool_result(
     tool_result: ToolResultContent,
-    tool_name: Optional[str] = None,
+    tool_name: Optional[str] = None,  # noqa: ARG001
 ) -> str:
     """Format raw ToolResultContent as HTML (fallback formatter).
 
-    This handles tool results that don't have specialized output types.
-    Called by format_tool_result_content for the ToolResultContent fallback case.
+    This handles tool results that don't have specialized output types,
+    including structured content with embedded images.
 
     Args:
         tool_result: The raw tool result content
-        tool_name: Optional tool name for specialized rendering (e.g., "Write", "Task")
+        tool_name: Unused (kept for API compatibility)
     """
     # Handle both string and structured content
     if isinstance(tool_result.content, str):
@@ -713,46 +781,11 @@ def _format_raw_tool_result(
             raw_content,
             flags=re.DOTALL,
         )
-        # Remove "String: ..." portions that echo the input (everything after "String:" to end)
+        # Remove "String: ..." portions that echo the input
         raw_content = re.sub(r"\nString:.*$", "", raw_content, flags=re.DOTALL)
 
-    # Special handling for Write tool: only show first line (acknowledgment) on success
-    if tool_name == "Write" and not tool_result.is_error and not has_images:
-        lines = raw_content.split("\n")
-        if lines:
-            # Keep only the first acknowledgment line and add ellipsis
-            first_line = lines[0]
-            escaped_html = escape_html(first_line)
-            return f"<pre>{escaped_html} ...</pre>"
-
-    # Note: Read and Edit tool results are now parsed upstream in tool_factory.py
-    # and dispatched to format_read_tool_result/format_edit_tool_result via renderer.py
-
-    # Special handling for Task tool: render result as markdown with Pygments (agent's final message)
-    # Deduplication is now handled retroactively by replacing the sub-assistant content
-    if tool_name == "Task" and not has_images:
-        return render_markdown_collapsible(raw_content, "task-result")
-
-    # Special handling for ExitPlanMode tool: truncate redundant plan echo on success
-    if tool_name == "ExitPlanMode" and not has_images:
-        processed_content = format_exitplanmode_result(raw_content)
-        escaped_content = escape_html(processed_content)
-        return f"<pre>{escaped_content}</pre>"
-
-    # Special handling for AskUserQuestion tool: render Q&A pairs with styling
-    if tool_name == "AskUserQuestion" and not has_images:
-        styled_result = format_askuserquestion_result(raw_content)
-        if styled_result:
-            return styled_result
-        # Fall through to default handling if parsing fails
-
-    # Check if this looks like Bash tool output and process ANSI codes
-    # Bash tool results often contain ANSI escape sequences and terminal output
-    is_ansi = _looks_like_bash_output(raw_content)
-    full_html = (
-        convert_ansi_to_html(raw_content) if is_ansi else escape_html(raw_content)
-    )
-    # For preview, always use plain escaped text (don't truncate HTML with tags)
+    # Format the content
+    full_html = escape_html(raw_content)
     preview_html = (
         escape_html(raw_content[:200]) + "..."
         if len(raw_content) > 200
@@ -779,12 +812,12 @@ def _format_raw_tool_result(
     </details>
     """
     else:
-        # Text-only content (existing behavior)
+        # Text-only content
         # For simple content, show directly without collapsible wrapper
         if len(raw_content) <= 200:
             return f"<pre>{full_html}</pre>"
 
-        # For longer content, use collapsible details but no extra wrapper
+        # For longer content, use collapsible details
         return f"""
     <details class="collapsible-details">
         <summary>
@@ -801,6 +834,11 @@ def _format_raw_tool_result(
 TOOL_RESULT_FORMATTERS: dict[type, Callable[[Any], str]] = {
     ReadOutput: format_read_tool_result,
     EditOutput: format_edit_tool_result,
+    WriteOutput: format_write_tool_result,
+    BashOutput: format_bash_tool_result,
+    TaskOutput: format_task_tool_result,
+    AskUserQuestionOutput: format_askuserquestion_output,
+    ExitPlanModeOutput: format_exitplanmode_output,
 }
 
 
