@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Render Claude transcript data to HTML format."""
 
+from __future__ import annotations
+
 import re
 import time
 from dataclasses import dataclass, field, replace
@@ -81,9 +83,15 @@ class RenderingContext:
         session_first_message: Maps session_id -> index of first message in session.
     """
 
-    messages: list["TemplateMessage"] = field(default_factory=list)
-    tool_use_context: dict[str, "ToolUseContent"] = field(default_factory=dict)
-    session_first_message: dict[str, int] = field(default_factory=dict)
+    messages: list[TemplateMessage] = field(
+        default_factory=lambda: []  # type: list[TemplateMessage]
+    )
+    tool_use_context: dict[str, ToolUseContent] = field(
+        default_factory=lambda: {}  # type: dict[str, ToolUseContent]
+    )
+    session_first_message: dict[str, int] = field(
+        default_factory=lambda: {}  # type: dict[str, int]
+    )
 
     def register(self, message: "TemplateMessage") -> int:
         """Register a TemplateMessage and assign its message_index.

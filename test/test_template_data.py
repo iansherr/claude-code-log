@@ -394,7 +394,7 @@ class TestTemplateMessageTree:
         self,
         msg_type: str,
         msg_id: str | None = None,
-        ancestry: list[str] | None = None,
+        ancestry: list[int] | None = None,
     ) -> TemplateMessage:
         """Helper to create a minimal TemplateMessage for testing."""
         # Parse int message_index from string if provided (e.g., "d-0" -> 0)
