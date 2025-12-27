@@ -27,6 +27,7 @@ from ..models import (
     BashInput,
     EditInput,
     ExitPlanModeInput,
+    GlobInput,
     MultiEditInput,
     ReadInput,
     TaskInput,
@@ -306,7 +307,19 @@ class HtmlRenderer(Renderer):
 
     def title_ReadInput(self, message: TemplateMessage) -> str:
         input = cast(ReadInput, cast(ToolUseMessage, message.content).input)
-        return self._tool_title(message, "📄", input.file_path)
+        summary = input.file_path
+        # Add line range info if available
+        if input.limit is not None:
+            offset = input.offset or 0
+            if input.limit == 1:
+                summary = f"{summary}, line {offset + 1}"
+            else:
+                summary = f"{summary}, lines {offset + 1}-{offset + input.limit}"
+        return self._tool_title(message, "📄", summary)
+
+    def title_GlobInput(self, message: TemplateMessage) -> str:
+        input = cast(GlobInput, cast(ToolUseMessage, message.content).input)
+        return self._tool_title(message, "🔍", f"({input.pattern})")
 
     def title_BashInput(self, message: TemplateMessage) -> str:
         input = cast(BashInput, cast(ToolUseMessage, message.content).input)
