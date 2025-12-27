@@ -34,6 +34,14 @@ from .models import (
 from .renderer import get_renderer
 
 
+def get_file_extension(format: str) -> str:
+    """Get the file extension for a format.
+
+    Normalizes 'markdown' to 'md' for consistent file extensions.
+    """
+    return "md" if format in ("md", "markdown") else format
+
+
 # =============================================================================
 # Transcript Loading Functions
 # =============================================================================
@@ -457,17 +465,18 @@ def convert_jsonl_to(
         except Exception as e:
             print(f"Warning: Failed to initialize cache manager: {e}")
 
+    ext = get_file_extension(format)
     if input_path.is_file():
         # Single file mode - cache only available for directory mode
         if output_path is None:
-            output_path = input_path.with_suffix(f".{format}")
+            output_path = input_path.with_suffix(f".{ext}")
         messages = load_transcript(input_path, silent=silent)
         title = f"Claude Transcript - {input_path.stem}"
         cache_was_updated = False  # No cache in single file mode
     else:
         # Directory mode - Cache-First Approach
         if output_path is None:
-            output_path = input_path / f"combined_transcripts.{format}"
+            output_path = input_path / f"combined_transcripts.{ext}"
 
         # Phase 1: Ensure cache is fresh and populated
         cache_was_updated = ensure_fresh_cache(
@@ -867,6 +876,7 @@ def _generate_individual_session_files(
     image_export_mode: Optional[str] = None,
 ) -> None:
     """Generate individual files for each session in the specified format."""
+    ext = get_file_extension(format)
     # Pre-compute warmup sessions to exclude them
     warmup_session_ids = get_warmup_session_ids(messages)
 
@@ -926,7 +936,7 @@ def _generate_individual_session_files(
             session_title += f" ({date_range_str})"
 
         # Check if session file needs regeneration
-        session_file_path = output_dir / f"session-{session_id}.{format}"
+        session_file_path = output_dir / f"session-{session_id}.{ext}"
 
         # Only regenerate if outdated, doesn't exist, or date filtering is active
         should_regenerate_session = (

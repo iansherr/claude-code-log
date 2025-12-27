@@ -201,12 +201,17 @@ class MarkdownRenderer(Renderer):
         return "\n\n".join(parts) if parts else ""
 
     def format_SessionHeaderMessage(self, message: SessionHeaderMessage) -> str:
+        # Return just the anchor - it will be placed before the heading
         session_short = message.session_id[:8]
-        parts = [f'<a id="session-{session_short}"></a>']
-        parts.append(f"**Session:** `{session_short}`")
-        if message.summary:
-            parts.append(f"\n{message.summary}")
-        return "\n".join(parts)
+        return f'<a id="session-{session_short}"></a>'
+
+    def title_SessionHeaderMessage(self, message: TemplateMessage) -> str:
+        # Return the title with session ID and optional summary
+        content = cast(SessionHeaderMessage, message.content)
+        session_short = content.session_id[:8]
+        if content.summary:
+            return f"Session `{session_short}`: {content.summary}"
+        return f"Session `{session_short}`"
 
     def format_DedupNoticeMessage(self, message: DedupNoticeMessage) -> str:
         return f"*{message.notice}*"
@@ -506,9 +511,16 @@ class MarkdownRenderer(Renderer):
         lines = ["## Sessions", ""]
         for session in session_nav:
             session_id = session.get("id", "")
-            anchor = f"session-{session_id[:8]}"
-            summary = session.get("summary", session_id[:8])
-            lines.append(f"- [{summary}](#{anchor})")
+            session_short = session_id[:8]
+            anchor = f"session-{session_short}"
+            summary = session.get("summary")
+            # Use summary if available, otherwise just the session ID
+            label = (
+                f"Session `{session_short}`: {summary}"
+                if summary
+                else f"Session `{session_short}`"
+            )
+            lines.append(f"- [{label}](#{anchor})")
         lines.append("")
         return "\n".join(lines)
 
@@ -520,13 +532,19 @@ class MarkdownRenderer(Renderer):
 
         parts: list[str] = []
 
+        # Format content - for session headers, anchor goes before heading
+        content = self.format_content(msg)
+        is_session_header = isinstance(msg.content, SessionHeaderMessage)
+        if is_session_header and content:
+            parts.append(content)
+            content = None  # Don't output again below
+
         # Heading with title
         title = self.title_content(msg)
         heading_level = min(level, 6)  # Markdown max is h6
         parts.append(f"{'#' * heading_level} {title}")
 
-        # Format content
-        content = self.format_content(msg)
+        # Format content (if not already output above)
         if content:
             parts.append(content)
 
@@ -630,7 +648,11 @@ class MarkdownRenderer(Renderer):
             # Derive markdown link from html_file path
             md_link = project.html_file.replace(".html", ".md")
             parts.append(f"## [{project.display_name}]({md_link})")
-            parts.append(f"- Sessions: {project.jsonl_count}")
+            # Use actual session count (filtered) like HTML does
+            session_count = (
+                len(project.sessions) if project.sessions else project.jsonl_count
+            )
+            parts.append(f"- Sessions: {session_count}")
             parts.append(f"- Messages: {project.message_count}")
             if project.formatted_time_range:
                 parts.append(f"- Date range: {project.formatted_time_range}")

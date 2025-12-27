@@ -10,7 +10,7 @@
   - Messages: 25
   
   ## [alpha](-Users-test-project-alpha/combined_transcripts.md)
-  - Sessions: 5
+  - Sessions: 1
   - Messages: 42
   - Date range: 2025-01-01 09:00:00 to 2025-01-15 10:00:00
   
@@ -24,13 +24,12 @@
   
   ## Sessions
   
-  - [None](#session-test_ses)
+  - [Session `test_ses`](#session-test_ses)
   
-  
-  # Session Header
   
   <a id="session-test_ses"></a>
-  **Session:** `test_ses`
+  
+  # Session `test_ses`
   
   ## User
   
@@ -160,15 +159,12 @@
   
   ## Sessions
   
-  - [Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer.](#session-edge_cas)
+  - [Session `edge_cas`: Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer.](#session-edge_cas)
   
-  
-  # Session Header
   
   <a id="session-edge_cas"></a>
-  **Session:** `edge_cas`
   
-  Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer.
+  # Session `edge_cas`: Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer.
   
   ## User
   
@@ -248,10 +244,9 @@
   
   > wow error
   
-  # Session Header
-  
   <a id="session-todowrit"></a>
-  **Session:** `todowrit`
+  
+  # Session `todowrit`
   
   ## Todo List
   
@@ -270,14 +265,13 @@
   
   ## Sessions
   
-  - [None](#session-session_)
-  - [User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.](#session-test_ses)
+  - [Session `session_`](#session-session_)
+  - [Session `test_ses`: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.](#session-test_ses)
   
-  
-  # Session Header
   
   <a id="session-session_"></a>
-  **Session:** `session_`
+  
+  # Session `session_`
   
   ## User
   
@@ -291,12 +285,9 @@
   
   > Perfect! This should appear without any session divider above it.
   
-  # Session Header
-  
   <a id="session-test_ses"></a>
-  **Session:** `test_ses`
   
-  User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.
+  # Session `test_ses`: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.
   
   ## User
   
@@ -426,15 +417,12 @@
   
   ## Sessions
   
-  - [User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.](#session-test_ses)
+  - [Session `test_ses`: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.](#session-test_ses)
   
-  
-  # Session Header
   
   <a id="session-test_ses"></a>
-  **Session:** `test_ses`
   
-  User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.
+  # Session `test_ses`: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator.
   
   ## User
   
