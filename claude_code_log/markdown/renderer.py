@@ -185,6 +185,52 @@ class MarkdownRenderer(Renderer):
         ext = Path(path).suffix.lower() if path else ""
         return ext_map.get(ext, "")
 
+    def _excerpt(self, text: str, max_len: int = 40, min_len: int = 12) -> str:
+        """Extract first line excerpt, truncating at word/sentence boundary.
+
+        - Stops at sentence endings ("? ", "! ", ". " but not lone ".")
+          only if at least min_len characters
+        - If over max_len, continues to end of current word
+        - Adds "…" if truncated
+        """
+        # Get first non-empty line
+        for line in text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+
+            # Check for early sentence endings (but enforce minimum length)
+            for ending in ("? ", "! ", ". "):
+                pos = line.find(ending)
+                if min_len <= pos < max_len:
+                    return line[: pos + 1]  # Include the punctuation
+
+            # If line fits, return as-is
+            if len(line) <= max_len:
+                return line
+
+            # Find word boundary after max_len
+            # Start from max_len and continue until non-word char
+            end = max_len
+            while end < len(line) and re.match(r"\w", line[end]):
+                end += 1
+
+            return line[:end] + "…"
+
+        return ""
+
+    def _get_message_text(self, msg: TemplateMessage) -> str:
+        """Extract text content from a message for excerpt generation."""
+        content = msg.content
+        if isinstance(content, ThinkingMessage):
+            return content.thinking
+        if isinstance(content, AssistantTextMessage):
+            # Get first text item
+            for item in content.items:
+                if isinstance(item, TextContent) and item.text.strip():
+                    return item.text
+        return ""
+
     def _build_message_index(
         self, roots: list[TemplateMessage]
     ) -> dict[int, TemplateMessage]:
@@ -550,6 +596,42 @@ class MarkdownRenderer(Renderer):
 
     def title_ExitPlanModeInput(self, message: TemplateMessage) -> str:  # noqa: ARG002
         return "Exiting plan mode"
+
+    def title_ThinkingMessage(self, message: TemplateMessage) -> str:
+        # When paired with Assistant, use Assistant title with assistant excerpt
+        if message.is_first_in_pair and message.pair_last is not None:
+            pair_msg = self._message_index.get(message.pair_last)
+            if pair_msg and isinstance(pair_msg.content, AssistantTextMessage):
+                text = self._get_message_text(pair_msg)
+                excerpt = self._excerpt(text)
+                if excerpt:
+                    escaped = self._escape_stars(excerpt)
+                    return f"Assistant: *{escaped}*"
+                return "Assistant"
+
+        # Standalone thinking
+        text = self._get_message_text(message)
+        excerpt = self._excerpt(text)
+        if excerpt:
+            escaped = self._escape_stars(excerpt)
+            return f"Thinking: *{escaped}*"
+        return "Thinking"
+
+    def title_AssistantTextMessage(self, message: TemplateMessage) -> str:
+        # When paired (after Thinking), skip title (already rendered with Thinking)
+        if message.is_last_in_pair:
+            return ""
+
+        # Sidechain assistant messages get special title
+        if message.meta.is_sidechain:
+            return "Sub-assistant"
+
+        text = self._get_message_text(message)
+        excerpt = self._excerpt(text)
+        if excerpt:
+            escaped = self._escape_stars(excerpt)
+            return f"Assistant: *{escaped}*"
+        return "Assistant"
 
     # -------------------------------------------------------------------------
     # Core Generate Methods

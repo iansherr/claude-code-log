@@ -236,3 +236,61 @@ class TestStripErrorTags:
         text = "<tool_use_error></tool_use_error>"
         result = strip_error_tags(text)
         assert result == ""
+
+
+class TestExcerpt:
+    """Tests for the _excerpt() method."""
+
+    def test_short_text(self, renderer):
+        """Short text is returned as-is."""
+        result = renderer._excerpt("Hello world")
+        assert result == "Hello world"
+
+    def test_stops_at_question(self, renderer):
+        """Stops at question mark followed by space."""
+        result = renderer._excerpt("Is this working? I hope so.")
+        assert result == "Is this working?"
+
+    def test_stops_at_exclamation(self, renderer):
+        """Stops at exclamation mark followed by space."""
+        result = renderer._excerpt("Great success! This is a test.")
+        assert result == "Great success!"
+
+    def test_ignores_short_sentence(self, renderer):
+        """Does not stop at sentence ending if too short (min 12 chars)."""
+        result = renderer._excerpt("Hello! This is a test.", max_len=30)
+        # "Hello!" is only 6 chars, so continues to next sentence
+        assert result == "Hello! This is a test."
+
+    def test_stops_at_period(self, renderer):
+        """Stops at period followed by space."""
+        result = renderer._excerpt("First sentence. Second sentence.")
+        assert result == "First sentence."
+
+    def test_no_stop_at_lone_period(self, renderer):
+        """Does not stop at period without space (like in .gitignore)."""
+        result = renderer._excerpt("Check the .gitignore file", max_len=30)
+        # Should continue past the lone period
+        assert ".gitignore" in result
+
+    def test_word_boundary(self, renderer):
+        """Truncation continues to end of current word."""
+        # "This is a longer sentence..." - max_len 20 hits mid-word in "sentence"
+        result = renderer._excerpt("This is a longer sentence that goes on", max_len=20)
+        # Should not cut "sentence" mid-word
+        assert result == "This is a longer sentence…"
+
+    def test_empty_text(self, renderer):
+        """Empty text returns empty string."""
+        result = renderer._excerpt("")
+        assert result == ""
+
+    def test_multiline_takes_first(self, renderer):
+        """Takes first non-empty line."""
+        result = renderer._excerpt("\n\nFirst line\nSecond line")
+        assert result == "First line"
+
+    def test_ellipsis_when_truncated(self, renderer):
+        """Adds ellipsis when truncated."""
+        result = renderer._excerpt("A very long text that exceeds limit", max_len=15)
+        assert result.endswith("…")
