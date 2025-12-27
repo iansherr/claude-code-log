@@ -62,9 +62,11 @@ def _render_question_item(q: AskUserQuestionItem) -> str:
         escaped_header = escape_html(q.header)
         html_parts.append(f'<div class="question-header">{escaped_header}</div>')
 
-    # Question text with icon
+    # Question text with Q: label
     question_text = escape_html(q.question)
-    html_parts.append(f'<div class="question-text">❓ {question_text}</div>')
+    html_parts.append(
+        f'<div class="question-text"><span class="qa-label">Q:</span> {question_text}</div>'
+    )
 
     # Options (if present)
     if q.options:
@@ -155,8 +157,12 @@ def format_askuserquestion_result(content: str) -> str:
         escaped_q = escape_html(question)
         escaped_a = escape_html(answer)
         html_parts.append('<div class="question-block answered">')
-        html_parts.append(f'<div class="question-text">❓ {escaped_q}</div>')
-        html_parts.append(f'<div class="answer-text">✅ {escaped_a}</div>')
+        html_parts.append(
+            f'<div class="question-text"><span class="qa-label">Q:</span> {escaped_q}</div>'
+        )
+        html_parts.append(
+            f'<div class="answer-text"><span class="qa-label answer">A:</span> {escaped_a}</div>'
+        )
         html_parts.append("</div>")
 
     html_parts.append("</div>")
@@ -391,8 +397,12 @@ def format_askuserquestion_output(output: AskUserQuestionOutput) -> str:
         escaped_q = escape_html(qa.question)
         escaped_a = escape_html(qa.answer)
         html_parts.append('<div class="question-block answered">')
-        html_parts.append(f'<div class="question-text">❓ {escaped_q}</div>')
-        html_parts.append(f'<div class="answer-text">✅ {escaped_a}</div>')
+        html_parts.append(
+            f'<div class="question-text"><span class="qa-label">Q:</span> {escaped_q}</div>'
+        )
+        html_parts.append(
+            f'<div class="answer-text"><span class="qa-label answer">A:</span> {escaped_a}</div>'
+        )
         html_parts.append("</div>")
 
     html_parts.append("</div>")

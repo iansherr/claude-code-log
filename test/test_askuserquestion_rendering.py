@@ -75,8 +75,8 @@ class TestAskUserQuestionRendering:
         assert "Treat .tar/.tar.gz like .zip" in html
         assert "Only process tar archives inside ZIP files" in html
 
-        # Check question icon
-        assert "❓" in html
+        # Check question label
+        assert "Q:" in html
 
         # Check select hint
         assert "(select one)" in html
@@ -149,7 +149,7 @@ class TestAskUserQuestionRendering:
         # Should still render the question
         assert 'class="askuserquestion-content"' in html
         assert "What is your preference?" in html
-        assert "❓" in html
+        assert "Q:" in html
 
     def test_format_askuserquestion_no_options(self):
         """Test AskUserQuestion formatting without options."""
@@ -224,8 +224,8 @@ class TestAskUserQuestionResultRendering:
         assert 'class="question-block answered"' in html
         assert "What is your preference?" in html
         assert "Option A" in html
-        assert "❓" in html
-        assert "✅" in html
+        assert "Q:" in html
+        assert "A:" in html
 
     def test_format_result_multiple_qa(self):
         """Test formatting a result with multiple Q&A pairs."""

@@ -54,7 +54,7 @@
       --question-accent: #f5a623;
       --question-bg: #fffbf0;
       --answer-accent: #4caf50;
-      --answer-bg: #f0fff4;
+      --answer-bg: #fffbf0;
   
       /* Priority palette (purple intensity - darker = more urgent) */
       --priority-600: #7c3aed;
@@ -1904,7 +1904,7 @@
       --question-accent: #f5a623;
       --question-bg: #fffbf0;
       --answer-accent: #4caf50;
-      --answer-bg: #f0fff4;
+      --answer-bg: #fffbf0;
   
       /* Priority palette (purple intensity - darker = more urgent) */
       --priority-600: #7c3aed;
@@ -3391,17 +3391,17 @@
       padding: 12px;
       background-color: var(--question-bg);
       border-radius: 6px;
-      border-left: 3px solid var(--question-accent);
+      border-left: 3px solid var(--assistant-color);
   }
   
   .question-block:last-child {
       margin-bottom: 0;
   }
   
-  /* Answered questions in result (lighter, success-tinted) */
+  /* Answered questions in result */
   .question-block.answered {
       background-color: var(--answer-bg);
-      border-left-color: var(--answer-accent);
+      border-left-color: var(--user-color);
   }
   
   .question-header {
@@ -3424,9 +3424,13 @@
   .answer-text {
       font-size: 1.05em;
       font-weight: 600;
-      color: var(--answer-accent);
+      color: var(--text-primary);
       line-height: 1.4;
-      padding-left: 4px;
+  }
+  
+  /* Q: and A: labels */
+  .qa-label {
+      font-weight: 700;
   }
   
   .question-options-hint {
@@ -6704,7 +6708,7 @@
       --question-accent: #f5a623;
       --question-bg: #fffbf0;
       --answer-accent: #4caf50;
-      --answer-bg: #f0fff4;
+      --answer-bg: #fffbf0;
   
       /* Priority palette (purple intensity - darker = more urgent) */
       --priority-600: #7c3aed;
@@ -8191,17 +8195,17 @@
       padding: 12px;
       background-color: var(--question-bg);
       border-radius: 6px;
-      border-left: 3px solid var(--question-accent);
+      border-left: 3px solid var(--assistant-color);
   }
   
   .question-block:last-child {
       margin-bottom: 0;
   }
   
-  /* Answered questions in result (lighter, success-tinted) */
+  /* Answered questions in result */
   .question-block.answered {
       background-color: var(--answer-bg);
-      border-left-color: var(--answer-accent);
+      border-left-color: var(--user-color);
   }
   
   .question-header {
@@ -8224,9 +8228,13 @@
   .answer-text {
       font-size: 1.05em;
       font-weight: 600;
-      color: var(--answer-accent);
+      color: var(--text-primary);
       line-height: 1.4;
-      padding-left: 4px;
+  }
+  
+  /* Q: and A: labels */
+  .qa-label {
+      font-weight: 700;
   }
   
   .question-options-hint {
@@ -11593,7 +11601,7 @@
       --question-accent: #f5a623;
       --question-bg: #fffbf0;
       --answer-accent: #4caf50;
-      --answer-bg: #f0fff4;
+      --answer-bg: #fffbf0;
   
       /* Priority palette (purple intensity - darker = more urgent) */
       --priority-600: #7c3aed;
@@ -13080,17 +13088,17 @@
       padding: 12px;
       background-color: var(--question-bg);
       border-radius: 6px;
-      border-left: 3px solid var(--question-accent);
+      border-left: 3px solid var(--assistant-color);
   }
   
   .question-block:last-child {
       margin-bottom: 0;
   }
   
-  /* Answered questions in result (lighter, success-tinted) */
+  /* Answered questions in result */
   .question-block.answered {
       background-color: var(--answer-bg);
-      border-left-color: var(--answer-accent);
+      border-left-color: var(--user-color);
   }
   
   .question-header {
@@ -13113,9 +13121,13 @@
   .answer-text {
       font-size: 1.05em;
       font-weight: 600;
-      color: var(--answer-accent);
+      color: var(--text-primary);
       line-height: 1.4;
-      padding-left: 4px;
+  }
+  
+  /* Q: and A: labels */
+  .qa-label {
+      font-weight: 700;
   }
   
   .question-options-hint {
@@ -16530,7 +16542,7 @@
       --question-accent: #f5a623;
       --question-bg: #fffbf0;
       --answer-accent: #4caf50;
-      --answer-bg: #f0fff4;
+      --answer-bg: #fffbf0;
   
       /* Priority palette (purple intensity - darker = more urgent) */
       --priority-600: #7c3aed;
@@ -18017,17 +18029,17 @@
       padding: 12px;
       background-color: var(--question-bg);
       border-radius: 6px;
-      border-left: 3px solid var(--question-accent);
+      border-left: 3px solid var(--assistant-color);
   }
   
   .question-block:last-child {
       margin-bottom: 0;
   }
   
-  /* Answered questions in result (lighter, success-tinted) */
+  /* Answered questions in result */
   .question-block.answered {
       background-color: var(--answer-bg);
-      border-left-color: var(--answer-accent);
+      border-left-color: var(--user-color);
   }
   
   .question-header {
@@ -18050,9 +18062,13 @@
   .answer-text {
       font-size: 1.05em;
       font-weight: 600;
-      color: var(--answer-accent);
+      color: var(--text-primary);
       line-height: 1.4;
-      padding-left: 4px;
+  }
+  
+  /* Q: and A: labels */
+  .qa-label {
+      font-weight: 700;
   }
   
   .question-options-hint {

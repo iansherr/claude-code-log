@@ -281,6 +281,9 @@ class HtmlRenderer(Renderer):
     def title_TodoWriteInput(self, message: TemplateMessage) -> str:  # noqa: ARG002
         return "📝 Todo List"
 
+    def title_AskUserQuestionInput(self, message: TemplateMessage) -> str:  # noqa: ARG002
+        return "❓ Asking questions..."
+
     def title_TaskInput(self, message: TemplateMessage) -> str:
         content = cast(ToolUseMessage, message.content)
         input = cast(TaskInput, content.input)

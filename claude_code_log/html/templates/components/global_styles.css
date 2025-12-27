@@ -42,7 +42,7 @@
     --question-accent: #f5a623;
     --question-bg: #fffbf0;
     --answer-accent: #4caf50;
-    --answer-bg: #f0fff4;
+    --answer-bg: #fffbf0;
 
     /* Priority palette (purple intensity - darker = more urgent) */
     --priority-600: #7c3aed;
