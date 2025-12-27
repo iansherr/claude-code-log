@@ -227,15 +227,10 @@ class MarkdownRenderer(Renderer):
         return "\n\n".join(parts)
 
     def format_UserSlashCommandMessage(self, message: UserSlashCommandMessage) -> str:
-        parts: list[str] = []
-        for item in message.items:
-            if isinstance(item, ImageContent):
-                parts.append(self._format_image(item))
-            elif isinstance(item, TextContent):
-                if item.text.strip():
-                    # Quote to protect embedded markdown
-                    parts.append(self._quote(item.text))
-        return "\n\n".join(parts)
+        # UserSlashCommandMessage has a text attribute (markdown), quote to protect it
+        if message.text.strip():
+            return self._quote(message.text)
+        return ""
 
     def format_SlashCommandMessage(self, message: SlashCommandMessage) -> str:
         parts: list[str] = []

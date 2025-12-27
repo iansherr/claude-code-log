@@ -26,7 +26,11 @@ from claude_code_log.cli import (
     find_projects_by_cwd,
     get_default_projects_dir,
 )
-from claude_code_log.converter import convert_jsonl_to_html, process_projects_hierarchy
+from claude_code_log.converter import (
+    convert_jsonl_to,
+    convert_jsonl_to_html,
+    process_projects_hierarchy,
+)
 from claude_code_log.cache import CacheManager, get_library_version
 
 # Path to realistic test data
@@ -1548,3 +1552,182 @@ class TestLargeProjectHandling:
             encoding="utf-8"
         )
         assert "Message number 499" in html_content
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("output_format,ext", [("html", "html"), ("md", "md")])
+class TestMultiFormatOutput:
+    """Test output generation in both HTML and Markdown formats.
+
+    These tests verify that --format option works correctly for the full
+    projects hierarchy processing, generating the appropriate output files.
+    """
+
+    def test_process_all_projects_creates_index(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Process all projects and verify index generation in specified format."""
+        index_path = process_projects_hierarchy(
+            temp_projects_copy, output_format=output_format
+        )
+
+        assert index_path.exists()
+        assert index_path.name == f"index.{ext}"
+
+        # Verify each project got a combined transcript in the right format
+        for project_dir in temp_projects_copy.iterdir():
+            if project_dir.is_dir() and list(project_dir.glob("*.jsonl")):
+                combined = project_dir / f"combined_transcripts.{ext}"
+                assert combined.exists(), (
+                    f"Missing combined {ext.upper()} for {project_dir.name}"
+                )
+
+    def test_cli_all_projects_with_format(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Test --all-projects with --format option."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--all-projects",
+                "--projects-dir",
+                str(temp_projects_copy),
+                "--format",
+                output_format,
+            ],
+        )
+
+        assert result.exit_code == 0, f"CLI failed: {result.output}"
+        assert "Successfully processed" in result.output
+        assert (temp_projects_copy / f"index.{ext}").exists()
+
+    def test_index_contains_correct_links(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Verify index contains links to correct file extensions."""
+        process_projects_hierarchy(temp_projects_copy, output_format=output_format)
+
+        index_path = temp_projects_copy / f"index.{ext}"
+        content = index_path.read_text(encoding="utf-8")
+
+        # Index should link to combined_transcripts with matching extension
+        assert f"combined_transcripts.{ext}" in content
+
+    def test_individual_session_files_format(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Verify individual session files are created with correct extension."""
+        process_projects_hierarchy(temp_projects_copy, output_format=output_format)
+
+        project = temp_projects_copy / "-Users-dain-workspace-JSSoundRecorder"
+        if not project.exists():
+            pytest.skip("JSSoundRecorder test data not available")
+
+        # Should have session files in the right format
+        session_files = list(project.glob(f"session-*.{ext}"))
+        # Count non-empty, non-agent JSONL files to compare
+        non_empty_jsonl = [
+            f
+            for f in project.glob("*.jsonl")
+            if f.stat().st_size > 0 and not f.name.startswith("agent-")
+        ]
+
+        if non_empty_jsonl:
+            assert len(session_files) > 0, (
+                f"Expected individual session {ext.upper()} files"
+            )
+
+    def test_single_project_with_format(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Test single project conversion with format option."""
+        project = temp_projects_copy / "-Users-dain-workspace-JSSoundRecorder"
+        if not project.exists():
+            pytest.skip("JSSoundRecorder test data not available")
+
+        output_path = convert_jsonl_to(output_format, project)
+
+        assert output_path.exists()
+        assert output_path.name == f"combined_transcripts.{ext}"
+
+    def test_cli_single_project_with_format(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Test CLI with format option for single project."""
+        runner = CliRunner()
+        project = temp_projects_copy / "-Users-dain-workspace-JSSoundRecorder"
+        if not project.exists():
+            pytest.skip("JSSoundRecorder test data not available")
+
+        result = runner.invoke(main, [str(project), "--format", output_format])
+
+        assert result.exit_code == 0, f"CLI failed: {result.output}"
+        assert (project / f"combined_transcripts.{ext}").exists()
+
+    def test_version_comment_in_output(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Verify version comment is present in output files."""
+        process_projects_hierarchy(temp_projects_copy, output_format=output_format)
+
+        index_path = temp_projects_copy / f"index.{ext}"
+        content = index_path.read_text(encoding="utf-8")
+
+        assert (
+            f"<!-- Generated by claude-code-log v{get_library_version()} -->" in content
+        )
+
+    def test_format_with_date_filtering(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Test format option works with date filtering."""
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--all-projects",
+                "--projects-dir",
+                str(temp_projects_copy),
+                "--format",
+                output_format,
+                "--from-date",
+                "2024-01-01",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert (temp_projects_copy / f"index.{ext}").exists()
+
+    def test_format_with_no_individual_sessions(
+        self, temp_projects_copy: Path, output_format: str, ext: str
+    ) -> None:
+        """Test format option works with --no-individual-sessions."""
+        runner = CliRunner()
+
+        # Clean any pre-existing session files
+        for project in temp_projects_copy.iterdir():
+            if project.is_dir():
+                for session_file in project.glob(f"session-*.{ext}"):
+                    session_file.unlink()
+
+        result = runner.invoke(
+            main,
+            [
+                "--all-projects",
+                "--projects-dir",
+                str(temp_projects_copy),
+                "--format",
+                output_format,
+                "--no-individual-sessions",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert (temp_projects_copy / f"index.{ext}").exists()
+
+        # Verify no session files were created
+        project = temp_projects_copy / "-Users-dain-workspace-JSSoundRecorder"
+        if project.exists():
+            session_files = list(project.glob(f"session-*.{ext}"))
+            assert len(session_files) == 0

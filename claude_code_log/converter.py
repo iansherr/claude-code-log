@@ -957,8 +957,10 @@ def process_projects_hierarchy(
     to_date: Optional[str] = None,
     use_cache: bool = True,
     generate_individual_sessions: bool = True,
+    output_format: str = "html",
+    image_export_mode: Optional[str] = None,
 ) -> Path:
-    """Process the entire ~/.claude/projects/ hierarchy and create linked HTML files."""
+    """Process the entire ~/.claude/projects/ hierarchy and create linked output files."""
     if not projects_path.exists():
         raise FileNotFoundError(f"Projects path not found: {projects_path}")
 
@@ -996,14 +998,16 @@ def process_projects_hierarchy(
             if cache_was_updated:
                 any_cache_updated = True
 
-            # Phase 2: Generate HTML for this project (optionally individual session files)
-            output_path = convert_jsonl_to_html(
+            # Phase 2: Generate output for this project (optionally individual session files)
+            output_path = convert_jsonl_to(
+                output_format,
                 project_dir,
                 None,
                 from_date,
                 to_date,
                 generate_individual_sessions,
                 use_cache,
+                image_export_mode=image_export_mode,
             )
 
             # Get project info for index - use cached data if available
@@ -1144,23 +1148,25 @@ def process_projects_hierarchy(
                 }
             )
         except Exception as e:
+            prev_project = project_summaries[-1] if project_summaries else "(none)"
             print(
                 f"Warning: Failed to process {project_dir}: {e}\n"
-                f"Previous (in alphabetical order) file before error: {project_summaries[-1]}"
+                f"Previous (in alphabetical order) project before error: {prev_project}"
                 f"\n{traceback.format_exc()}"
             )
             continue
 
-    # Generate index HTML (always regenerate if outdated)
-    index_path = projects_path / "index.html"
-    renderer = get_renderer("html")
+    # Generate index (always regenerate if outdated)
+    ext = "md" if output_format in ("md", "markdown") else "html"
+    index_path = projects_path / f"index.{ext}"
+    renderer = get_renderer(output_format, image_export_mode)
     if renderer.is_outdated(index_path) or from_date or to_date or any_cache_updated:
-        index_html = renderer.generate_projects_index(
+        index_content = renderer.generate_projects_index(
             project_summaries, from_date, to_date
         )
-        assert index_html is not None
-        index_path.write_text(index_html, encoding="utf-8")
+        assert index_content is not None
+        index_path.write_text(index_content, encoding="utf-8")
     else:
-        print("Index HTML is current, skipping regeneration")
+        print(f"Index {ext.upper()} is current, skipping regeneration")
 
     return index_path

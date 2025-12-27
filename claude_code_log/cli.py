@@ -416,6 +416,7 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
     help="Custom projects directory (default: ~/.claude/projects/). Useful for testing.",
 )
 @click.option(
+    "-f",
     "--format",
     "output_format",
     type=click.Choice(["html", "md", "markdown"]),
@@ -586,6 +587,8 @@ def main(
                 to_date,
                 not no_cache,
                 not no_individual_sessions,
+                output_format,
+                image_export_mode,
             )
 
             # Count processed projects
