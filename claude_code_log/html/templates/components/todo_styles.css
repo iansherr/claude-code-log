@@ -75,7 +75,7 @@
 }
 
 .todo-item.medium {
-    border-left: 3px solid var(--priority-medium);
+    border-left: 3px solid transparent;
 }
 
 .todo-item.low {
