@@ -440,12 +440,9 @@ class MarkdownRenderer(Renderer):
         return "\n".join(parts)
 
     def format_AskUserQuestionInput(self, input: AskUserQuestionInput) -> str:
-        parts: list[str] = []
-        for question in input.questions:
-            parts.append(f"**{question.question}**")
-            for option in question.options:
-                parts.append(f"- {option.label}: {option.description}")
-        return "\n\n".join(parts)
+        # Store questions for use by paired output formatter
+        self._pending_questions = {q.question: q for q in input.questions}
+        return ""  # Full output rendered by format_AskUserQuestionOutput
 
     def format_ExitPlanModeInput(self, input: ExitPlanModeInput) -> str:  # noqa: ARG002
         # Title contains "Exiting plan mode", body is empty
@@ -516,11 +513,26 @@ class MarkdownRenderer(Renderer):
         return self._collapsible("Report", quoted)
 
     def format_AskUserQuestionOutput(self, output: AskUserQuestionOutput) -> str:
+        # Get stored questions from paired input
+        questions_map = getattr(self, "_pending_questions", {})
+        self._pending_questions = {}  # Clear for next use
+
         parts: list[str] = []
         for qa in output.answers:
-            parts.append(f"**Q:** {qa.question}")
+            # Question in italics
+            parts.append(f"**Q:** *{qa.question}*")
+
+            # Options from paired input (if available)
+            if qa.question in questions_map:
+                q = questions_map[qa.question]
+                for option in q.options:
+                    parts.append(f"- {option.label}: {option.description}")
+
+            # Answer
             parts.append(f"**A:** {qa.answer}")
-        return "\n\n".join(parts)
+            parts.append("")  # Blank line between Q&A pairs
+
+        return "\n\n".join(parts).rstrip()
 
     def format_ExitPlanModeOutput(self, output: ExitPlanModeOutput) -> str:
         status = "✓ Approved" if output.approved else "✗ Not approved"
