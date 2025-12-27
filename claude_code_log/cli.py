@@ -418,9 +418,21 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["html"]),
+    type=click.Choice(["html", "md", "markdown"]),
     default="html",
-    help="Output format (default: html). Currently only html is supported.",
+    help="Output format (default: html). Supports html, md, or markdown.",
+)
+@click.option(
+    "--image-export-mode",
+    type=click.Choice(["placeholder", "embedded", "referenced"]),
+    default=None,
+    help="Image export mode: placeholder (mark position), embedded (base64), referenced (PNG files). Default: embedded for HTML, referenced for Markdown.",
+)
+@click.option(
+    "--debug",
+    is_flag=True,
+    default=False,
+    help="Show full traceback on errors.",
 )
 def main(
     input_path: Optional[Path],
@@ -436,8 +448,10 @@ def main(
     tui: bool,
     projects_dir: Optional[Path],
     output_format: str,
+    image_export_mode: Optional[str],
+    debug: bool,
 ) -> None:
-    """Convert Claude transcript JSONL files to HTML.
+    """Convert Claude transcript JSONL files to HTML or Markdown.
 
     INPUT_PATH: Path to a Claude transcript JSONL file, directory containing JSONL files, or project path to convert. If not provided, defaults to ~/.claude/projects/ and --all-projects is used.
     """
@@ -622,6 +636,7 @@ def main(
             to_date,
             not no_individual_sessions,
             not no_cache,
+            image_export_mode=image_export_mode,
         )
         if input_path.is_file():
             click.echo(f"Successfully converted {input_path} to {output_path}")
@@ -642,9 +657,17 @@ def main(
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
+        if debug:
+            import traceback
+
+            traceback.print_exc()
         sys.exit(1)
     except Exception as e:
         click.echo(f"Error converting file: {e}", err=True)
+        if debug:
+            import traceback
+
+            traceback.print_exc()
         sys.exit(1)
 
 

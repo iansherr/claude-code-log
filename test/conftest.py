@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from test.snapshot_serializers import NormalisedHTMLSerializer
+from test.snapshot_serializers import (
+    NormalisedHTMLSerializer,
+    NormalisedMarkdownSerializer,
+)
 
 
 @pytest.fixture
@@ -17,6 +20,12 @@ def test_data_dir() -> Path:
 def html_snapshot(snapshot):
     """Snapshot fixture with HTML normalisation for regression testing."""
     return snapshot.use_extension(NormalisedHTMLSerializer)
+
+
+@pytest.fixture
+def markdown_snapshot(snapshot):
+    """Snapshot fixture with Markdown normalisation for regression testing."""
+    return snapshot.use_extension(NormalisedMarkdownSerializer)
 
 
 @pytest.fixture(scope="session")

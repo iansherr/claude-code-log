@@ -2257,8 +2257,15 @@ class Renderer:
         messages: list[TranscriptEntry],
         title: Optional[str] = None,
         combined_transcript_link: Optional[str] = None,
+        output_dir: Optional[Path] = None,
     ) -> Optional[str]:
         """Generate output from transcript messages.
+
+        Args:
+            messages: List of transcript entries to render.
+            title: Optional title for the output.
+            combined_transcript_link: Optional link to combined transcript.
+            output_dir: Optional output directory for referenced images.
 
         Returns None by default; subclasses override to return formatted output.
         """
@@ -2270,8 +2277,16 @@ class Renderer:
         session_id: str,
         title: Optional[str] = None,
         cache_manager: Optional["CacheManager"] = None,
+        output_dir: Optional[Path] = None,
     ) -> Optional[str]:
         """Generate output for a single session.
+
+        Args:
+            messages: List of transcript entries.
+            session_id: Session ID to generate output for.
+            title: Optional title for the output.
+            cache_manager: Optional cache manager.
+            output_dir: Optional output directory for referenced images.
 
         Returns None by default; subclasses override to return formatted output.
         """
@@ -2297,11 +2312,13 @@ class Renderer:
         return None
 
 
-def get_renderer(format: str) -> Renderer:
+def get_renderer(format: str, image_export_mode: Optional[str] = None) -> Renderer:
     """Get a renderer instance for the specified format.
 
     Args:
-        format: The output format (currently only "html" is supported).
+        format: The output format ("html", "md", or "markdown").
+        image_export_mode: Image export mode ("placeholder", "embedded", "referenced").
+            If None, defaults to "embedded" for HTML and "referenced" for Markdown.
 
     Returns:
         A Renderer instance for the specified format.
@@ -2312,5 +2329,13 @@ def get_renderer(format: str) -> Renderer:
     if format == "html":
         from .html.renderer import HtmlRenderer
 
-        return HtmlRenderer()
+        # For HTML, default to embedded mode (current behavior)
+        mode = image_export_mode or "embedded"
+        return HtmlRenderer(image_export_mode=mode)
+    elif format in ("md", "markdown"):
+        from .markdown.renderer import MarkdownRenderer
+
+        # For Markdown, default to referenced mode
+        mode = image_export_mode or "referenced"
+        return MarkdownRenderer(image_export_mode=mode)
     raise ValueError(f"Unsupported format: {format}")

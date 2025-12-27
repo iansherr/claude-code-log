@@ -52,7 +52,7 @@
     --question-accent: #f5a623;
     --question-bg: #fffbf0;
     --answer-accent: #4caf50;
-    --answer-bg: #f0fff4;
+    --answer-bg: #fffbf0;
 
     /* Priority palette (purple intensity - darker = more urgent) */
     --priority-600: #7c3aed;
@@ -76,6 +76,7 @@
     --text-primary: #333;
     --text-muted: #666;
     --text-secondary: #495057;
+    --fold-color: #888;
 
     /* Border colors */
     --border-light: #e0e0e0;
@@ -1001,7 +1002,7 @@ pre {
         let prev = messageElement.previousElementSibling;
         while (prev) {
             if (prev.classList.contains('session-header')) {
-                return prev.id.replace('session-', '');
+                return prev.dataset.sessionId || null;
             }
             prev = prev.previousElementSibling;
         }

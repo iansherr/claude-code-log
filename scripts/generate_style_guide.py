@@ -18,8 +18,9 @@ import uuid as uuid_module
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from claude_code_log.converter import convert_jsonl_to_html
+from claude_code_log.converter import convert_jsonl_to_html, convert_jsonl_to
 from claude_code_log.html.renderer import generate_projects_index_html
+from claude_code_log.markdown.renderer import MarkdownRenderer
 
 
 def create_style_guide_data():
@@ -678,20 +679,36 @@ def generate_style_guide():
         transcript_html = convert_jsonl_to_html(
             jsonl_file, output_dir / "transcript_style_guide.html"
         )
+        print(f"    ✅ Transcript style guide (HTML) saved to: {transcript_html}")
 
-        print(f"    ✅ Transcript style guide saved to: {transcript_html}")
+        # Convert to Markdown
+        transcript_md = convert_jsonl_to(
+            "md",
+            jsonl_file,
+            output_dir / "transcript_style_guide.md",
+        )
+        print(f"    ✅ Transcript style guide (Markdown) saved to: {transcript_md}")
 
     # Generate index style guide
     print("  📂 Creating index style guide...")
     index_data = create_index_style_guide_data()
+
+    # HTML index
     index_html_content = generate_projects_index_html(
         index_data, from_date="last week", to_date="today"
     )
+    index_html_file = output_dir / "index_style_guide.html"
+    index_html_file.write_text(index_html_content, encoding="utf-8")
+    print(f"    ✅ Index style guide (HTML) saved to: {index_html_file}")
 
-    index_file = output_dir / "index_style_guide.html"
-    index_file.write_text(index_html_content, encoding="utf-8")
-
-    print(f"    ✅ Index style guide saved to: {index_file}")
+    # Markdown index
+    md_renderer = MarkdownRenderer()
+    index_md_content = md_renderer.generate_projects_index(
+        index_data, from_date="last week", to_date="today"
+    )
+    index_md_file = output_dir / "index_style_guide.md"
+    index_md_file.write_text(index_md_content, encoding="utf-8")
+    print(f"    ✅ Index style guide (Markdown) saved to: {index_md_file}")
 
     # Create a main index file
     print("  🏠 Creating main style guide index...")
@@ -809,8 +826,12 @@ def generate_style_guide():
     print()
     print("Style guide files generated:")
     print(f"  • Main index: {main_index_file}")
-    print(f"  • Transcript guide: {output_dir / 'transcript_style_guide.html'}")
-    print(f"  • Index guide: {output_dir / 'index_style_guide.html'}")
+    print("  HTML:")
+    print(f"    • Transcript guide: {output_dir / 'transcript_style_guide.html'}")
+    print(f"    • Index guide: {output_dir / 'index_style_guide.html'}")
+    print("  Markdown:")
+    print(f"    • Transcript guide: {output_dir / 'transcript_style_guide.md'}")
+    print(f"    • Index guide: {output_dir / 'index_style_guide.md'}")
 
 
 if __name__ == "__main__":

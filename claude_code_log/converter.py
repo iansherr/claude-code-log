@@ -429,8 +429,22 @@ def convert_jsonl_to(
     generate_individual_sessions: bool = True,
     use_cache: bool = True,
     silent: bool = False,
+    image_export_mode: Optional[str] = None,
 ) -> Path:
-    """Convert JSONL transcript(s) to the specified format."""
+    """Convert JSONL transcript(s) to the specified format.
+
+    Args:
+        format: Output format ("html", "md", or "markdown").
+        input_path: Path to JSONL file or directory.
+        output_path: Optional output path.
+        from_date: Optional start date filter.
+        to_date: Optional end date filter.
+        generate_individual_sessions: Whether to generate individual session files.
+        use_cache: Whether to use caching.
+        silent: Whether to suppress output.
+        image_export_mode: Image export mode ("placeholder", "embedded", "referenced").
+            If None, uses format default (embedded for HTML, referenced for Markdown).
+    """
     if not input_path.exists():
         raise FileNotFoundError(f"Input path not found: {input_path}")
 
@@ -489,7 +503,7 @@ def convert_jsonl_to(
 
     # Generate combined output file (check if regeneration needed)
     assert output_path is not None
-    renderer = get_renderer(format)
+    renderer = get_renderer(format, image_export_mode)
     should_regenerate = (
         renderer.is_outdated(output_path)
         or from_date is not None
@@ -501,7 +515,9 @@ def convert_jsonl_to(
     )
 
     if should_regenerate:
-        content = renderer.generate(messages, title)
+        # For referenced images, pass the output directory
+        output_dir = output_path.parent if output_path else input_path
+        content = renderer.generate(messages, title, output_dir=output_dir)
         assert content is not None
         output_path.write_text(content, encoding="utf-8")
     else:
@@ -519,6 +535,7 @@ def convert_jsonl_to(
             to_date,
             cache_manager,
             cache_was_updated,
+            image_export_mode,
         )
 
     return output_path
@@ -847,6 +864,7 @@ def _generate_individual_session_files(
     to_date: Optional[str] = None,
     cache_manager: Optional["CacheManager"] = None,
     cache_was_updated: bool = False,
+    image_export_mode: Optional[str] = None,
 ) -> None:
     """Generate individual files for each session in the specified format."""
     # Pre-compute warmup sessions to exclude them
@@ -874,7 +892,7 @@ def _generate_individual_session_files(
     project_title = get_project_display_name(output_dir.name, working_directories)
 
     # Get renderer once outside the loop
-    renderer = get_renderer(format)
+    renderer = get_renderer(format, image_export_mode)
 
     # Generate HTML file for each session
     for session_id in session_ids:
@@ -922,7 +940,7 @@ def _generate_individual_session_files(
         if should_regenerate_session:
             # Generate session content
             session_content = renderer.generate_session(
-                messages, session_id, session_title, cache_manager
+                messages, session_id, session_title, cache_manager, output_dir
             )
             assert session_content is not None
             # Write session file
