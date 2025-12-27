@@ -672,16 +672,21 @@ class DedupNoticeMessage(MessageContent):
     """Content for deduplication notices.
 
     Displayed when content is deduplicated (e.g., sidechain assistant
-    text that duplicates the Task tool result).
+    text that duplicates the Task tool result). Styled as assistant message
+    since it replaces sidechain assistant content.
+
+    The `original` field preserves the original AssistantTextMessage so renderers
+    can optionally show the full content instead of the link.
     """
 
     notice_text: str
     target_message_id: Optional[str] = None  # Message ID for anchor link
     original_text: Optional[str] = None  # Original duplicated content (for debugging)
+    original: Optional["AssistantTextMessage"] = None  # Original message for renderers
 
     @property
     def message_type(self) -> str:
-        return "dedup_notice"
+        return "assistant"  # Styled as assistant (replaces sidechain assistant)
 
 
 # =============================================================================

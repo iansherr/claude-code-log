@@ -29,11 +29,13 @@ from .models import (
     ThinkingContent,
     UsageInfo,
     # Structured content types
+    AssistantTextMessage,
     CommandOutputMessage,
     DedupNoticeMessage,
     SessionHeaderMessage,
     SlashCommandMessage,
     SystemMessage,
+    TaskOutput,
     ToolResultMessage,
     ToolUseMessage,
     UnknownMessage,
@@ -1287,8 +1289,14 @@ def _extract_task_result_text(tool_result_message: ToolResultMessage) -> Optiona
     Returns:
         The extracted text content (normalized), or None if extraction fails
     """
-    # Get the ToolResultContent from the output
     output = tool_result_message.output
+
+    # Handle parsed TaskOutput (preferred - has structured result field)
+    if isinstance(output, TaskOutput):
+        text = output.result.strip() if output.result else None
+        return _normalize_for_dedup(text) if text else None
+
+    # Handle raw ToolResultContent (fallback for unparsed results)
     if not isinstance(output, ToolResultContent):
         return None
 
@@ -1370,21 +1378,25 @@ def _cleanup_sidechain_duplicates(root_messages: list[TemplateMessage]) -> None:
 
         for i in range(len(children) - 1, -1, -1):
             child = children[i]
+            child_content = child.content
             # Get raw_text_content from content (UserTextMessage/AssistantTextMessage)
-            child_raw = getattr(child.content, "raw_text_content", None)
+            child_raw = getattr(child_content, "raw_text_content", None)
             child_text = _normalize_for_dedup(child_raw) if child_raw else None
             if (
                 child.type == "assistant"
                 and child.is_sidechain
+                and isinstance(child_content, AssistantTextMessage)
                 and child_text
                 and child_text == task_result_text
             ):
                 # Replace with dedup notice pointing to the Task result
+                # Preserve original meta (sidechain/session flags) and original message
                 child.content = DedupNoticeMessage(
-                    MessageMeta.empty(),
+                    child_content.meta,
                     notice_text="Task summary — see result above",
                     target_message_id=message.message_id,
                     original_text=child_text,
+                    original=child_content,
                 )
                 break
 
