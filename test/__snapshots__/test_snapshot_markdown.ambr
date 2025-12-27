@@ -205,11 +205,7 @@
   
   ### FailingTool
   
-  ```json
-  {
-    "test_param": "This tool will fail to demonstrate error handling"
-  }
-  ```
+  **test_param:** `This tool will fail to demonstrate error handling`
   
   ```
   Error: Tool execution failed with error: Command not found

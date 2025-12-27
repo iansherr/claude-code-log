@@ -45,7 +45,6 @@ from ..models import (
     EditOutput,
     ExitPlanModeOutput,
     GlobOutput,
-    GrepOutput,
     ReadOutput,
     TaskOutput,
     ToolResultContent,
@@ -213,8 +212,9 @@ class MarkdownRenderer(Renderer):
             return f"Session `{session_short}`: {content.summary}"
         return f"Session `{session_short}`"
 
-    def format_DedupNoticeMessage(self, message: DedupNoticeMessage) -> str:
-        return f"*{message.notice}*"
+    def format_DedupNoticeMessage(self, message: DedupNoticeMessage) -> str:  # noqa: ARG002
+        # Skip dedup notices in markdown output
+        return ""
 
     # -------------------------------------------------------------------------
     # User Content Formatters
@@ -257,7 +257,7 @@ class MarkdownRenderer(Renderer):
 
     def format_BashOutputMessage(self, message: BashOutputMessage) -> str:
         # Combine stdout and stderr, strip ANSI codes for markdown output
-        parts = []
+        parts: list[str] = []
         if message.stdout:
             parts.append(message.stdout)
         if message.stderr:
@@ -268,10 +268,10 @@ class MarkdownRenderer(Renderer):
 
     def format_CompactedSummaryMessage(self, message: CompactedSummaryMessage) -> str:
         # Quote to protect embedded markdown
-        return self._quote(message.summary)
+        return self._quote(message.summary_text)
 
     def format_UserMemoryMessage(self, message: UserMemoryMessage) -> str:
-        return self._code_fence(message.content)
+        return self._code_fence(message.memory_text)
 
     # -------------------------------------------------------------------------
     # Assistant Content Formatters
@@ -282,7 +282,7 @@ class MarkdownRenderer(Renderer):
         for item in message.items:
             if isinstance(item, ImageContent):
                 parts.append(self._format_image(item))
-            elif isinstance(item, TextContent):
+            else:  # TextContent
                 if item.text.strip():
                     # Quote to protect embedded markdown
                     parts.append(self._quote(item.text))
@@ -384,8 +384,29 @@ class MarkdownRenderer(Renderer):
         return "*Exiting plan mode*"
 
     def format_ToolUseContent(self, content: ToolUseContent) -> str:
-        """Fallback for unknown tool inputs."""
-        return self._code_fence(json.dumps(content.input, indent=2), "json")
+        """Fallback for unknown tool inputs - render as key/value list."""
+        return self._render_params(content.input)
+
+    def _render_params(self, params: dict[str, Any]) -> str:
+        """Render parameters as a markdown key/value list."""
+        if not params:
+            return "*No parameters*"
+
+        lines: list[str] = []
+        for key, value in params.items():
+            if isinstance(value, (dict, list)):
+                # Structured value - render as JSON code block
+                formatted = json.dumps(value, indent=2, ensure_ascii=False)
+                lines.append(f"**{key}:**")
+                lines.append(self._code_fence(formatted, "json"))
+            elif isinstance(value, str) and len(value) > 100:
+                # Long string - render as code block
+                lines.append(f"**{key}:**")
+                lines.append(self._code_fence(value))
+            else:
+                # Simple value - inline
+                lines.append(f"**{key}:** `{value}`")
+        return "\n\n".join(lines)
 
     # -------------------------------------------------------------------------
     # Tool Output Formatters
@@ -414,10 +435,8 @@ class MarkdownRenderer(Renderer):
             return "*No files found*"
         return "\n".join(f"- `{f}`" for f in output.files)
 
-    def format_GrepOutput(self, output: GrepOutput) -> str:
-        if not output.content:
-            return "*No matches found*"
-        return self._code_fence(output.content)
+    # Note: GrepOutput is not used (tool results handled as raw strings)
+    # Grep results fall back to format_ToolResultContent
 
     def format_TaskOutput(self, output: TaskOutput) -> str:
         # TaskOutput contains markdown, quote it
