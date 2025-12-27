@@ -76,8 +76,9 @@
   
       /* Solid colors for text and accents */
       --text-primary: #333;
-      --text-muted: #888;
+      --text-muted: #666;
       --text-secondary: #495057;
+      --fold-color: #888;
   
       /* Border colors */
       --border-light: #e0e0e0;
@@ -1926,8 +1927,9 @@
   
       /* Solid colors for text and accents */
       --text-primary: #333;
-      --text-muted: #888;
+      --text-muted: #666;
       --text-secondary: #495057;
+      --fold-color: #888;
   
       /* Border colors */
       --border-light: #e0e0e0;
@@ -2164,7 +2166,7 @@
   .fold-icon {
       font-size: 1.1em;
       line-height: 1;
-      color: var(--text-muted);
+      color: var(--fold-color);
   }
   
   .fold-count {
@@ -2174,7 +2176,7 @@
   }
   
   .fold-label {
-      color: var(--text-muted);
+      color: var(--fold-color);
       font-size: 0.9em;
   }
   
@@ -6731,8 +6733,9 @@
   
       /* Solid colors for text and accents */
       --text-primary: #333;
-      --text-muted: #888;
+      --text-muted: #666;
       --text-secondary: #495057;
+      --fold-color: #888;
   
       /* Border colors */
       --border-light: #e0e0e0;
@@ -6969,7 +6972,7 @@
   .fold-icon {
       font-size: 1.1em;
       line-height: 1;
-      color: var(--text-muted);
+      color: var(--fold-color);
   }
   
   .fold-count {
@@ -6979,7 +6982,7 @@
   }
   
   .fold-label {
-      color: var(--text-muted);
+      color: var(--fold-color);
       font-size: 0.9em;
   }
   
@@ -11625,8 +11628,9 @@
   
       /* Solid colors for text and accents */
       --text-primary: #333;
-      --text-muted: #888;
+      --text-muted: #666;
       --text-secondary: #495057;
+      --fold-color: #888;
   
       /* Border colors */
       --border-light: #e0e0e0;
@@ -11863,7 +11867,7 @@
   .fold-icon {
       font-size: 1.1em;
       line-height: 1;
-      color: var(--text-muted);
+      color: var(--fold-color);
   }
   
   .fold-count {
@@ -11873,7 +11877,7 @@
   }
   
   .fold-label {
-      color: var(--text-muted);
+      color: var(--fold-color);
       font-size: 0.9em;
   }
   
@@ -16567,8 +16571,9 @@
   
       /* Solid colors for text and accents */
       --text-primary: #333;
-      --text-muted: #888;
+      --text-muted: #666;
       --text-secondary: #495057;
+      --fold-color: #888;
   
       /* Border colors */
       --border-light: #e0e0e0;
@@ -16805,7 +16810,7 @@
   .fold-icon {
       font-size: 1.1em;
       line-height: 1;
-      color: var(--text-muted);
+      color: var(--fold-color);
   }
   
   .fold-count {
@@ -16815,7 +16820,7 @@
   }
   
   .fold-label {
-      color: var(--text-muted);
+      color: var(--fold-color);
       font-size: 0.9em;
   }
   

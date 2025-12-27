@@ -72,7 +72,7 @@
 .fold-icon {
     font-size: 1.1em;
     line-height: 1;
-    color: var(--text-muted);
+    color: var(--fold-color);
 }
 
 .fold-count {
@@ -82,7 +82,7 @@
 }
 
 .fold-label {
-    color: var(--text-muted);
+    color: var(--fold-color);
     font-size: 0.9em;
 }
 
