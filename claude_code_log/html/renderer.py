@@ -11,6 +11,7 @@ from ..models import (
     CommandOutputMessage,
     CompactedSummaryMessage,
     HookSummaryMessage,
+    ImageContent,
     SessionHeaderMessage,
     SlashCommandMessage,
     SystemMessage,
@@ -146,10 +147,30 @@ class HtmlRenderer(Renderer):
 
         Args:
             image_export_mode: Image export mode - "placeholder", "embedded", or "referenced".
-                Currently only "embedded" is fully supported for HTML.
         """
         super().__init__()
         self.image_export_mode = image_export_mode
+        self._output_dir: Path | None = None
+        self._image_counter = 0
+
+    # -------------------------------------------------------------------------
+    # Private Utility Methods
+    # -------------------------------------------------------------------------
+
+    def _format_image(self, image: ImageContent) -> str:
+        """Format image based on export mode."""
+        from ..image_export import export_image
+
+        self._image_counter += 1
+        src = export_image(
+            image,
+            self.image_export_mode,
+            output_dir=self._output_dir,
+            counter=self._image_counter,
+        )
+        if src is None:
+            return "[Image]"
+        return f'<img src="{src}" alt="image" class="uploaded-image" />'
 
     # -------------------------------------------------------------------------
     # System Content Formatters
@@ -173,7 +194,9 @@ class HtmlRenderer(Renderer):
 
     def format_UserTextMessage(self, message: UserTextMessage) -> str:
         """Format → rendered markdown HTML."""
-        return format_user_text_model_content(message)
+        return format_user_text_model_content(
+            message, image_formatter=self._format_image
+        )
 
     def format_UserSlashCommandMessage(self, message: UserSlashCommandMessage) -> str:
         """Format → <span class='slash-command'>/cmd</span>."""
@@ -209,7 +232,9 @@ class HtmlRenderer(Renderer):
 
     def format_AssistantTextMessage(self, message: AssistantTextMessage) -> str:
         """Format → rendered markdown HTML."""
-        return format_assistant_text_content(message)
+        return format_assistant_text_content(
+            message, image_formatter=self._format_image
+        )
 
     def format_ThinkingMessage(self, message: ThinkingMessage) -> str:
         """Format → <details class='thinking'>...</details> (foldable if >10 lines)."""
@@ -432,12 +457,16 @@ class HtmlRenderer(Renderer):
         messages: list[TranscriptEntry],
         title: Optional[str] = None,
         combined_transcript_link: Optional[str] = None,
-        output_dir: Optional[Path] = None,  # noqa: ARG002
+        output_dir: Optional[Path] = None,
     ) -> str:
         """Generate HTML from transcript messages."""
         import time
 
         t_start = time.time()
+
+        # Set output directory for image export (used in "referenced" mode)
+        self._output_dir = output_dir
+        self._image_counter = 0
 
         if not title:
             title = "Claude Transcript"
@@ -482,7 +511,7 @@ class HtmlRenderer(Renderer):
         session_id: str,
         title: Optional[str] = None,
         cache_manager: Optional["CacheManager"] = None,
-        output_dir: Optional[Path] = None,  # noqa: ARG002
+        output_dir: Optional[Path] = None,
     ) -> str:
         """Generate HTML for a single session."""
         # Filter messages for this session (SummaryTranscriptEntry.sessionId is always None)
@@ -502,6 +531,7 @@ class HtmlRenderer(Renderer):
             session_messages,
             title or f"Session {session_id[:8]}",
             combined_transcript_link=combined_link,
+            output_dir=output_dir,
         )
 
     def generate_projects_index(

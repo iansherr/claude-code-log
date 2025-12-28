@@ -10,6 +10,9 @@ Part of the thematic formatter organization:
 Content models are defined in models.py, this module only handles formatting.
 """
 
+from typing import Callable, Optional
+
+from ..image_export import export_image
 from ..models import (
     AssistantTextMessage,
     ImageContent,
@@ -17,6 +20,9 @@ from ..models import (
     UnknownMessage,
 )
 from .utils import escape_html, render_markdown_collapsible
+
+# Type alias for image formatter callback
+ImageFormatter = Callable[[ImageContent], str]
 
 
 # =============================================================================
@@ -28,25 +34,29 @@ def format_assistant_text_content(
     content: AssistantTextMessage,
     line_threshold: int = 30,
     preview_line_count: int = 10,
+    image_formatter: Optional[ImageFormatter] = None,
 ) -> str:
     """Format assistant text content as HTML.
 
     Iterates through content.items preserving order:
     - TextContent: Rendered as markdown with collapsible support
-    - ImageContent: Rendered as inline <img> tag with base64 data URL
+    - ImageContent: Rendered as inline <img> tag
 
     Args:
         content: AssistantTextMessage with text/items to render
         line_threshold: Number of lines before content becomes collapsible
         preview_line_count: Number of preview lines to show when collapsed
+        image_formatter: Optional callback for image formatting. If None, uses
+            format_image_content() which embeds images as base64 data URLs.
 
     Returns:
         HTML string with markdown-rendered, optionally collapsible content
     """
+    formatter = image_formatter or format_image_content
     parts: list[str] = []
     for item in content.items:
         if isinstance(item, ImageContent):
-            parts.append(format_image_content(item))
+            parts.append(formatter(item))
         else:  # TextContent
             if item.text.strip():
                 text_html = render_markdown_collapsible(
@@ -83,7 +93,11 @@ def format_thinking_content(
 
 
 def format_image_content(image: ImageContent) -> str:
-    """Format image content as HTML.
+    """Format image content as HTML with embedded base64 data.
+
+    This is the default image formatter for backward compatibility.
+    For other export modes (referenced, placeholder), use the renderer's
+    _format_image() method via the image_formatter callback.
 
     Args:
         image: ImageContent with base64 image data
@@ -91,8 +105,10 @@ def format_image_content(image: ImageContent) -> str:
     Returns:
         HTML img tag with data URL
     """
-    data_url = f"data:{image.source.media_type};base64,{image.source.data}"
-    return f'<img src="{data_url}" alt="Uploaded image" class="uploaded-image" />'
+    src = export_image(image, mode="embedded")
+    if src is None:
+        return "[Image]"
+    return f'<img src="{src}" alt="image" class="uploaded-image" />'
 
 
 def format_unknown_content(content: UnknownMessage) -> str:

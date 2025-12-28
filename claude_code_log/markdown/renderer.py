@@ -136,9 +136,15 @@ class MarkdownRenderer(Renderer):
         from ..image_export import export_image
 
         self._image_counter += 1
-        return export_image(
-            image, self.image_export_mode, self._output_dir, self._image_counter
+        src = export_image(
+            image,
+            self.image_export_mode,
+            output_dir=self._output_dir,
+            counter=self._image_counter,
         )
+        if src is None:
+            return "[Image]"
+        return f"![image]({src})"
 
     def _lang_from_path(self, path: str) -> str:
         """Get language hint from file extension."""

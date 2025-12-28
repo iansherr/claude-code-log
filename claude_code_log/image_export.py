@@ -17,8 +17,11 @@ def export_image(
     mode: str,
     output_dir: Path | None = None,
     counter: int = 0,
-) -> str:
-    """Export image content based on the specified mode.
+) -> str | None:
+    """Export image content and return the source URL/path.
+
+    This is a format-agnostic function that handles image export logic
+    and returns just the src. Callers format the result as HTML or Markdown.
 
     Args:
         image: ImageContent with base64-encoded image data
@@ -27,21 +30,20 @@ def export_image(
         counter: Image counter for generating unique filenames
 
     Returns:
-        Markdown/HTML image reference string based on mode:
-        - placeholder: "[Image]"
-        - embedded: "![image](data:image/...;base64,...)"
-        - referenced: "![image](images/image_0001.png)"
+        For "placeholder" mode: None (caller should render placeholder text)
+        For "embedded" mode: data URL (e.g., "data:image/png;base64,...")
+        For "referenced" mode: relative path (e.g., "images/image_0001.png")
+        For unsupported mode: None
     """
     if mode == "placeholder":
-        return "[Image]"
+        return None
 
-    elif mode == "embedded":
-        data_url = f"data:{image.source.media_type};base64,{image.source.data}"
-        return f"![image]({data_url})"
+    if mode == "embedded":
+        return f"data:{image.source.media_type};base64,{image.source.data}"
 
-    elif mode == "referenced":
+    if mode == "referenced":
         if output_dir is None:
-            return "[Image: export directory not set]"
+            return None
 
         # Create images subdirectory
         images_dir = output_dir / "images"
@@ -56,10 +58,10 @@ def export_image(
         image_data = base64.b64decode(image.source.data)
         filepath.write_bytes(image_data)
 
-        return f"![image](images/{filename})"
+        return f"images/{filename}"
 
-    else:
-        return f"[Image: unsupported mode '{mode}']"
+    # Unsupported mode
+    return None
 
 
 def _get_extension(media_type: str) -> str:

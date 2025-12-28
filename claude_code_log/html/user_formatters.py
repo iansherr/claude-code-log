@@ -8,6 +8,8 @@ Part of the thematic formatter organization:
 - tool_formatters.py: tool use/result content
 """
 
+from typing import Callable, Optional
+
 from .ansi_colors import convert_ansi_to_html
 from ..models import (
     BashInputMessage,
@@ -191,7 +193,10 @@ def format_user_text_content(text: str) -> str:
     return f"<pre>{escaped_text}</pre>"
 
 
-def format_user_text_model_content(content: UserTextMessage) -> str:
+def format_user_text_model_content(
+    content: UserTextMessage,
+    image_formatter: Optional[Callable[[ImageContent], str]] = None,
+) -> str:
     """Format UserTextMessage model as HTML.
 
     Handles user text with optional IDE notifications, compacted summaries,
@@ -199,11 +204,13 @@ def format_user_text_model_content(content: UserTextMessage) -> str:
 
     When `items` is set, iterates through the content items preserving order:
     - TextContent: Rendered as preformatted text
-    - ImageContent: Rendered as inline <img> tag with base64 data URL
+    - ImageContent: Rendered as inline <img> tag
     - IdeNotificationContent: Rendered as IDE notification blocks
 
     Args:
         content: UserTextMessage with text/items and optional flags/notifications
+        image_formatter: Optional callback for image formatting. If None, uses
+            format_image_content() which embeds images as base64 data URLs.
 
     Returns:
         HTML string combining all content items
@@ -211,6 +218,7 @@ def format_user_text_model_content(content: UserTextMessage) -> str:
     # Import here to avoid circular dependency
     from .assistant_formatters import format_image_content
 
+    formatter = image_formatter or format_image_content
     parts: list[str] = []
 
     for item in content.items:
@@ -218,7 +226,7 @@ def format_user_text_model_content(content: UserTextMessage) -> str:
             notifications = format_ide_notification_content(item)
             parts.extend(notifications)
         elif isinstance(item, ImageContent):
-            parts.append(format_image_content(item))
+            parts.append(formatter(item))
         else:  # TextContent
             # Regular user text as preformatted
             if item.text.strip():
