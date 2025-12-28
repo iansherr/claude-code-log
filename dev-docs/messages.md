@@ -884,6 +884,5 @@ Sub-agent messages (from `Task` tool):
   - [tool_factory.py](../claude_code_log/factories/tool_factory.py) - `create_tool_use_message()`, `create_tool_result_message()`
   - [system_factory.py](../claude_code_log/factories/system_factory.py) - `create_system_message()`
   - [meta_factory.py](../claude_code_log/factories/meta_factory.py) - `create_meta()`
-- [TEMPLATE_MESSAGE_CHILDREN.md](TEMPLATE_MESSAGE_CHILDREN.md) - Tree architecture exploration
-- [MESSAGE_REFACTORING.md](MESSAGE_REFACTORING.md) - Refactoring plan (Phase 1)
-- [MESSAGE_REFACTORING2.md](MESSAGE_REFACTORING2.md) - Refactoring plan (Phase 2)
+- [rendering-architecture.md](rendering-architecture.md) - Rendering pipeline and Renderer class hierarchy
+- [rendering-next.md](rendering-next.md) - Future rendering improvements

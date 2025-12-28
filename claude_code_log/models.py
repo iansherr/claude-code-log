@@ -720,7 +720,7 @@ class ToolUseMessage(MessageContent):
 # =============================================================================
 # Tool Input Models
 # =============================================================================
-# Typed models for tool inputs (Phase 11 of MESSAGE_REFACTORING.md)
+# Typed models for tool inputs.
 # These provide type safety and IDE autocompletion for tool parameters.
 
 

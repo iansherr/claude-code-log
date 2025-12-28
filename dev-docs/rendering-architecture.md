@@ -1,0 +1,329 @@
+# Rendering Architecture
+
+This document describes how Claude Code transcript data flows from raw JSONL entries to final output (HTML, Markdown). The architecture separates concerns into distinct layers:
+
+1. **Parsing Layer** - Raw JSONL to typed transcript entries
+2. **Factory Layer** - Transcript entries to `MessageContent` models
+3. **Rendering Layer** - Format-neutral tree building and relationship processing
+4. **Output Layer** - Format-specific rendering (HTML, Markdown)
+
+---
+
+## 1. Data Flow Overview
+
+```
+JSONL File
+    ↓ (parser.py)
+list[TranscriptEntry]
+    ↓ (factories/)
+list[TemplateMessage] with MessageContent
+    ↓ (renderer.py: generate_template_messages)
+Tree of TemplateMessage (roots with children)
++ RenderingContext (message registry)
++ Session navigation data
+    ↓ (html/renderer.py or markdown/renderer.py)
+Final output (HTML or Markdown)
+```
+
+**Key cardinality rules**:
+- Each transcript entry has a `uuid`, but a single entry's `list[ContentItem]` may be chunked and produce multiple `MessageContent` objects (e.g., tool_use items are split into separate messages)
+- Each `MessageContent` gets exactly one `TemplateMessage` wrapper
+- The `message_index` (assigned during registration) uniquely identifies a `TemplateMessage` within a render
+
+---
+
+## 2. Naming Conventions
+
+The codebase uses consistent suffixes to distinguish layers:
+
+| Suffix | Layer | Examples |
+|--------|-------|----------|
+| `*Content` | ContentItem (JSONL parsing) | `TextContent`, `ToolUseContent`, `ThinkingContent`, `ImageContent` |
+| `*Input` | Tool input models | `BashInput`, `ReadInput`, `TaskInput` |
+| `*Output` | Tool output models | `ReadOutput`, `EditOutput`, `TaskOutput` |
+| `*Message` | MessageContent (rendering) | `UserTextMessage`, `ToolUseMessage`, `AssistantTextMessage` |
+| `*Model` | Pydantic JSONL models | `UserMessageModel`, `AssistantMessageModel` |
+
+**Key distinction**:
+- `ToolUseContent` is the raw JSONL content item
+- `ToolUseMessage` is the render-time wrapper containing a typed `ToolInput`
+- `BashInput` is a specific tool input model parsed from `ToolUseContent.input`
+
+---
+
+## 3. The Factory Layer
+
+Factories ([factories/](../claude_code_log/factories/)) transform raw transcript data into typed `MessageContent` models. Each factory focuses on a specific message category:
+
+| Factory | Creates | Key Function |
+|---------|---------|--------------|
+| [meta_factory.py](../claude_code_log/factories/meta_factory.py) | `MessageMeta` | `create_meta(entry)` |
+| [user_factory.py](../claude_code_log/factories/user_factory.py) | User message types | `create_user_message(meta, content_list, ...)` |
+| [assistant_factory.py](../claude_code_log/factories/assistant_factory.py) | Assistant messages | `create_assistant_message(meta, items)` |
+| [tool_factory.py](../claude_code_log/factories/tool_factory.py) | Tool use/result | `create_tool_use_message(meta, item, ...)` |
+| [system_factory.py](../claude_code_log/factories/system_factory.py) | System messages | `create_system_message(meta, ...)` |
+
+### Factory Pattern
+
+All factory functions require `MessageMeta` as the first parameter:
+
+```python
+def create_user_message(
+    meta: MessageMeta,
+    content_list: list[ContentItem],
+    ...
+) -> UserTextMessage | UserSlashCommandMessage | ...
+```
+
+This ensures every `MessageContent` has valid metadata accessible via `content.meta`.
+
+### Tool Input Parsing
+
+Tool inputs are parsed into typed models in [tool_factory.py:create_tool_input()](../claude_code_log/factories/tool_factory.py):
+
+```python
+TOOL_INPUT_MODELS: dict[str, type[ToolInput]] = {
+    "Bash": BashInput,
+    "Read": ReadInput,
+    "Write": WriteInput,
+    ...
+}
+
+def create_tool_input(tool_use: ToolUseContent) -> ToolInput:
+    model_class = TOOL_INPUT_MODELS.get(tool_use.name)
+    if model_class:
+        return model_class.model_validate(tool_use.input)
+    return tool_use  # Fallback to raw ToolUseContent
+```
+
+### Tool Output Parsing
+
+Tool outputs use a **different approach** than inputs. While inputs are parsed via Pydantic `model_validate()`, outputs are extracted from text using **regex patterns** since tool results arrive as text content:
+
+```python
+TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
+    "Read": parse_read_output,
+    "Edit": parse_edit_output,
+    "Write": parse_write_output,
+    "Bash": parse_bash_output,
+    "Task": parse_task_output,
+    ...
+}
+
+def create_tool_output(tool_name, tool_result, file_path) -> ToolOutput:
+    if parser := TOOL_OUTPUT_PARSERS.get(tool_name):
+        if parsed := parser(tool_result, file_path):
+            return parsed
+    return tool_result  # Fallback to raw ToolResultContent
+```
+
+Each parser extracts text from `ToolResultContent` and parses patterns like:
+- `cat -n` format: `"   123→content"` for file content with line numbers
+- Structured prefixes: `"The file ... has been updated."` for edit results
+
+---
+
+## 4. The TemplateMessage Wrapper
+
+`TemplateMessage` ([renderer.py:132](../claude_code_log/renderer.py#L132)) wraps `MessageContent` with render-time state:
+
+**MessageContent** (pure transcript data):
+- `meta: MessageMeta` - timestamp, session_id, uuid, is_sidechain, etc.
+- `message_type` property - type identifier ("user", "assistant", etc.)
+- `has_markdown` property - whether content contains markdown
+
+**TemplateMessage** (render-time wrapper):
+- `content: MessageContent` - the wrapped content
+- `meta` property - delegates to `content.meta` (`message.meta is message.content.meta`)
+- `message_index: Optional[int]` - unique index in RenderingContext registry
+- `message_id` property - formatted as `"d-{message_index}"` for HTML element IDs
+
+Relationship fields (populated by processing phases, using `message_index` for references):
+- Pairing: `pair_first`, `pair_last`, `pair_duration`, `is_first_in_pair`, `is_last_in_pair`
+- Hierarchy: `ancestry` (list of parent `message_index` values), `children`
+- Fold/unfold: `immediate_children_count`, `total_descendants_count`
+
+---
+
+## 5. Format-Neutral Processing Pipeline
+
+The core rendering pipeline is in [renderer.py:generate_template_messages()](../claude_code_log/renderer.py#L523). It returns:
+
+1. **Tree of TemplateMessage** - Session headers as roots with nested children
+2. **Session navigation data** - For table of contents
+3. **RenderingContext** - Message registry for `message_index` lookups
+
+### Processing Phases
+
+The pipeline processes messages through several phases:
+
+#### Phase 1: Message Loop
+[_process_messages_loop()](../claude_code_log/renderer.py) creates `TemplateMessage` wrappers for each transcript entry. The loop handles:
+- Inserting session headers at session boundaries
+- Creating `MessageContent` via factories
+- Registering messages in `RenderingContext`
+
+#### Phase 2: Pairing
+[_identify_message_pairs()](../claude_code_log/renderer.py#L929) marks related messages:
+- **Adjacent pairs**: thinking+assistant, bash-input+output, system+slash-command
+- **Indexed pairs**: tool_use+tool_result (by tool_use_id)
+
+After identification, [_reorder_paired_messages()](../claude_code_log/renderer.py#L968) moves `pair_last` messages adjacent to their `pair_first`.
+
+#### Phase 3: Hierarchy
+[_build_message_hierarchy()](../claude_code_log/renderer.py) assigns `ancestry` based on message relationships:
+- User messages at level 1
+- Assistant/system at level 2
+- Tool use/result at level 3
+- Sidechain messages at level 4+
+
+#### Phase 4: Tree Building
+[_build_message_tree()](../claude_code_log/renderer.py#L1226) populates `children` lists from `ancestry`:
+
+```
+Session Header (root)
+  └─ User message
+       └─ Assistant message
+            └─ Tool use
+            └─ Tool result
+                 └─ Sidechain assistant (Task result children)
+```
+
+---
+
+## 6. RenderingContext
+
+`RenderingContext` ([renderer.py:75](../claude_code_log/renderer.py#L75)) holds per-render state:
+
+```python
+@dataclass
+class RenderingContext:
+    messages: list[TemplateMessage]  # All messages by index
+    tool_use_context: dict[str, ToolUseContent]  # For result→use lookup
+    session_first_message: dict[str, int]  # Session header indices
+
+    def register(self, message: TemplateMessage) -> int:
+        """Assign message_index and add to registry."""
+
+    def get(self, message_index: int) -> Optional[TemplateMessage]:
+        """Lookup by index."""
+```
+
+This enables parallel-safe rendering where each render operation gets its own context.
+
+---
+
+## 7. The Renderer Class Hierarchy
+
+The base `Renderer` class ([renderer.py:2056](../claude_code_log/renderer.py#L2056)) defines the method-based dispatcher pattern. Subclasses implement format-specific rendering.
+
+### Dispatch Mechanism
+
+The dispatcher finds methods by content type name:
+
+```python
+def _dispatch_format(self, obj: Any) -> str:
+    """Dispatch to format_{ClassName} method."""
+    for cls in type(obj).__mro__:
+        if cls is object:
+            break
+        if method := getattr(self, f"format_{cls.__name__}", None):
+            return method(obj)
+    return ""
+```
+
+For example, `ToolUseMessage` with `BashInput`:
+1. `format_content(message)` calls `_dispatch_format(message.content)`
+2. Finds `format_ToolUseMessage()` which calls `_dispatch_format(content.input)`
+3. Finds `format_BashInput()` for the specific tool
+
+### Title Dispatch
+
+Similar pattern for titles via `title_{ClassName}` methods:
+
+```python
+def title_ToolUseMessage(self, message: TemplateMessage) -> str:
+    content = cast(ToolUseMessage, message.content)
+    if title := self._dispatch_title(content.input, message):
+        return title
+    return content.tool_name  # Default fallback
+```
+
+### Subclass Implementations
+
+**HtmlRenderer** ([html/renderer.py](../claude_code_log/html/renderer.py)):
+- Implements `format_*` methods by delegating to formatter functions
+- `_flatten_preorder()` traverses tree, formats content, builds flat list for template
+- Generates HTML via Jinja2 templates
+
+**MarkdownRenderer** ([markdown/renderer.py](../claude_code_log/markdown/renderer.py)):
+- Implements `format_*` methods inline
+- Writes directly to file/string without templates
+- Simpler structure suited to plain text output
+
+---
+
+## 8. HTML Formatter Organization
+
+HTML formatters are split by message category:
+
+| Module | Scope | Key Functions |
+|--------|-------|---------------|
+| [user_formatters.py](../claude_code_log/html/user_formatters.py) | User messages | `format_user_text_model_content()`, `format_bash_input_content()` |
+| [assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) | Assistant/thinking | `format_assistant_text_content()`, `format_thinking_content()` |
+| [system_formatters.py](../claude_code_log/html/system_formatters.py) | System messages | `format_system_content()`, `format_session_header_content()` |
+| [tool_formatters.py](../claude_code_log/html/tool_formatters.py) | Tool inputs/outputs | `format_bash_input()`, `format_read_output()`, etc. |
+| [utils.py](../claude_code_log/html/utils.py) | Shared utilities | `render_markdown()`, `escape_html()`, `CSS_CLASS_REGISTRY` |
+
+---
+
+## 9. CSS Class Derivation
+
+CSS classes are derived from content types using `CSS_CLASS_REGISTRY` in [html/utils.py](../claude_code_log/html/utils.py#L56):
+
+```python
+CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
+    SystemMessage: ["system"],  # level added dynamically
+    UserTextMessage: ["user"],
+    UserSteeringMessage: ["user", "steering"],
+    ToolUseMessage: ["tool_use"],
+    ToolResultMessage: ["tool_result"],  # error added dynamically
+    ...
+}
+```
+
+The function `css_class_from_message()` walks the content type's MRO to find matching classes, then adds dynamic modifiers (sidechain, error level).
+
+See [css-classes.md](css-classes.md) for the complete reference.
+
+---
+
+## 10. Key Architectural Decisions
+
+### Content as Source of Truth
+
+`MessageContent.meta` holds all identity data. `TemplateMessage.meta` is the same object:
+```python
+assert message.meta is message.content.meta  # Same object
+```
+
+Note that `meta.uuid` is the original transcript entry's UUID. Since a single entry may be split into multiple `MessageContent` objects (e.g., multiple tool_use items), several messages can share the same UUID. Use `message_index` for unique identification within a render.
+
+### Tree-First Architecture
+
+`generate_template_messages()` returns tree roots. Flattening for template rendering is an explicit step in `HtmlRenderer._flatten_preorder()`. This keeps the tree authoritative while supporting existing flat-list templates.
+
+### Separation of Concerns
+
+- **models.py**: Pure data structures, no rendering logic
+- **factories/**: Data transformation, no I/O
+- **renderer.py**: Format-neutral processing (pairing, hierarchy, tree)
+- **html/**, **markdown/**: Format-specific output generation
+
+---
+
+## Related Documentation
+
+- [messages.md](messages.md) - Complete message type reference
+- [css-classes.md](css-classes.md) - CSS class combinations and rules
+- [FOLD_STATE_DIAGRAM.md](FOLD_STATE_DIAGRAM.md) - Fold/unfold state machine
