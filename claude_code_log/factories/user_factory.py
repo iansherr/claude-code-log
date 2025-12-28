@@ -464,14 +464,4 @@ def create_user_message(
             # Duck-typed image content - convert to our Pydantic model
             items.append(ImageContent.model_validate(item.model_dump()))  # type: ignore[union-attr]
 
-    # Extract text content from items for dedup matching and simple renderers
-    raw_text_content = "\n".join(
-        item.text for item in items if isinstance(item, TextContent)
-    )
-
-    # Return UserTextMessage with items list and cached raw text
-    return UserTextMessage(
-        items=items,
-        raw_text_content=raw_text_content if raw_text_content else None,
-        meta=meta,
-    )
+    return UserTextMessage(items=items, meta=meta)

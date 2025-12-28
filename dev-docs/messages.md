@@ -478,7 +478,6 @@ Assistant messages contain `ContentItem` instances that are:
 @dataclass
 class AssistantTextMessage(MessageContent):
     items: list[TextContent | ImageContent]  # Interleaved text and images
-    raw_text_content: Optional[str]          # Cached raw text for dedup/search
     token_usage: Optional[str]               # Formatted token usage string
 ```
 

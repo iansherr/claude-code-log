@@ -1384,16 +1384,21 @@ def _cleanup_sidechain_duplicates(root_messages: list[TemplateMessage]) -> None:
         for i in range(len(children) - 1, -1, -1):
             child = children[i]
             child_content = child.content
-            # Get raw_text_content from content (UserTextMessage/AssistantTextMessage)
-            child_raw = getattr(child_content, "raw_text_content", None)
-            child_text = _normalize_for_dedup(child_raw) if child_raw else None
             if (
                 child.type == "assistant"
                 and child.is_sidechain
                 and isinstance(child_content, AssistantTextMessage)
-                and child_text
-                and child_text == task_result_text
             ):
+                # Extract text on-demand for dedup check (only for sidechain assistant)
+                child_raw = "\n".join(
+                    item.text
+                    for item in child_content.items
+                    if isinstance(item, TextContent)
+                )
+                child_text = _normalize_for_dedup(child_raw) if child_raw else None
+            else:
+                child_text = None
+            if child_text and child_text == task_result_text:
                 # Replace with dedup notice pointing to the Task result
                 # Preserve original meta (sidechain/session flags) and original message
                 child.content = DedupNoticeMessage(

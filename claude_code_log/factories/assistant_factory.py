@@ -12,7 +12,6 @@ from ..models import (
     AssistantTextMessage,
     ContentItem,
     MessageMeta,
-    TextContent,
     ThinkingContent,
     ThinkingMessage,
     UsageInfo,
@@ -69,14 +68,9 @@ def create_assistant_message(
     # Create AssistantTextMessage directly from items
     # (empty text already filtered by chunk_message_content)
     if items:
-        # Extract text content from items for dedup matching and simple renderers
-        text_content = "\n".join(
-            item.text for item in items if isinstance(item, TextContent)
-        )
         return AssistantTextMessage(
             meta,
             items=items,  # type: ignore[arg-type]
-            raw_text_content=text_content if text_content else None,
             token_usage=format_token_usage(usage) if usage else None,
         )
     return None
