@@ -290,12 +290,13 @@ def _clear_caches(input_path: Path, all_projects: bool) -> None:
         click.echo(f"Warning: Failed to clear cache: {e}")
 
 
-def _clear_html_files(input_path: Path, all_projects: bool) -> None:
-    """Clear HTML files for the specified path."""
+def _clear_output_files(input_path: Path, all_projects: bool, file_ext: str) -> None:
+    """Clear generated output files (HTML or Markdown) for the specified path."""
+    ext_upper = file_ext.upper()
     try:
         if all_projects:
-            # Clear HTML files for all project directories
-            click.echo("Clearing HTML files for all projects...")
+            # Clear output files for all project directories
+            click.echo(f"Clearing {ext_upper} files for all projects...")
             project_dirs = [
                 d
                 for d in input_path.iterdir()
@@ -305,55 +306,55 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
             total_removed = 0
             for project_dir in project_dirs:
                 try:
-                    # Remove HTML files in project directory
-                    html_files = list(project_dir.glob("*.html"))
-                    for html_file in html_files:
-                        html_file.unlink()
+                    # Remove output files in project directory
+                    output_files = list(project_dir.glob(f"*.{file_ext}"))
+                    for output_file in output_files:
+                        output_file.unlink()
                         total_removed += 1
 
-                    if html_files:
+                    if output_files:
                         click.echo(
-                            f"  Removed {len(html_files)} HTML files from {project_dir.name}"
+                            f"  Removed {len(output_files)} {ext_upper} files from {project_dir.name}"
                         )
                 except Exception as e:
                     click.echo(
-                        f"  Warning: Failed to clear HTML files for {project_dir.name}: {e}"
+                        f"  Warning: Failed to clear {ext_upper} files for {project_dir.name}: {e}"
                     )
 
-            # Also remove top-level index.html
-            index_file = input_path / "index.html"
+            # Also remove top-level index file
+            index_file = input_path / f"index.{file_ext}"
             if index_file.exists():
                 index_file.unlink()
                 total_removed += 1
-                click.echo("  Removed top-level index.html")
+                click.echo(f"  Removed top-level index.{file_ext}")
 
             if total_removed > 0:
-                click.echo(f"Total: Removed {total_removed} HTML files")
+                click.echo(f"Total: Removed {total_removed} {ext_upper} files")
             else:
-                click.echo("No HTML files found to remove")
+                click.echo(f"No {ext_upper} files found to remove")
 
         elif input_path.is_dir():
-            # Clear HTML files for single directory
-            click.echo(f"Clearing HTML files for {input_path}...")
-            html_files = list(input_path.glob("*.html"))
-            for html_file in html_files:
-                html_file.unlink()
+            # Clear output files for single directory
+            click.echo(f"Clearing {ext_upper} files for {input_path}...")
+            output_files = list(input_path.glob(f"*.{file_ext}"))
+            for output_file in output_files:
+                output_file.unlink()
 
-            if html_files:
-                click.echo(f"Removed {len(html_files)} HTML files")
+            if output_files:
+                click.echo(f"Removed {len(output_files)} {ext_upper} files")
             else:
-                click.echo("No HTML files found to remove")
+                click.echo(f"No {ext_upper} files found to remove")
         else:
-            # Single file - remove corresponding HTML file
-            html_file = input_path.with_suffix(".html")
-            if html_file.exists():
-                html_file.unlink()
-                click.echo(f"Removed {html_file}")
+            # Single file - remove corresponding output file
+            output_file = input_path.with_suffix(f".{file_ext}")
+            if output_file.exists():
+                output_file.unlink()
+                click.echo(f"Removed {output_file}")
             else:
-                click.echo("No corresponding HTML file found to remove")
+                click.echo(f"No corresponding {ext_upper} file found to remove")
 
     except Exception as e:
-        click.echo(f"Warning: Failed to clear HTML files: {e}")
+        click.echo(f"Warning: Failed to clear {ext_upper} files: {e}")
 
 
 @click.command()
@@ -362,7 +363,7 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
     "-o",
     "--output",
     type=click.Path(path_type=Path),
-    help="Output HTML file path (default: input file with .html extension or combined_transcripts.html for directories)",
+    help="Output file path (default: input file with format extension, or combined_transcripts.{html,md} for directories)",
 )
 @click.option(
     "--open-browser",
@@ -400,9 +401,11 @@ def _clear_html_files(input_path: Path, all_projects: bool) -> None:
     help="Clear all cache directories before processing",
 )
 @click.option(
+    "--clear-output",
     "--clear-html",
+    "clear_output",
     is_flag=True,
-    help="Clear all HTML files and force regeneration",
+    help="Clear generated output files (HTML or Markdown based on --format) and force regeneration",
 )
 @click.option(
     "--tui",
@@ -445,7 +448,7 @@ def main(
     no_individual_sessions: bool,
     no_cache: bool,
     clear_cache: bool,
-    clear_html: bool,
+    clear_output: bool,
     tui: bool,
     projects_dir: Optional[Path],
     output_format: str,
@@ -567,12 +570,13 @@ def main(
                 click.echo("Cache cleared successfully.")
                 return
 
-        # Handle HTML files clearing
-        if clear_html:
-            _clear_html_files(input_path, all_projects)
-            if clear_html and not (from_date or to_date or input_path.is_file()):
-                # If only clearing HTML files, exit after clearing
-                click.echo("HTML files cleared successfully.")
+        # Handle output files clearing
+        if clear_output:
+            file_ext = "md" if output_format in ("md", "markdown") else "html"
+            _clear_output_files(input_path, all_projects, file_ext)
+            if clear_output and not (from_date or to_date or input_path.is_file()):
+                # If only clearing output files, exit after clearing
+                click.echo(f"{file_ext.upper()} files cleared successfully.")
                 return
 
         # Handle --all-projects flag or default behavior
