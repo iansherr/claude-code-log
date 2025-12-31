@@ -525,7 +525,7 @@ def convert_jsonl_to(
 
     if should_regenerate:
         # For referenced images, pass the output directory
-        output_dir = output_path.parent if output_path else input_path
+        output_dir = output_path.parent
         content = renderer.generate(messages, title, output_dir=output_dir)
         assert content is not None
         output_path.write_text(content, encoding="utf-8")
