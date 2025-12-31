@@ -220,6 +220,7 @@ class SessionBrowser(App[Optional[str]]):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("q", "quit", "Quit"),
         Binding("h", "export_selected", "Open HTML page"),
+        Binding("m", "export_markdown", "Open Markdown"),
         Binding("c", "resume_selected", "Resume in Claude Code"),
         Binding("e", "toggle_expanded", "Toggle Expanded View"),
         Binding("p", "back_to_projects", "Open Project Selector"),
@@ -524,6 +525,22 @@ class SessionBrowser(App[Optional[str]]):
         except Exception as e:
             self.notify(f"Error opening session HTML: {e}", severity="error")
 
+    def action_export_markdown(self) -> None:
+        """Export the selected session to Markdown."""
+        if not self.selected_session_id:
+            self.notify("No session selected", severity="warning")
+            return
+
+        try:
+            # Use cached session Markdown file directly
+            session_file = self.project_path / f"session-{self.selected_session_id}.md"
+
+            webbrowser.open(f"file://{session_file}")
+            self.notify(f"Opened session Markdown: {session_file}")
+
+        except Exception as e:
+            self.notify(f"Error opening session Markdown: {e}", severity="error")
+
     def action_resume_selected(self) -> None:
         """Resume the selected session in Claude Code."""
         if not self.selected_session_id:
@@ -646,7 +663,8 @@ class SessionBrowser(App[Optional[str]]):
             "- Expanded content updates automatically when visible\n\n"
             "Actions:\n"
             "- e: Toggle expanded view for session\n"
-            "- h: Open selected session's HTML page log\n"
+            "- h: Open selected session's HTML page\n"
+            "- m: Open selected session's Markdown file\n"
             "- c: Resume selected session in Claude Code\n"
             "- p: Open project selector\n"
             "- q: Quit\n\n"
