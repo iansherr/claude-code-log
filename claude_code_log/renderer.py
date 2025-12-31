@@ -568,10 +568,14 @@ def generate_template_messages(
         )
 
     # Pass 2: Render messages to TemplateMessage objects
-    with log_timing(lambda: f"Render messages ({len(ctx.messages)} messages)", t_start):
+    ctx: RenderingContext | None = None
+    with log_timing(
+        lambda: f"Render messages ({len(ctx.messages) if ctx else 0} messages)", t_start
+    ):
         ctx = _render_messages(filtered_messages, sessions, show_tokens_for_message)
 
     # Prepare session navigation data (uses ctx for session header indices)
+    session_nav: list[dict[str, Any]] = []
     with log_timing(
         lambda: f"Session navigation building ({len(session_nav)} sessions)", t_start
     ):
