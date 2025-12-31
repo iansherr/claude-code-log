@@ -9,12 +9,14 @@ from typing import ClassVar, Optional, cast
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding, BindingType
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, VerticalScroll
+from textual.screen import ModalScreen
 from textual.widgets import (
     DataTable,
     Footer,
     Header,
     Label,
+    Markdown,
     Static,
 )
 from textual.reactive import reactive
@@ -179,6 +181,65 @@ class ProjectSelector(App[Path]):
         self.exit(None)
 
 
+class MarkdownViewerScreen(ModalScreen[None]):
+    """Modal screen for viewing Markdown content."""
+
+    CSS = """
+    MarkdownViewerScreen {
+        align: center middle;
+    }
+
+    #md-container {
+        width: 90%;
+        height: 90%;
+        border: solid $primary;
+        background: $surface;
+    }
+
+    #md-header {
+        dock: top;
+        height: 3;
+        background: $primary;
+        color: $text;
+        text-align: center;
+        padding: 1;
+    }
+
+    #md-content {
+        height: 1fr;
+        padding: 1 2;
+    }
+
+    #md-footer {
+        dock: bottom;
+        height: 1;
+        background: $primary-darken-2;
+        color: $text-muted;
+        text-align: center;
+    }
+    """
+
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("escape", "dismiss", "Close", show=True),
+        Binding("q", "dismiss", "Close", show=False),
+    ]
+
+    def __init__(self, content: str, title: str = "Markdown Viewer") -> None:
+        super().__init__()
+        self.md_content = content
+        self.md_title = title
+
+    def compose(self) -> ComposeResult:
+        with Container(id="md-container"):
+            yield Static(self.md_title, id="md-header")
+            with VerticalScroll(id="md-content"):
+                yield Markdown(self.md_content)
+            yield Static("Press ESC or q to close", id="md-footer")
+
+    def action_dismiss(self) -> None:
+        self.dismiss(None)
+
+
 class SessionBrowser(App[Optional[str]]):
     """Interactive TUI for browsing and managing Claude Code Log sessions."""
 
@@ -221,6 +282,7 @@ class SessionBrowser(App[Optional[str]]):
         Binding("q", "quit", "Quit"),
         Binding("h", "export_selected", "Open HTML page"),
         Binding("m", "export_markdown", "Open Markdown"),
+        Binding("v", "view_markdown", "View Markdown"),
         Binding("c", "resume_selected", "Resume in Claude Code"),
         Binding("e", "toggle_expanded", "Toggle Expanded View"),
         Binding("p", "back_to_projects", "Open Project Selector"),
@@ -541,6 +603,29 @@ class SessionBrowser(App[Optional[str]]):
         except Exception as e:
             self.notify(f"Error opening session Markdown: {e}", severity="error")
 
+    def action_view_markdown(self) -> None:
+        """View the selected session's Markdown in an embedded viewer."""
+        if not self.selected_session_id:
+            self.notify("No session selected", severity="warning")
+            return
+
+        try:
+            session_file = self.project_path / f"session-{self.selected_session_id}.md"
+
+            if not session_file.exists():
+                self.notify(
+                    f"Markdown file not found: {session_file.name}",
+                    severity="warning",
+                )
+                return
+
+            content = session_file.read_text(encoding="utf-8")
+            title = f"Session: {self.selected_session_id[:8]}..."
+            self.push_screen(MarkdownViewerScreen(content, title))
+
+        except Exception as e:
+            self.notify(f"Error viewing Markdown: {e}", severity="error")
+
     def action_resume_selected(self) -> None:
         """Resume the selected session in Claude Code."""
         if not self.selected_session_id:
@@ -664,7 +749,8 @@ class SessionBrowser(App[Optional[str]]):
             "Actions:\n"
             "- e: Toggle expanded view for session\n"
             "- h: Open selected session's HTML page\n"
-            "- m: Open selected session's Markdown file\n"
+            "- m: Open selected session's Markdown file (in browser)\n"
+            "- v: View Markdown in embedded viewer\n"
             "- c: Resume selected session in Claude Code\n"
             "- p: Open project selector\n"
             "- q: Quit\n\n"
