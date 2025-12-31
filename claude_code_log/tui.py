@@ -22,7 +22,8 @@ from textual.widgets import (
 from textual.reactive import reactive
 
 from .cache import CacheManager, SessionCacheData, get_library_version
-from .converter import ensure_fresh_cache
+from .converter import ensure_fresh_cache, load_directory_transcripts
+from .renderer import get_renderer
 from .utils import get_project_display_name
 
 
@@ -570,35 +571,39 @@ class SessionBrowser(App[Optional[str]]):
             pass
 
     def action_export_selected(self) -> None:
-        """Export the selected session to HTML."""
+        """Export the selected session to HTML and open in browser."""
         if not self.selected_session_id:
             self.notify("No session selected", severity="warning")
             return
 
         try:
-            # Use cached session HTML file directly
-            session_file = (
-                self.project_path / f"session-{self.selected_session_id}.html"
-            )
+            # Ensure HTML file exists and is up-to-date
+            session_file = self._ensure_session_file(self.selected_session_id, "html")
+            if session_file is None:
+                self.notify("Failed to generate HTML file", severity="error")
+                return
 
             webbrowser.open(f"file://{session_file}")
-            self.notify(f"Opened session HTML: {session_file}")
+            self.notify(f"Opened session HTML: {session_file.name}")
 
         except Exception as e:
             self.notify(f"Error opening session HTML: {e}", severity="error")
 
     def action_export_markdown(self) -> None:
-        """Export the selected session to Markdown."""
+        """Export the selected session to Markdown and open in browser."""
         if not self.selected_session_id:
             self.notify("No session selected", severity="warning")
             return
 
         try:
-            # Use cached session Markdown file directly
-            session_file = self.project_path / f"session-{self.selected_session_id}.md"
+            # Ensure Markdown file exists and is up-to-date
+            session_file = self._ensure_session_file(self.selected_session_id, "md")
+            if session_file is None:
+                self.notify("Failed to generate Markdown file", severity="error")
+                return
 
             webbrowser.open(f"file://{session_file}")
-            self.notify(f"Opened session Markdown: {session_file}")
+            self.notify(f"Opened session Markdown: {session_file.name}")
 
         except Exception as e:
             self.notify(f"Error opening session Markdown: {e}", severity="error")
@@ -610,13 +615,10 @@ class SessionBrowser(App[Optional[str]]):
             return
 
         try:
-            session_file = self.project_path / f"session-{self.selected_session_id}.md"
-
-            if not session_file.exists():
-                self.notify(
-                    f"Markdown file not found: {session_file.name}",
-                    severity="warning",
-                )
+            # Ensure Markdown file exists and is up-to-date
+            session_file = self._ensure_session_file(self.selected_session_id, "md")
+            if session_file is None:
+                self.notify("Failed to generate Markdown file", severity="error")
                 return
 
             content = session_file.read_text(encoding="utf-8")
@@ -717,6 +719,71 @@ class SessionBrowser(App[Optional[str]]):
             content_parts.append(f"\n[bold]Token Usage:[/bold] {token_details}")
 
         expanded_content.update("\n".join(content_parts))
+
+    def _ensure_session_file(self, session_id: str, format: str) -> Optional[Path]:
+        """Ensure the session file exists and is up-to-date.
+
+        Regenerates the file if it doesn't exist or is outdated.
+
+        Args:
+            session_id: The session ID to generate a file for.
+            format: Output format - "html" or "md".
+
+        Returns:
+            Path to the file if successful, None if regeneration failed.
+        """
+        ext = "html" if format == "html" else "md"
+        session_file = self.project_path / f"session-{session_id}.{ext}"
+        renderer = get_renderer(format)
+
+        # Check if we need to regenerate
+        needs_regeneration = not session_file.exists() or renderer.is_outdated(
+            session_file
+        )
+
+        if not needs_regeneration:
+            return session_file
+
+        # Load messages from JSONL files
+        try:
+            messages = load_directory_transcripts(
+                self.project_path, self.cache_manager, silent=True
+            )
+            if not messages:
+                return None
+
+            # Build session title
+            session_data = self.sessions.get(session_id)
+            project_cache = self.cache_manager.get_cached_project_data()
+            project_name = get_project_display_name(
+                self.project_path.name,
+                project_cache.working_directories if project_cache else None,
+            )
+            if session_data and session_data.summary:
+                session_title = f"{project_name}: {session_data.summary}"
+            elif session_data and session_data.first_user_message:
+                preview = session_data.first_user_message
+                if len(preview) > 50:
+                    preview = preview[:50] + "..."
+                session_title = f"{project_name}: {preview}"
+            else:
+                session_title = f"{project_name}: Session {session_id[:8]}"
+
+            # Generate session content
+            session_content = renderer.generate_session(
+                messages,
+                session_id,
+                session_title,
+                self.cache_manager,
+                self.project_path,
+            )
+            if session_content:
+                session_file.write_text(session_content, encoding="utf-8")
+                return session_file
+        except Exception:
+            return None
+
+        return None
 
     def action_toggle_expanded(self) -> None:
         """Toggle the expanded view for the selected session."""
