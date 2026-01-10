@@ -246,7 +246,7 @@ class TestCLIWithProjectsDir:
         assert result.exit_code == 0
 
         # Verify SQLite cache was created
-        cache_db = temp_projects_copy / "cache.db"
+        cache_db = temp_projects_copy / "claude-code-log-cache.db"
         assert cache_db.exists(), "SQLite cache should exist after processing"
 
         # Clear caches
@@ -419,7 +419,7 @@ class TestCacheWithRealData:
         process_projects_hierarchy(temp_projects_copy)
 
         # Verify SQLite cache database was created
-        cache_db = temp_projects_copy / "cache.db"
+        cache_db = temp_projects_copy / "claude-code-log-cache.db"
         assert cache_db.exists(), "SQLite cache database should exist"
 
         for project_dir in temp_projects_copy.iterdir():

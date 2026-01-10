@@ -3,8 +3,9 @@
 
 import json
 import sqlite3
+import zlib
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
@@ -178,8 +179,8 @@ class CacheManager:
         self.project_path = project_path
         self.library_version = library_version
 
-        # Database at parent level (projects_dir/cache.db)
-        self.db_path = project_path.parent / "cache.db"
+        # Database at parent level (projects_dir/claude-code-log-cache.db)
+        self.db_path = project_path.parent / "claude-code-log-cache.db"
 
         # Initialise database and ensure project exists
         self._init_database()
@@ -287,7 +288,9 @@ class CacheManager:
             "_leaf_uuid": None,
             "_level": None,
             "_operation": None,
-            "content": json.dumps(entry.model_dump()),
+            "content": zlib.compress(
+                json.dumps(entry.model_dump(), separators=(",", ":")).encode("utf-8")
+            ),
         }
 
         # Extract flattened usage for assistant messages
@@ -321,7 +324,7 @@ class CacheManager:
 
     def _deserialize_entry(self, row: sqlite3.Row) -> TranscriptEntry:
         """Convert SQLite row back to TranscriptEntry."""
-        content_dict = json.loads(row["content"])
+        content_dict = json.loads(zlib.decompress(row["content"]).decode("utf-8"))
         return create_transcript_entry(content_dict)
 
     def _get_file_id(self, jsonl_path: Path) -> Optional[int]:
@@ -422,13 +425,22 @@ class CacheManager:
         params: List[Any] = [file_id]
 
         if from_dt:
+            # Normalize to UTC 'Z' format for consistent string comparison
+            # with stored timestamps (which use 'Z' suffix from JSONL)
+            if from_dt.tzinfo is None:
+                from_dt = from_dt.replace(tzinfo=timezone.utc)
+            from_bound = from_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             # Include entries with NULL timestamp (like summaries) OR within date range
             sql += " AND (timestamp IS NULL OR timestamp >= ?)"
-            params.append(from_dt.isoformat())
+            params.append(from_bound)
 
         if to_dt:
+            # Normalize to UTC 'Z' format for consistent string comparison
+            if to_dt.tzinfo is None:
+                to_dt = to_dt.replace(tzinfo=timezone.utc)
+            to_bound = to_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             sql += " AND (timestamp IS NULL OR timestamp <= ?)"
-            params.append(to_dt.isoformat())
+            params.append(to_bound)
 
         sql += " ORDER BY timestamp NULLS LAST"
 
@@ -997,18 +1009,8 @@ class CacheManager:
                 (self._project_id, session_id),
             ).fetchall()
 
-        # Re-serialize to compact JSON format (no spaces after separators)
-        # to match original JSONL file format
-        result: List[str] = []
-        for row in rows:
-            try:
-                parsed = json.loads(row["content"])
-                compact = json.dumps(parsed, separators=(",", ":"))
-                result.append(compact)
-            except json.JSONDecodeError:
-                # If parsing fails, use original content
-                result.append(row["content"])
-        return result
+        # Content is stored as compressed, compact JSON - just decompress
+        return [zlib.decompress(row["content"]).decode("utf-8") for row in rows]
 
     def load_session_entries(self, session_id: str) -> List[TranscriptEntry]:
         """Load transcript entries for a session from cache.
@@ -1357,6 +1359,13 @@ class CacheManager:
                 (self._project_id, session_id),
             )
 
+            # Delete cached_files entry for this session's JSONL file
+            # File name pattern is {session_id}.jsonl
+            conn.execute(
+                "DELETE FROM cached_files WHERE project_id = ? AND file_name = ?",
+                (self._project_id, f"{session_id}.jsonl"),
+            )
+
             # Delete the session record
             conn.execute(
                 "DELETE FROM sessions WHERE project_id = ? AND session_id = ?",
@@ -1389,7 +1398,7 @@ class CacheManager:
 def get_all_cached_projects(projects_dir: Path) -> List[tuple[str, bool]]:
     """Get all projects from cache, indicating which are archived.
 
-    This is a standalone function that queries the cache.db directly
+    This is a standalone function that queries the cache database directly
     to find all project paths, without needing to instantiate CacheManager
     for each project.
 
@@ -1400,7 +1409,7 @@ def get_all_cached_projects(projects_dir: Path) -> List[tuple[str, bool]]:
         List of (project_path, is_archived) tuples.
         is_archived is True if the project has no JSONL files but exists in cache.
     """
-    db_path = projects_dir / "cache.db"
+    db_path = projects_dir / "claude-code-log-cache.db"
     if not db_path.exists():
         return []
 

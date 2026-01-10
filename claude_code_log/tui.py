@@ -1036,8 +1036,9 @@ class SessionBrowser(App[Optional[str]]):
             try:
                 self.populate_table()
                 self.update_stats()
-            except Exception:
-                pass
+            except Exception as e:
+                # UI components may not be mounted yet during initialization
+                self.log.debug(f"Skipped UI update for archived project: {e}")
             return
 
         # Check if we need to rebuild cache by checking for modified files
@@ -1069,8 +1070,9 @@ class SessionBrowser(App[Optional[str]]):
                 else:
                     self.sessions = {}
 
-            except Exception:
-                # Don't show notification during startup - just return
+            except Exception as e:
+                # Don't show notification during startup - log and return
+                self.log.debug(f"Cache building failed during startup: {e}")
                 return
 
         # Only compute archived sessions if there are JSONL files to compare against
@@ -1095,9 +1097,9 @@ class SessionBrowser(App[Optional[str]]):
         try:
             self.populate_table()
             self.update_stats()
-        except Exception:
-            # Not in app context, skip UI updates
-            pass
+        except Exception as e:
+            # UI components may not be mounted yet during initialization
+            self.log.debug(f"Skipped UI update after session load: {e}")
 
     def populate_table(self) -> None:
         """Populate the sessions table with session data."""

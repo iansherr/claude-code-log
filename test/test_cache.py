@@ -27,7 +27,7 @@ from claude_code_log.models import (
 def temp_project_dir():
     """Create a temporary project directory for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create project subdirectory so db_path (parent/cache.db) is unique per test
+        # Create project subdirectory so db_path (parent/claude-code-log-cache.db) is unique per test
         project_dir = Path(temp_dir) / "project"
         project_dir.mkdir()
         yield project_dir
@@ -102,13 +102,16 @@ class TestCacheManager:
         assert cache_manager.project_path == temp_project_dir
         assert cache_manager.library_version == mock_version
         # SQLite database should be created at parent level
-        assert cache_manager.db_path == temp_project_dir.parent / "cache.db"
+        assert (
+            cache_manager.db_path
+            == temp_project_dir.parent / "claude-code-log-cache.db"
+        )
         assert cache_manager.db_path.exists()
 
     def test_database_path(self, cache_manager, temp_project_dir):
         """Test that SQLite database is created at the correct location."""
-        # Database should be at parent level (projects_dir/cache.db)
-        expected_db = temp_project_dir.parent / "cache.db"
+        # Database should be at parent level (projects_dir/claude-code-log-cache.db)
+        expected_db = temp_project_dir.parent / "claude-code-log-cache.db"
         assert cache_manager.db_path == expected_db
         assert expected_db.exists()
 
@@ -259,6 +262,70 @@ class TestCacheManager:
         user_messages = [entry for entry in filtered if entry.type == "user"]
         assert len(user_messages) == 1
         assert "Early message" in str(user_messages[0].message.content)
+
+    def test_filtered_loading_with_z_suffix_boundary(
+        self, cache_manager, temp_project_dir
+    ):
+        """Test that timestamps with 'Z' suffix are correctly compared at day boundaries.
+
+        This tests the edge case where a message at 23:59:59Z should be included
+        when filtering with to_date set to that day. Previously, the query used
+        isoformat() which produced '.999999' microseconds, and 'Z' > '.' in string
+        comparison caused incorrect exclusion.
+        """
+        entries = [
+            UserTranscriptEntry(
+                parentUuid=None,
+                isSidechain=False,
+                userType="user",
+                cwd="/test",
+                sessionId="session1",
+                version="1.0.0",
+                uuid="user1",
+                timestamp="2023-01-01T23:59:59Z",  # End of day with Z suffix
+                type="user",
+                message=UserMessageModel(
+                    role="user",
+                    content=[TextContent(type="text", text="End of day message")],
+                ),
+            ),
+            UserTranscriptEntry(
+                parentUuid=None,
+                isSidechain=False,
+                userType="user",
+                cwd="/test",
+                sessionId="session1",
+                version="1.0.0",
+                uuid="user2",
+                timestamp="2023-01-02T00:00:01Z",  # Start of next day
+                type="user",
+                message=UserMessageModel(
+                    role="user",
+                    content=[TextContent(type="text", text="Next day message")],
+                ),
+            ),
+        ]
+
+        jsonl_path = temp_project_dir / "test.jsonl"
+        jsonl_path.write_text("dummy content", encoding="utf-8")
+
+        cache_manager.save_cached_entries(jsonl_path, entries)
+
+        # Filter to only 2023-01-01 - should include the 23:59:59Z message
+        filtered = cache_manager.load_cached_entries_filtered(
+            jsonl_path, "2023-01-01", "2023-01-01"
+        )
+
+        assert filtered is not None
+        user_messages = [entry for entry in filtered if entry.type == "user"]
+
+        # Should include only the end-of-day message, not the next day message
+        assert len(user_messages) == 1, (
+            f"Expected 1 message from 2023-01-01, got {len(user_messages)}. "
+            "The 23:59:59Z message may have been incorrectly excluded due to "
+            "timestamp format mismatch (Z vs .999999 suffix)."
+        )
+        assert "End of day message" in str(user_messages[0].message.content)
 
     def test_clear_cache(self, cache_manager, temp_project_dir, sample_entries):
         """Test cache clearing functionality."""

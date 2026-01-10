@@ -303,7 +303,7 @@ def _clear_caches(input_path: Path, all_projects: bool) -> None:
             click.echo("Clearing caches for all projects...")
 
             # Delete the shared SQLite cache database
-            cache_db = input_path / "cache.db"
+            cache_db = input_path / "claude-code-log-cache.db"
             if cache_db.exists():
                 try:
                     cache_db.unlink()

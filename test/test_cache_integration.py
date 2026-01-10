@@ -96,7 +96,7 @@ class TestCacheIntegrationCLI:
         assert result1.exit_code == 0
 
         # Check if SQLite cache was created at parent level
-        cache_db = project_dir.parent / "cache.db"
+        cache_db = project_dir.parent / "claude-code-log-cache.db"
         assert cache_db.exists()
 
         # Clear the cache
@@ -161,7 +161,7 @@ class TestCacheIntegrationCLI:
         assert result.exit_code == 0
 
         # Verify SQLite cache database created at projects level
-        cache_db = temp_projects_dir / "cache.db"
+        cache_db = temp_projects_dir / "claude-code-log-cache.db"
         assert cache_db.exists()
 
         # Verify cache data exists for each project
@@ -202,7 +202,7 @@ class TestCacheIntegrationConverter:
         assert output1.exists()
 
         # Verify SQLite cache was created
-        cache_db = project_dir.parent / "cache.db"
+        cache_db = project_dir.parent / "claude-code-log-cache.db"
         assert cache_db.exists()
 
         # Verify cache has data
@@ -253,7 +253,7 @@ class TestCacheIntegrationConverter:
         assert output1.exists()
 
         # Verify SQLite cache database was created
-        cache_db = temp_projects_dir / "cache.db"
+        cache_db = temp_projects_dir / "claude-code-log-cache.db"
         assert cache_db.exists()
 
         # Verify cache data exists for each project
@@ -759,6 +759,56 @@ class TestArchivedSessionsIntegration:
         exported = cache_manager.export_session_to_jsonl("session-1")
         assert exported == []
 
+    def test_delete_session_invalidates_file_cache(
+        self, temp_projects_dir, sample_jsonl_data
+    ):
+        """Test that delete_session also removes cached_files entry.
+
+        Previously, delete_session only removed from messages, html_cache, and
+        sessions tables but left cached_files intact. This caused is_file_cached()
+        to return True even though the session data was gone, leading to
+        load_cached_entries() returning an empty list instead of None.
+        """
+        project_dir = temp_projects_dir / "delete-file-cache-test"
+        project_dir.mkdir()
+
+        # Create JSONL file with session ID matching file name
+        session_id = "session-1"
+        jsonl_file = project_dir / f"{session_id}.jsonl"
+        with open(jsonl_file, "w") as f:
+            for entry in sample_jsonl_data:
+                f.write(json.dumps(entry) + "\n")
+
+        # Process to populate cache
+        convert_jsonl_to_html(input_path=project_dir, use_cache=True)
+
+        # Verify file is cached before deletion
+        cache_manager = CacheManager(project_dir, "1.0.0")
+        assert cache_manager.is_file_cached(jsonl_file), (
+            "File should be cached before deletion"
+        )
+        entries_before = cache_manager.load_cached_entries(jsonl_file)
+        assert entries_before is not None and len(entries_before) > 0, (
+            "Should load cached entries before deletion"
+        )
+
+        # Delete the session
+        result = cache_manager.delete_session(session_id)
+        assert result is True
+
+        # Verify cached_files entry is also removed
+        assert not cache_manager.is_file_cached(jsonl_file), (
+            "is_file_cached() should return False after delete_session() "
+            "because the cached_files entry should be removed"
+        )
+
+        # load_cached_entries should return None (not empty list) for uncached file
+        entries_after = cache_manager.load_cached_entries(jsonl_file)
+        assert entries_after is None, (
+            "load_cached_entries() should return None after delete_session() "
+            "because the file is no longer considered cached"
+        )
+
     def test_delete_nonexistent_session(self, temp_projects_dir):
         """Test deleting a session that doesn't exist returns False."""
         project_dir = temp_projects_dir / "delete-nonexistent"
@@ -850,7 +900,7 @@ class TestGetAllCachedProjects:
         """Test get_all_cached_projects with no cache."""
         from claude_code_log.cache import get_all_cached_projects
 
-        # No cache.db exists
+        # No claude-code-log-cache.db exists
         projects = get_all_cached_projects(temp_projects_dir)
         assert projects == []
 

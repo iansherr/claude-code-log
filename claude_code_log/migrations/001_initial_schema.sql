@@ -99,8 +99,8 @@ CREATE TABLE IF NOT EXISTS messages (
     -- QueueOperationTranscriptEntry
     _operation TEXT,
 
-    -- Message content as JSON
-    content JSON NOT NULL,
+    -- Message content as compressed JSON (zlib)
+    content BLOB NOT NULL,
 
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (file_id) REFERENCES cached_files(id) ON DELETE CASCADE

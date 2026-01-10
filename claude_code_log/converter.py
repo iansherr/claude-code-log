@@ -576,6 +576,103 @@ def _assign_sessions_to_pages(
     return pages
 
 
+def _build_session_data_from_messages(
+    messages: List[TranscriptEntry],
+) -> Dict[str, SessionCacheData]:
+    """Build session data from messages when cache is unavailable.
+
+    This is a fallback for pagination when get_cached_project_data() returns None.
+
+    Args:
+        messages: All messages (deduplicated)
+
+    Returns:
+        Dict mapping session_id to SessionCacheData
+    """
+    from .parser import extract_text_content
+
+    # Pre-compute warmup session IDs to filter them out
+    warmup_session_ids = get_warmup_session_ids(messages)
+
+    # Group messages by session
+    sessions: Dict[str, Dict[str, Any]] = {}
+    for message in messages:
+        if not hasattr(message, "sessionId") or isinstance(
+            message, SummaryTranscriptEntry
+        ):
+            continue
+
+        session_id = getattr(message, "sessionId", "")
+        if not session_id or session_id in warmup_session_ids:
+            continue
+
+        if session_id not in sessions:
+            sessions[session_id] = {
+                "first_timestamp": getattr(message, "timestamp", ""),
+                "last_timestamp": getattr(message, "timestamp", ""),
+                "message_count": 0,
+                "first_user_message": "",
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "total_cache_creation_tokens": 0,
+                "total_cache_read_tokens": 0,
+            }
+
+        sessions[session_id]["message_count"] += 1
+        current_timestamp = getattr(message, "timestamp", "")
+        if current_timestamp:
+            sessions[session_id]["last_timestamp"] = current_timestamp
+
+        # Get first user message for preview
+        if (
+            isinstance(message, UserTranscriptEntry)
+            and not sessions[session_id]["first_user_message"]
+            and hasattr(message, "message")
+        ):
+            first_user_content = extract_text_content(message.message.content)
+            if should_use_as_session_starter(first_user_content):
+                sessions[session_id]["first_user_message"] = create_session_preview(
+                    first_user_content
+                )
+
+        # Extract token usage from assistant messages
+        if isinstance(message, AssistantTranscriptEntry) and hasattr(
+            message, "message"
+        ):
+            msg_data = message.message
+            if hasattr(msg_data, "usage") and msg_data.usage:
+                usage = msg_data.usage
+                sessions[session_id]["total_input_tokens"] += (
+                    getattr(usage, "input_tokens", 0) or 0
+                )
+                sessions[session_id]["total_output_tokens"] += (
+                    getattr(usage, "output_tokens", 0) or 0
+                )
+                sessions[session_id]["total_cache_creation_tokens"] += (
+                    getattr(usage, "cache_creation_input_tokens", 0) or 0
+                )
+                sessions[session_id]["total_cache_read_tokens"] += (
+                    getattr(usage, "cache_read_input_tokens", 0) or 0
+                )
+
+    # Convert to Dict[str, SessionCacheData]
+    result: Dict[str, SessionCacheData] = {}
+    for session_id, data in sessions.items():
+        result[session_id] = SessionCacheData(
+            session_id=session_id,
+            first_timestamp=data["first_timestamp"],
+            last_timestamp=data["last_timestamp"],
+            message_count=data["message_count"],
+            first_user_message=data["first_user_message"],
+            total_input_tokens=data["total_input_tokens"],
+            total_output_tokens=data["total_output_tokens"],
+            total_cache_creation_tokens=data["total_cache_creation_tokens"],
+            total_cache_read_tokens=data["total_cache_read_tokens"],
+        )
+
+    return result
+
+
 def _generate_paginated_html(
     messages: List[TranscriptEntry],
     output_dir: Path,
@@ -928,7 +1025,11 @@ def convert_jsonl_to(
     if use_pagination:
         # Use paginated HTML generation
         assert cache_manager is not None  # Ensured by use_pagination condition
-        session_data = cached_data.sessions if cached_data else {}
+        # Use cached session data if available, otherwise build from messages
+        if cached_data is not None:
+            session_data = cached_data.sessions
+        else:
+            session_data = _build_session_data_from_messages(messages)
         output_path = _generate_paginated_html(
             messages,
             input_path,

@@ -685,3 +685,52 @@ class TestPaginationNextLinkVisibility:
         )
         assert "PAGINATION_NEXT_LINK_START" in page2
         assert "last-page" in page2
+
+
+class TestPaginationFallbackWithoutCache:
+    """Tests for pagination when cache data is unavailable."""
+
+    def test_pagination_renders_messages_when_cache_unavailable(self, temp_project_dir):
+        """Pagination should render messages even when get_cached_project_data returns None.
+
+        This tests the fallback path where cached_data is None but pagination is triggered
+        because total_message_count exceeds page_size.
+        """
+        from unittest.mock import patch
+        from claude_code_log.converter import convert_jsonl_to_html
+        from claude_code_log.cache import CacheManager
+
+        # Create sessions with messages
+        for i, session_id in enumerate(["s1", "s2"]):
+            jsonl_file = temp_project_dir / f"{session_id}.jsonl"
+            messages = _create_session_messages(session_id, 20, f"2023-01-0{i + 1}")
+            with open(jsonl_file, "w", encoding="utf-8") as f:
+                for msg in messages:
+                    f.write(json.dumps(msg) + "\n")
+
+        # First pass: Build cache but then simulate cache unavailable
+        convert_jsonl_to_html(temp_project_dir, page_size=5000, silent=True)
+
+        # Delete combined file to force regeneration
+        combined_path = temp_project_dir / "combined_transcripts.html"
+        if combined_path.exists():
+            combined_path.unlink()
+
+        # Patch get_cached_project_data to return None (simulating cache unavailable)
+        # but keep total_message_count high enough to trigger pagination
+        def mock_get_cached_project_data(self):
+            return None
+
+        with patch.object(
+            CacheManager, "get_cached_project_data", mock_get_cached_project_data
+        ):
+            # Force pagination with small page_size
+            convert_jsonl_to_html(temp_project_dir, page_size=15, silent=True)
+
+        # Verify the generated HTML contains actual messages, not empty content
+        page1_content = combined_path.read_text(encoding="utf-8")
+
+        # The page should contain message content from the sessions
+        assert "Message 0 from user" in page1_content or "Response" in page1_content, (
+            "Paginated HTML should contain messages when cache is unavailable"
+        )
