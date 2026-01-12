@@ -475,19 +475,20 @@ class TestCacheEdgeCases:
 
     def test_cache_corruption_recovery(self, setup_test_project):
         """Test recovery from corrupted cache files."""
-        project_dir = setup_test_project
+        project_with_cache = setup_test_project
+        project_dir = project_with_cache.project_dir
+        db_path = project_with_cache.db_path
 
         # Create initial cache
         convert_jsonl_to_html(input_path=project_dir, use_cache=True)
 
-        # Corrupt cache file
-        cache_dir = project_dir / "cache"
-        cache_files = list(cache_dir.glob("*.json"))
-        if cache_files:
-            cache_file = [f for f in cache_files if f.name != "index.json"][0]
-            cache_file.write_text("corrupted json data", encoding="utf-8")
+        # Corrupt SQLite database
+        assert db_path.exists()
+        with open(db_path, "r+b") as f:
+            f.seek(100)  # Skip SQLite header
+            f.write(b"corrupted data here")
 
-        # Should recover gracefully
+        # Should recover gracefully (recreates database)
         output = convert_jsonl_to_html(input_path=project_dir, use_cache=True)
         assert output.exists()
 

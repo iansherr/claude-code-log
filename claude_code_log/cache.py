@@ -2,6 +2,7 @@
 """SQLite-based cache management for Claude Code Log."""
 
 import json
+import logging
 import os
 import sqlite3
 import zlib
@@ -23,6 +24,8 @@ from .models import (
     TranscriptEntry,
     UserTranscriptEntry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ========== Data Models ==========
@@ -442,14 +445,7 @@ class CacheManager:
         if to_date:
             to_dt = dateparser.parse(to_date)
             if to_dt:
-                if to_date in ["today", "yesterday"] or "days ago" in to_date:
-                    to_dt = to_dt.replace(
-                        hour=23, minute=59, second=59, microsecond=999999
-                    )
-                else:
-                    to_dt = to_dt.replace(
-                        hour=23, minute=59, second=59, microsecond=999999
-                    )
+                to_dt = to_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         # Build query with SQL-based filtering
         sql = "SELECT content FROM messages WHERE file_id = ?"
@@ -525,26 +521,27 @@ class CacheManager:
             conn.execute("DELETE FROM messages WHERE file_id = ?", (file_id,))
 
             # Insert all entries in a batch
-            for entry in entries:
-                serialized = self._serialize_entry(entry, file_id)
-                conn.execute(
-                    """
-                    INSERT INTO messages (
-                        project_id, file_id, type, timestamp, session_id,
-                        _uuid, _parent_uuid, _is_sidechain, _user_type, _cwd, _version,
-                        _is_meta, _agent_id, _request_id,
-                        input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
-                        _leaf_uuid, _level, _operation, content
-                    ) VALUES (
-                        :project_id, :file_id, :type, :timestamp, :session_id,
-                        :_uuid, :_parent_uuid, :_is_sidechain, :_user_type, :_cwd, :_version,
-                        :_is_meta, :_agent_id, :_request_id,
-                        :input_tokens, :output_tokens, :cache_creation_tokens, :cache_read_tokens,
-                        :_leaf_uuid, :_level, :_operation, :content
-                    )
-                    """,
-                    serialized,
+            serialized_entries = [
+                self._serialize_entry(entry, file_id) for entry in entries
+            ]
+            conn.executemany(
+                """
+                INSERT INTO messages (
+                    project_id, file_id, type, timestamp, session_id,
+                    _uuid, _parent_uuid, _is_sidechain, _user_type, _cwd, _version,
+                    _is_meta, _agent_id, _request_id,
+                    input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
+                    _leaf_uuid, _level, _operation, content
+                ) VALUES (
+                    :project_id, :file_id, :type, :timestamp, :session_id,
+                    :_uuid, :_parent_uuid, :_is_sidechain, :_user_type, :_cwd, :_version,
+                    :_is_meta, :_agent_id, :_request_id,
+                    :input_tokens, :output_tokens, :cache_creation_tokens, :cache_read_tokens,
+                    :_leaf_uuid, :_level, :_operation, :content
                 )
+                """,
+                serialized_entries,
+            )
 
             self._update_last_updated(conn)
             conn.commit()
@@ -1513,8 +1510,8 @@ def get_all_cached_projects(
                 result.append((row["project_path"], is_archived))
         finally:
             conn.close()
-    except Exception:
-        pass
+    except (sqlite3.Error, OSError) as e:
+        logger.debug("Failed to read cached projects from %s: %s", actual_db_path, e)
 
     return result
 
