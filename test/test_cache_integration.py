@@ -890,6 +890,71 @@ class TestArchivedSessionsIntegration:
             "because the file is no longer considered cached"
         )
 
+    def test_delete_session_removes_page_sessions(
+        self, temp_projects_dir, sample_jsonl_data
+    ):
+        """Test that delete_session removes page_sessions entries.
+
+        When a session is part of a paginated combined transcript, deleting
+        the session should also remove its entry from the page_sessions table.
+        """
+        project_dir = temp_projects_dir / "delete-page-sessions-test"
+        project_dir.mkdir()
+
+        session_id = "session-1"
+        jsonl_file = project_dir / f"{session_id}.jsonl"
+        with open(jsonl_file, "w") as f:
+            for entry in sample_jsonl_data:
+                f.write(json.dumps(entry) + "\n")
+
+        # Process to populate cache
+        convert_jsonl_to_html(input_path=project_dir, use_cache=True)
+
+        cache_manager = CacheManager(project_dir, "1.0.0")
+
+        # Add page cache entry with this session
+        cache_manager.update_page_cache(
+            page_number=1,
+            html_path="combined_transcripts.html",
+            page_size_config=50,
+            session_ids=[session_id],
+            message_count=5,
+            first_timestamp="2024-01-01T00:00:00Z",
+            last_timestamp="2024-01-01T01:00:00Z",
+            total_input_tokens=100,
+            total_output_tokens=200,
+            total_cache_creation_tokens=0,
+            total_cache_read_tokens=0,
+        )
+
+        # Verify page has the session
+        page_data = cache_manager.get_page_data(1)
+        assert page_data is not None
+        assert session_id in page_data.session_ids
+
+        # Delete the session
+        result = cache_manager.delete_session(session_id)
+        assert result is True
+
+        # Verify page_sessions entry is removed
+        # The page itself still exists, but the session mapping should be gone
+        import sqlite3
+
+        conn = sqlite3.connect(cache_manager.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute(
+                """SELECT COUNT(*) as cnt FROM page_sessions ps
+                   JOIN html_pages hp ON ps.page_id = hp.id
+                   WHERE hp.project_id = ? AND ps.session_id = ?""",
+                (cache_manager._project_id, session_id),
+            ).fetchone()
+            assert row["cnt"] == 0, (
+                "page_sessions entry should be removed after delete_session()"
+            )
+        finally:
+            conn.close()
+
     def test_delete_nonexistent_session(self, temp_projects_dir):
         """Test deleting a session that doesn't exist returns False."""
         project_dir = temp_projects_dir / "delete-nonexistent"

@@ -1419,6 +1419,13 @@ class CacheManager:
                 (self._project_id, session_id),
             )
 
+            # Delete page_sessions entries referencing this session
+            conn.execute(
+                """DELETE FROM page_sessions WHERE session_id = ?
+                   AND page_id IN (SELECT id FROM html_pages WHERE project_id = ?)""",
+                (session_id, self._project_id),
+            )
+
             # Delete cached_files entry for this session's JSONL file
             # File name pattern is {session_id}.jsonl
             conn.execute(
