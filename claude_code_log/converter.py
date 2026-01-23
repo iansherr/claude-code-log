@@ -252,11 +252,25 @@ def load_transcript(
     agent_messages_map: dict[str, list[TranscriptEntry]] = {}
     if agent_ids:
         parent_dir = jsonl_path.parent
+        session_basename = (
+            jsonl_path.stem
+        )  # e.g., "29ccd257-68b1-427f-ae5f-6524b7cb6f20"
         for agent_id in agent_ids:
+            # Try legacy location first (same directory as session file)
             agent_file = parent_dir / f"agent-{agent_id}.jsonl"
             # Skip if the agent file is the same as the current file (self-reference)
             if agent_file == jsonl_path:
                 continue
+            # Try new subagents directory structure (Claude Code 2.1.17+)
+            if not agent_file.exists():
+                subagent_file = (
+                    parent_dir
+                    / session_basename
+                    / "subagents"
+                    / f"agent-{agent_id}.jsonl"
+                )
+                if subagent_file.exists():
+                    agent_file = subagent_file
             if agent_file.exists():
                 if not silent:
                     print(f"Loading agent file {agent_file}...")

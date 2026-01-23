@@ -396,3 +396,62 @@ def test_task_output_structured_content_markdown():
         # Should include the rendered content
         assert "<strong>bold</strong>" in html or "<b>bold</b>" in html
         assert "<code>code</code>" in html
+
+
+def test_subagents_directory_structure():
+    """Test that agent files are loaded from {session}/subagents/ directory (Claude Code 2.1.17+).
+
+    The new directory structure is:
+      session-uuid.jsonl
+      session-uuid/subagents/agent-*.jsonl
+
+    This test verifies the new structure works while maintaining backward compatibility.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+
+        # Create session file with UUID-style name (mimics real Claude Code structure)
+        session_uuid = "29ccd257-68b1-427f-ae5f-6524b7cb6f20"
+        main_file = tmpdir_path / f"{session_uuid}.jsonl"
+
+        # Create the new subagents directory structure
+        subagents_dir = tmpdir_path / session_uuid / "subagents"
+        subagents_dir.mkdir(parents=True)
+
+        # Write main transcript referencing an agent
+        main_file.write_text(
+            '{"parentUuid":null,"isSidechain":false,"userType":"external","cwd":"/workspace/test","sessionId":"test-subagents","version":"2.1.17","gitBranch":"main","type":"user","message":{"role":"user","content":[{"type":"text","text":"Do something with an agent"}]},"uuid":"s-0","timestamp":"2025-01-15T13:00:00.000Z"}\n'
+            '{"parentUuid":"s-0","isSidechain":false,"userType":"external","cwd":"/workspace/test","sessionId":"test-subagents","version":"2.1.17","gitBranch":"main","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01","type":"message","role":"assistant","content":[{"type":"tool_use","id":"task-sub","name":"Task","input":{"prompt":"Subagent task"}}],"stop_reason":"tool_use","stop_sequence":null,"usage":{"input_tokens":100,"output_tokens":50}},"requestId":"req_01","type":"assistant","uuid":"s-1","timestamp":"2025-01-15T13:00:05.000Z"}\n'
+            '{"parentUuid":"s-1","isSidechain":false,"userType":"external","cwd":"/workspace/test","sessionId":"test-subagents","version":"2.1.17","gitBranch":"main","type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"task-sub","content":"Subagent completed the task"}]},"uuid":"s-2","timestamp":"2025-01-15T13:00:15.000Z","toolUseResult":{"status":"completed","agentId":"a2271d1","content":[{"type":"text","text":"Subagent completed the task"}]},"agentId":"a2271d1"}\n',
+            encoding="utf-8",
+        )
+
+        # Write agent file in the NEW subagents directory (not in parent dir)
+        agent_file = subagents_dir / "agent-a2271d1.jsonl"
+        agent_file.write_text(
+            '{"parentUuid":null,"isSidechain":true,"userType":"external","cwd":"/workspace/test","sessionId":"test-subagents","version":"2.1.17","gitBranch":"main","agentId":"a2271d1","type":"user","message":{"role":"user","content":[{"type":"text","text":"Subagent task"}]},"uuid":"agent-s-0","timestamp":"2025-01-15T13:00:06.000Z"}\n'
+            '{"parentUuid":"agent-s-0","isSidechain":true,"userType":"external","cwd":"/workspace/test","sessionId":"test-subagents","version":"2.1.17","gitBranch":"main","agentId":"a2271d1","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_agent_01","type":"message","role":"assistant","content":[{"type":"text","text":"Subagent completed the task"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":50,"output_tokens":25}},"requestId":"req_agent_01","type":"assistant","uuid":"agent-s-1","timestamp":"2025-01-15T13:00:14.000Z"}\n',
+            encoding="utf-8",
+        )
+
+        # Verify agent file is NOT in the legacy location
+        legacy_agent = tmpdir_path / "agent-a2271d1.jsonl"
+        assert not legacy_agent.exists(), (
+            "Agent should NOT be in legacy location for this test"
+        )
+
+        # Load transcript - should find agent in subagents directory
+        messages = load_transcript(main_file)
+
+        # Should have 3 main + 2 agent messages = 5 total
+        assert len(messages) == 5, f"Expected 5 messages, got {len(messages)}"
+
+        # Verify agent messages were loaded and marked as sidechain
+        sidechain_count = sum(1 for m in messages if getattr(m, "isSidechain", False))
+        assert sidechain_count == 2, (
+            f"Expected 2 sidechain messages, got {sidechain_count}"
+        )
+
+        # Verify HTML generation works with subagent messages
+        html = generate_html(messages, title="Test Subagents Directory")
+        assert "Subagent completed the task" in html
