@@ -42,6 +42,7 @@ from ..models import (
     TodoWriteInput,
     ToolUseContent,
     WebSearchInput,
+    WebFetchInput,
     WriteInput,
     # Tool output types
     AskUserQuestionOutput,
@@ -53,6 +54,7 @@ from ..models import (
     TaskOutput,
     ToolResultContent,
     WebSearchOutput,
+    WebFetchOutput,
     WriteOutput,
 )
 from ..renderer import (
@@ -505,6 +507,12 @@ class MarkdownRenderer(Renderer):
         # Query is shown in the title, body is empty
         return ""
 
+    def format_WebFetchInput(self, input: WebFetchInput, _: TemplateMessage) -> str:
+        """Format → '' (url in title, prompt if long)."""
+        if len(input.prompt) > 100:
+            return self._code_fence(input.prompt)
+        return ""
+
     def format_ToolUseContent(self, content: ToolUseContent, _: TemplateMessage) -> str:
         """Fallback for unknown tool inputs - render as key/value list."""
         return self._render_params(content.input)
@@ -640,6 +648,10 @@ class MarkdownRenderer(Renderer):
 
         return "\n".join(parts)
 
+    def format_WebFetchOutput(self, output: WebFetchOutput, _: TemplateMessage) -> str:
+        """Format → collapsible 'Result' with blockquoted content."""
+        return self._collapsible("Result", self._quote(output.result))
+
     def format_ToolResultContent(
         self, output: ToolResultContent, message: TemplateMessage
     ) -> str:
@@ -718,6 +730,10 @@ class MarkdownRenderer(Renderer):
     def title_WebSearchInput(self, input: WebSearchInput, _: TemplateMessage) -> str:
         """Title → '🔎 WebSearch `query`'."""
         return f"🔎 WebSearch `{input.query}`"
+
+    def title_WebFetchInput(self, input: WebFetchInput, _: TemplateMessage) -> str:
+        """Title → '🌐 WebFetch `url`'."""
+        return f"🌐 WebFetch `{input.url}`"
 
     def title_ThinkingMessage(
         self, _content: ThinkingMessage, _message: TemplateMessage

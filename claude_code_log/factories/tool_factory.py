@@ -38,6 +38,7 @@ from ..models import (
     ToolUseMessage,
     ToolUseResult,
     WebSearchInput,
+    WebFetchInput,
     WriteInput,
     # Tool output models
     AskUserQuestionAnswer,
@@ -50,6 +51,7 @@ from ..models import (
     ToolOutput,
     WebSearchLink,
     WebSearchOutput,
+    WebFetchOutput,
     WriteOutput,
 )
 
@@ -72,6 +74,7 @@ TOOL_INPUT_MODELS: dict[str, type[BaseModel]] = {
     "ask_user_question": AskUserQuestionInput,  # Legacy tool name
     "ExitPlanMode": ExitPlanModeInput,
     "WebSearch": WebSearchInput,
+    "WebFetch": WebFetchInput,
 }
 
 
@@ -556,6 +559,57 @@ def parse_websearch_output(
     return _parse_websearch_from_structured(tool_use_result)
 
 
+def parse_webfetch_output(
+    tool_result: ToolResultContent,
+    file_path: Optional[str],
+    tool_use_result: Optional[ToolUseResult] = None,
+) -> Optional[WebFetchOutput]:
+    """Parse WebFetch tool result from structured toolUseResult.
+
+    WebFetch results include metadata from toolUseResult:
+    - bytes: Size of fetched content
+    - code: HTTP status code
+    - codeText: HTTP status text
+    - result: The processed markdown result
+    - durationMs: Time taken in milliseconds
+    - url: The URL that was fetched
+
+    Args:
+        tool_result: The tool result content (used as fallback)
+        file_path: Unused for WebFetch tool
+        tool_use_result: Structured result containing rich metadata
+
+    Returns:
+        WebFetchOutput if parsing succeeds, None otherwise
+    """
+    del file_path  # Unused
+
+    # Prefer structured toolUseResult when available
+    if tool_use_result is not None and isinstance(tool_use_result, dict):
+        url = tool_use_result.get("url")
+        result = tool_use_result.get("result")
+
+        # Both url and result are required
+        if url and result:
+            return WebFetchOutput(
+                url=str(url),
+                result=str(result),
+                bytes=tool_use_result.get("bytes"),
+                code=tool_use_result.get("code"),
+                code_text=tool_use_result.get("codeText"),
+                duration_ms=tool_use_result.get("durationMs"),
+            )
+
+    # Fallback: try to extract from tool_result content
+    content = _extract_tool_result_text(tool_result)
+    if not content:
+        return None
+
+    # For fallback, we don't have the rich metadata, just the result text
+    # We also don't have the URL, so return None (will use generic formatter)
+    return None
+
+
 # Type alias for tool output parsers
 # Standard signature: (tool_result, file_path) -> Optional[ToolOutput]
 # Extended signature: (tool_result, file_path, tool_use_result) -> Optional[ToolOutput]
@@ -563,7 +617,7 @@ ToolOutputParser = Callable[..., Optional[ToolOutput]]
 
 # Registry of tool output parsers: tool_name -> parser function
 # Parsers receive the full ToolResultContent and can use _extract_tool_result_text() for text.
-# Some parsers (like WebSearch) also accept optional tool_use_result for structured data.
+# Some parsers (like WebSearch, WebFetch) also accept optional tool_use_result for structured data.
 TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
     "Read": parse_read_output,
     "Edit": parse_edit_output,
@@ -573,10 +627,11 @@ TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
     "AskUserQuestion": parse_askuserquestion_output,
     "ExitPlanMode": parse_exitplanmode_output,
     "WebSearch": parse_websearch_output,
+    "WebFetch": parse_webfetch_output,
 }
 
 # Parsers that accept the extended signature with tool_use_result
-PARSERS_WITH_TOOL_USE_RESULT: set[str] = {"WebSearch"}
+PARSERS_WITH_TOOL_USE_RESULT: set[str] = {"WebSearch", "WebFetch"}
 
 
 def create_tool_output(
@@ -591,11 +646,14 @@ def create_tool_output(
     using the TOOL_OUTPUT_PARSERS registry. Each parser receives the full
     ToolResultContent and can use _extract_tool_result_text() if it needs text.
 
+    For tools in PARSERS_WITH_TOOL_USE_RESULT, the structured toolUseResult
+    from the transcript entry is also passed to the parser.
+
     Args:
         tool_name: The name of the tool (e.g., "Bash", "Read")
         tool_result: The raw tool result content
         file_path: Optional file path for file-based tools (Read, Edit, Write)
-        tool_use_result: Optional structured toolUseResult from entry (for WebSearch, etc.)
+        tool_use_result: Optional structured toolUseResult from entry (for WebSearch, WebFetch)
 
     Returns:
         A typed output model if parsing succeeds, ToolResultContent as fallback.
@@ -682,7 +740,7 @@ def create_tool_result_message(
         meta: Message metadata
         tool_result: The tool result content item
         tool_use_context: Dict with tool_use_id -> ToolUseContent mapping
-        tool_use_result: Optional structured toolUseResult from the entry
+        tool_use_result: Optional structured toolUseResult from transcript entry
 
     Returns:
         ToolItemResult with tool_result content model

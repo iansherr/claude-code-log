@@ -45,6 +45,8 @@ from ..models import (
     ToolResultContent,
     WebSearchInput,
     WebSearchOutput,
+    WebFetchInput,
+    WebFetchOutput,
     WriteInput,
     WriteOutput,
 )
@@ -579,6 +581,70 @@ def format_task_input(task_input: TaskInput) -> str:
     return render_markdown_collapsible(task_input.prompt, "task-prompt")
 
 
+# -- WebFetch Tool ------------------------------------------------------------
+
+
+def format_webfetch_input(webfetch_input: WebFetchInput) -> str:
+    """Format WebFetch tool use content.
+
+    Args:
+        webfetch_input: Typed WebFetchInput with url and prompt.
+
+    The URL is shown in the title, so we only show the prompt here if it's
+    substantial enough to warrant display.
+    """
+    # If prompt is short, it can fit in the title - return empty
+    if len(webfetch_input.prompt) <= 100:
+        return ""
+
+    # Show the prompt for longer queries
+    escaped_prompt = escape_html(webfetch_input.prompt)
+    return f'<div class="webfetch-prompt">{escaped_prompt}</div>'
+
+
+def format_webfetch_output(output: WebFetchOutput) -> str:
+    """Format WebFetch tool result as collapsible markdown.
+
+    Args:
+        output: Parsed WebFetchOutput with result and metadata
+
+    Returns:
+        HTML string with markdown rendered in collapsible section,
+        plus metadata badge showing HTTP status and timing.
+    """
+    # Build metadata badge
+    badge_parts: list[str] = []
+    if output.code is not None:
+        status_class = "success" if output.code == 200 else "error"
+        badge_parts.append(
+            f'<span class="webfetch-status webfetch-status-{status_class}">{output.code}</span>'
+        )
+    if output.bytes is not None:
+        # Format bytes nicely
+        if output.bytes >= 1024 * 1024:
+            size_str = f"{output.bytes / (1024 * 1024):.1f} MB"
+        elif output.bytes >= 1024:
+            size_str = f"{output.bytes / 1024:.1f} KB"
+        else:
+            size_str = f"{output.bytes} bytes"
+        badge_parts.append(f'<span class="webfetch-size">{size_str}</span>')
+    if output.duration_ms is not None:
+        if output.duration_ms >= 1000:
+            time_str = f"{output.duration_ms / 1000:.1f}s"
+        else:
+            time_str = f"{output.duration_ms}ms"
+        badge_parts.append(f'<span class="webfetch-duration">{time_str}</span>')
+
+    badge_html = ""
+    if badge_parts:
+        badge_html = f'<div class="webfetch-meta">{" ".join(badge_parts)}</div>'
+
+    # Render the result as markdown in a collapsible section
+    content_html = render_markdown_collapsible(output.result, "webfetch-result")
+
+    return f"{badge_html}{content_html}"
+
+
 # -- Generic Parameter Table --------------------------------------------------
 
 
@@ -768,6 +834,7 @@ __all__ = [
     "format_bash_input",
     "format_task_input",
     "format_websearch_input",
+    "format_webfetch_input",
     # Tool output formatters (called by HtmlRenderer.format_{OutputClass})
     "format_read_output",
     "format_write_output",
@@ -777,6 +844,7 @@ __all__ = [
     "format_askuserquestion_output",
     "format_exitplanmode_output",
     "format_websearch_output",
+    "format_webfetch_output",
     # Fallback for ToolResultContent
     "format_tool_result_content_raw",
     # Legacy formatters (still used)

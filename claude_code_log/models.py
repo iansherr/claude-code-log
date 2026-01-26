@@ -877,6 +877,13 @@ class WebSearchInput(BaseModel):
     query: str
 
 
+class WebFetchInput(BaseModel):
+    """Input parameters for the WebFetch tool."""
+
+    url: str
+    prompt: str
+
+
 # Union of all typed tool inputs
 ToolInput = Union[
     BashInput,
@@ -891,6 +898,7 @@ ToolInput = Union[
     AskUserQuestionInput,
     ExitPlanModeInput,
     WebSearchInput,
+    WebFetchInput,
     ToolUseContent,  # Generic fallback when no specialized parser
 ]
 
@@ -1061,6 +1069,22 @@ class WebSearchOutput:
     summary: Optional[str] = None  # Markdown analysis after the links
 
 
+@dataclass
+class WebFetchOutput:
+    """Parsed WebFetch tool output.
+
+    Symmetric with WebFetchInput for tool_use → tool_result pairing.
+    Contains the fetched URL's processed content as markdown.
+    """
+
+    url: str  # The URL that was fetched
+    result: str  # The processed markdown result
+    bytes: Optional[int] = None  # Size of fetched content
+    code: Optional[int] = None  # HTTP status code
+    code_text: Optional[str] = None  # HTTP status text (e.g., "OK")
+    duration_ms: Optional[int] = None  # Time taken in milliseconds
+
+
 # Union of all specialized output types + ToolResultContent as generic fallback
 ToolOutput = Union[
     ReadOutput,
@@ -1071,6 +1095,7 @@ ToolOutput = Union[
     AskUserQuestionOutput,
     ExitPlanModeOutput,
     WebSearchOutput,
+    WebFetchOutput,
     # TODO: Add as parsers are implemented:
     # GlobOutput, GrepOutput
     ToolResultContent,  # Generic fallback for unparsed results

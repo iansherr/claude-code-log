@@ -36,6 +36,7 @@ from ..models import (
     TodoWriteInput,
     ToolUseContent,
     WebSearchInput,
+    WebFetchInput,
     WriteInput,
     # Tool output types
     AskUserQuestionOutput,
@@ -46,6 +47,7 @@ from ..models import (
     TaskOutput,
     ToolResultContent,
     WebSearchOutput,
+    WebFetchOutput,
     WriteOutput,
 )
 from ..renderer import (
@@ -100,6 +102,8 @@ from .tool_formatters import (
     format_tool_result_content_raw,
     format_websearch_input,
     format_websearch_output,
+    format_webfetch_input,
+    format_webfetch_output,
     format_write_input,
     format_write_output,
     render_params_table,
@@ -362,6 +366,14 @@ class HtmlRenderer(Renderer):
         """Format → <pre>raw content</pre> (fallback for unknown tools)."""
         return format_tool_result_content_raw(output)
 
+    def format_WebFetchInput(self, input: WebFetchInput, _: TemplateMessage) -> str:
+        """Format → prompt text if long, empty if shown in title."""
+        return format_webfetch_input(input)
+
+    def format_WebFetchOutput(self, output: WebFetchOutput, _: TemplateMessage) -> str:
+        """Format → collapsible markdown with metadata badge."""
+        return format_webfetch_output(output)
+
     # -------------------------------------------------------------------------
     # Tool Input Title Methods (for Renderer.title_ToolUseMessage dispatch)
     # -------------------------------------------------------------------------
@@ -442,6 +454,12 @@ class HtmlRenderer(Renderer):
     ) -> str:
         """Title → '🔎 WebSearch <query>'."""
         return self._tool_title(message, "🔎", input.query)
+
+    def title_WebFetchInput(
+        self, input: WebFetchInput, message: TemplateMessage
+    ) -> str:
+        """Title → '🌐 WebFetch <url>'."""
+        return self._tool_title(message, "🌐", input.url)
 
     def _flatten_preorder(
         self, roots: list[TemplateMessage]

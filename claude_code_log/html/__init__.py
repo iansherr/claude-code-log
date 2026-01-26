@@ -25,6 +25,7 @@ from .tool_formatters import (
     format_read_input,
     format_task_input,
     format_todowrite_input,
+    format_webfetch_input,
     format_write_input,
     # Tool output formatters (called by HtmlRenderer.format_{OutputClass})
     format_askuserquestion_output,
@@ -33,6 +34,7 @@ from .tool_formatters import (
     format_exitplanmode_output,
     format_read_output,
     format_task_output,
+    format_webfetch_output,
     format_write_output,
     # Fallback formatter
     format_tool_result_content_raw,
@@ -108,6 +110,7 @@ __all__ = [
     "format_read_input",
     "format_task_input",
     "format_todowrite_input",
+    "format_webfetch_input",
     "format_write_input",
     # tool_formatters (output) - called by HtmlRenderer.format_{OutputClass}
     "format_askuserquestion_output",
@@ -116,6 +119,7 @@ __all__ = [
     "format_exitplanmode_output",
     "format_read_output",
     "format_task_output",
+    "format_webfetch_output",
     "format_write_output",
     # Fallback formatter
     "format_tool_result_content_raw",
