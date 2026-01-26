@@ -247,5 +247,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and archi
 - add minimalist theme and make it light + dark; animate gradient background in fancy theme
 - do we need special handling for hooks?
 - make processing parallel, currently we only use 1 CPU (core) and it's slow
-- migrate cache from JSON files to SQLite to make it faster and more versatile for downstream tasks and analytics
 - merge git worktree directories

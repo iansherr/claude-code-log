@@ -10,10 +10,11 @@ This indicates that 3 sessions exist in the cache whose source JSONL files have 
 
 ## What Are Archived Sessions?
 
-Archived sessions are sessions preserved in the SQLite cache (`~/.claude/projects/cache.db`) even after their source JSONL files have been deleted. This happens when:
+Archived sessions are sessions preserved in the SQLite cache (`~/.claude/projects/claude-code-log-cache.db`) even after their source JSONL files have been deleted. This happens when:
 
 1. Claude Code automatically deletes old JSONL files based on the `cleanupPeriodDays` setting
 2. You manually delete JSONL files from `~/.claude/projects/*/`
+3. You archive sessions using the TUI (`a` key)
 
 The cache stores the complete message data, so full restoration is possible.
 
@@ -41,35 +42,39 @@ The easiest way to browse and restore archived sessions is through the interacti
 claude-code-log --tui
 ```
 
-### Toggle Archived View
+### Viewing Archived Sessions
 
-Press `a` to toggle between current and archived sessions. The header shows the current mode:
+Archived sessions appear inline with current sessions, marked with an `[ARCHIVED]` prefix:
 
 ```text
 ┌─ Claude Code Log ─────────────────────────────────────────────────┐
-│ Project: my-project ARCHIVED (3)                                  │
-│ Sessions: 3 │ Messages: 456 │ Tokens: 45,230                      │
-├──────────┬───────────────────────────────────┬─────────┬──────────┤
-│ Session  │ Title                             │ Start   │ Messages │
-├──────────┼───────────────────────────────────┼─────────┼──────────┤
-│ abc123   │ Fix authentication bug            │ 12-01   │ 45       │
-│ def456   │ Add user settings page            │ 11-28   │ 123      │
-│ ghi789   │ Refactor database layer           │ 11-15   │ 67       │
-└──────────┴───────────────────────────────────┴─────────┴──────────┘
- [a] Current  [r] Restore  [h] HTML  [v] View  [q] Quit
+│ Project: my-project (3 archived)                                  │
+│ Sessions: 5 │ Messages: 456 │ Tokens: 45,230                      │
+├──────────┬───────────────────────────────────────┬─────────┬──────┤
+│ Session  │ Title                                 │ Start   │ Msgs │
+├──────────┼───────────────────────────────────────┼─────────┼──────┤
+│ xyz789   │ Current session                       │ 01-20   │ 32   │
+│ abc123   │ [ARCHIVED] Fix authentication bug     │ 12-01   │ 45   │
+│ def456   │ [ARCHIVED] Add user settings page     │ 11-28   │ 123  │
+└──────────┴───────────────────────────────────────┴─────────┴──────┘
+ [a] Archive  [r] Restore  [h] HTML  [v] View  [c] Resume  [q] Quit
 ```
+
+### Archive and Restore Keys
+
+- `a` - **Archive Session**: Deletes the JSONL file but keeps the session in cache
+- `r` - **Restore JSONL**: Recreates the JSONL file from cached data
 
 ### Restore a Session
 
-1. Switch to archived view with `a`
-2. Navigate to the session you want to restore
-3. Press `r` to restore the session to a JSONL file
-4. The session will be restored to `~/.claude/projects/{project}/{session-id}.jsonl`
-5. Press `a` again to switch back to current sessions and see the restored session
+1. Navigate to the archived session (marked with `[ARCHIVED]`)
+2. Press `r` to restore the session to a JSONL file
+3. The session will be restored to `~/.claude/projects/{project}/{session-id}.jsonl`
+4. The `[ARCHIVED]` prefix will be removed after the session list refreshes
 
 ### View Archived Sessions
 
-You can also view archived sessions as HTML or Markdown without restoring them:
+You can view archived sessions as HTML or Markdown without restoring them:
 
 - `h` - Open HTML in browser
 - `m` - Open Markdown in browser
@@ -85,7 +90,7 @@ You can also view archived sessions as HTML or Markdown without restoring them:
 For advanced users, you can also query the cache database directly:
 
 ```bash
-sqlite3 ~/.claude/projects/cache.db
+sqlite3 ~/.claude/projects/claude-code-log-cache.db
 ```
 
 ```sql

@@ -226,14 +226,14 @@ The interactive timeline is implemented in JavaScript within `claude_code_log/te
 
 ## Cache System
 
-The tool implements a caching system for performance:
+The tool implements a SQLite-based caching system for performance:
 
-- **Location**: `.cache/` directory within each project folder
+- **Location**: `claude-code-log-cache.db` in the projects directory (or set `CLAUDE_CODE_LOG_CACHE_PATH` env var)
 - **Contents**: Pre-parsed session metadata (IDs, summaries, timestamps, token usage)
 - **Invalidation**: Automatic detection based on file modification times
 - **Performance**: 10-100x faster loading for large projects
 
-The cache automatically rebuilds when source files change or cache version changes.
+The cache automatically rebuilds when source files change or cache schema version changes.
 
 ## Release Process
 
