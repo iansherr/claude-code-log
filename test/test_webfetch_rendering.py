@@ -312,6 +312,34 @@ class TestWebFetchMarkdownRenderer:
         assert "Result" in md
         assert "> # Heading" in md  # Blockquoted
 
+    def test_markdown_renderer_format_webfetch_output_with_metadata(self):
+        """Test MarkdownRenderer.format_WebFetchOutput includes metadata."""
+        renderer = MarkdownRenderer()
+        output = WebFetchOutput(
+            url="https://example.com",
+            result="Content here",
+            code=200,
+            code_text="OK",
+            bytes=5678,
+            duration_ms=2500,
+        )
+        from claude_code_log.models import ToolResultMessage
+
+        tool_result_msg = ToolResultMessage(
+            MessageMeta.empty(),
+            output=output,
+            tool_use_id="toolu_webfetch",
+            tool_name="WebFetch",
+        )
+        msg = TemplateMessage(tool_result_msg)
+        md = renderer.format_WebFetchOutput(output, msg)
+        # Check metadata line
+        assert "200 OK" in md
+        assert "5.5 KB" in md
+        assert "2.5s" in md
+        # Check it's italicized
+        assert "*200 OK · 5.5 KB · 2.5s*" in md
+
     def test_markdown_renderer_title_webfetch_input(self):
         """Test MarkdownRenderer.title_WebFetchInput method."""
         renderer = MarkdownRenderer()
@@ -330,6 +358,30 @@ class TestWebFetchMarkdownRenderer:
         assert "🌐" in title
         assert "WebFetch" in title
         assert "`https://docs.python.org`" in title
+
+    def test_markdown_renderer_title_webfetch_input_long_url(self):
+        """Test MarkdownRenderer.title_WebFetchInput truncates long URLs."""
+        renderer = MarkdownRenderer()
+        long_url = "https://example.com/very/long/path/to/some/resource/that/exceeds/sixty/characters"
+        webfetch_input = WebFetchInput(
+            url=long_url,
+            prompt="Get info",
+        )
+        tool_msg = ToolUseMessage(
+            MessageMeta.empty(),
+            input=webfetch_input,
+            tool_use_id="toolu_webfetch",
+            tool_name="WebFetch",
+        )
+        msg = TemplateMessage(tool_msg)
+        title = renderer.title_WebFetchInput(webfetch_input, msg)
+        assert "🌐" in title
+        # URL should be truncated with ellipsis
+        assert "…" in title
+        # Full URL should not be present
+        assert long_url not in title
+        # Truncated URL should be present
+        assert long_url[:60] in title
 
 
 class TestWebFetchIntegration:

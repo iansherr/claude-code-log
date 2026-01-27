@@ -649,8 +649,25 @@ class MarkdownRenderer(Renderer):
         return "\n".join(parts)
 
     def format_WebFetchOutput(self, output: WebFetchOutput, _: TemplateMessage) -> str:
-        """Format → collapsible 'Result' with blockquoted content."""
-        return self._collapsible("Result", self._quote(output.result))
+        """Format → metadata line + collapsible 'Result' with blockquoted content."""
+        meta_parts: list[str] = []
+        if output.code is not None:
+            status = f"{output.code} {output.code_text or ''}".strip()
+            meta_parts.append(status)
+        if output.bytes is not None:
+            if output.bytes >= 1024 * 1024:
+                meta_parts.append(f"{output.bytes / (1024 * 1024):.1f} MB")
+            elif output.bytes >= 1024:
+                meta_parts.append(f"{output.bytes / 1024:.1f} KB")
+            else:
+                meta_parts.append(f"{output.bytes} bytes")
+        if output.duration_ms is not None:
+            if output.duration_ms >= 1000:
+                meta_parts.append(f"{output.duration_ms / 1000:.1f}s")
+            else:
+                meta_parts.append(f"{output.duration_ms}ms")
+        meta_line = f"*{' · '.join(meta_parts)}*\n\n" if meta_parts else ""
+        return meta_line + self._collapsible("Result", self._quote(output.result))
 
     def format_ToolResultContent(
         self, output: ToolResultContent, message: TemplateMessage
@@ -732,8 +749,9 @@ class MarkdownRenderer(Renderer):
         return f"🔎 WebSearch `{input.query}`"
 
     def title_WebFetchInput(self, input: WebFetchInput, _: TemplateMessage) -> str:
-        """Title → '🌐 WebFetch `url`'."""
-        return f"🌐 WebFetch `{input.url}`"
+        """Title → '🌐 WebFetch `url`' (truncated if > 60 chars)."""
+        url = input.url[:60] + "…" if len(input.url) > 60 else input.url
+        return f"🌐 WebFetch `{url}`"
 
     def title_ThinkingMessage(
         self, _content: ThinkingMessage, _message: TemplateMessage
