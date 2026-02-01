@@ -3087,6 +3087,11 @@
       color: var(--text-muted);
   }
   
+  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
+  .webfetch-result.collapsible-code {
+      margin-top: 0;
+  }
+  
   @media (max-width: 1280px) {
       .fold-bar {
           height: auto;
@@ -8047,6 +8052,11 @@
   .webfetch-size,
   .webfetch-duration {
       color: var(--text-muted);
+  }
+  
+  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
+  .webfetch-result.collapsible-code {
+      margin-top: 0;
   }
   
   @media (max-width: 1280px) {
@@ -13105,6 +13115,11 @@
   .webfetch-size,
   .webfetch-duration {
       color: var(--text-muted);
+  }
+  
+  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
+  .webfetch-result.collapsible-code {
+      margin-top: 0;
   }
   
   @media (max-width: 1280px) {
@@ -18204,6 +18219,11 @@
   .webfetch-size,
   .webfetch-duration {
       color: var(--text-muted);
+  }
+  
+  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
+  .webfetch-result.collapsible-code {
+      margin-top: 0;
   }
   
   @media (max-width: 1280px) {
