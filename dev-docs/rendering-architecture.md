@@ -344,3 +344,4 @@ Note that `meta.uuid` is the original transcript entry's UUID. Since a single en
 - [messages.md](messages.md) - Complete message type reference
 - [css-classes.md](css-classes.md) - CSS class combinations and rules
 - [FOLD_STATE_DIAGRAM.md](FOLD_STATE_DIAGRAM.md) - Fold/unfold state machine
+- [dag.md](dag.md) - DAG-based message architecture (planned replacement for timestamp ordering)
