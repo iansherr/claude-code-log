@@ -13,8 +13,12 @@
     <div class='session-nav'>
         {% for session in sessions %}
         <a href='{{ link_prefix }}{% if mode == "expandable" %}session-{{ session.id }}.html{% else %}#msg-d-{{ session.message_index }}{% endif %}'
-            class='session-link'>
+            class='session-link{% if session.depth|default(0) > 0 %} session-child{% endif %}'
+            {% if session.depth|default(0) > 0 %}style='margin-left: {{ session.depth * 24 }}px'{% endif %}>
             <div class='session-link-title'>
+                {% if session.parent_session_id %}
+                <span class='session-backlink'>&#x21b3; continues from {{ session.parent_session_id[:8] }}</span>
+                {% endif %}
                 {% if session.summary %}
                 {{ session.summary }} •
                 {% endif %}

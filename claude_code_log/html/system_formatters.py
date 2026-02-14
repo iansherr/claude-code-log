@@ -88,6 +88,13 @@ def format_session_header_content(content: SessionHeaderMessage) -> str:
         HTML for the session header display
     """
     escaped_title = html.escape(content.title)
+    if content.parent_session_id:
+        parent_label = content.parent_session_summary or content.parent_session_id[:8]
+        escaped_parent = html.escape(parent_label)
+        return (
+            f'<span class="session-backlink">&#x21b3; continues from '
+            f"{escaped_parent}</span>{escaped_title}"
+        )
     return escaped_title
 
 

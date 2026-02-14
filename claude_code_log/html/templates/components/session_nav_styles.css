@@ -48,6 +48,18 @@
     margin-top: 2px;
 }
 
+/* Child session hierarchy */
+.session-child {
+    border-left: 3px solid var(--accent-color, #6c757d);
+}
+
+.session-backlink {
+    font-size: 0.75em;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 2px;
+}
+
 /* Project-specific session navigation */
 .project-sessions {
     margin-top: 15px;

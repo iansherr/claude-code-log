@@ -278,6 +278,93 @@ class TestEndToEndHtmlWithDag:
         )
         assert s1_idx < s2_idx
 
+    def test_session_header_hierarchy_fields(self, tmp_path: Path) -> None:
+        """Session headers carry hierarchy fields (parent, depth) from DAG."""
+        from claude_code_log.renderer import generate_template_messages
+        from claude_code_log.models import SessionHeaderMessage
+
+        # s1 is root, s2 resumes from s1 (c.parent=b), s3 resumes from s2
+        entries = [
+            _make_user_entry("a", "s1", "2025-07-01T10:00:00.000Z", None, "Start"),
+            _make_assistant_entry("b", "s1", "2025-07-01T10:01:00.000Z", "a"),
+            _make_user_entry("c", "s2", "2025-07-01T11:00:00.000Z", "b", "Resume"),
+            _make_assistant_entry("d", "s2", "2025-07-01T11:01:00.000Z", "c"),
+            _make_user_entry("e", "s3", "2025-07-01T12:00:00.000Z", "d", "Resume2"),
+            _make_assistant_entry("f", "s3", "2025-07-01T12:01:00.000Z", "e"),
+        ]
+
+        _write_jsonl(tmp_path / "sessions.jsonl", entries)
+        messages = load_directory_transcripts(tmp_path, silent=True)
+        root_messages, session_nav, _ctx = generate_template_messages(messages)
+
+        headers = {
+            tm.content.session_id: tm.content
+            for tm in root_messages
+            if isinstance(tm.content, SessionHeaderMessage)
+        }
+
+        # s1 is root
+        assert headers["s1"].parent_session_id is None
+        assert headers["s1"].depth == 0
+
+        # s2 is child of s1
+        assert headers["s2"].parent_session_id == "s1"
+        assert headers["s2"].depth == 1
+
+        # s3 is grandchild (child of s2)
+        assert headers["s3"].parent_session_id == "s2"
+        assert headers["s3"].depth == 2
+
+    def test_session_nav_hierarchy_fields(self, tmp_path: Path) -> None:
+        """Session nav entries carry hierarchy data for template rendering."""
+        from claude_code_log.renderer import generate_template_messages
+
+        entries = [
+            _make_user_entry("a", "s1", "2025-07-01T10:00:00.000Z", None, "Start"),
+            _make_assistant_entry("b", "s1", "2025-07-01T10:01:00.000Z", "a"),
+            _make_user_entry("c", "s2", "2025-07-01T11:00:00.000Z", "b", "Resume"),
+            _make_assistant_entry("d", "s2", "2025-07-01T11:01:00.000Z", "c"),
+        ]
+
+        _write_jsonl(tmp_path / "sessions.jsonl", entries)
+        messages = load_directory_transcripts(tmp_path, silent=True)
+        _root, session_nav, _ctx = generate_template_messages(messages)
+
+        nav_by_id = {s["id"]: s for s in session_nav}
+
+        # s1 root
+        assert nav_by_id["s1"]["parent_session_id"] is None
+        assert nav_by_id["s1"]["depth"] == 0
+
+        # s2 child
+        assert nav_by_id["s2"]["parent_session_id"] == "s1"
+        assert nav_by_id["s2"]["depth"] == 1
+
+    def test_degenerate_data_no_hierarchy(self, tmp_path: Path) -> None:
+        """Degenerate data (all null parentUuid) has no hierarchy."""
+        from claude_code_log.renderer import generate_template_messages
+        from claude_code_log.models import SessionHeaderMessage
+
+        entries = [
+            _make_user_entry("a", "s1", "2025-07-01T10:00:00.000Z", None, "Msg"),
+            _make_assistant_entry("b", "s1", "2025-07-01T10:01:00.000Z", None),
+        ]
+
+        _write_jsonl(tmp_path / "session.jsonl", entries)
+        messages = load_directory_transcripts(tmp_path, silent=True)
+        root_messages, session_nav, _ctx = generate_template_messages(messages)
+
+        header = next(
+            tm.content
+            for tm in root_messages
+            if isinstance(tm.content, SessionHeaderMessage)
+        )
+        assert header.parent_session_id is None
+        assert header.depth == 0
+
+        assert session_nav[0]["depth"] == 0
+        assert session_nav[0]["parent_session_id"] is None
+
     def test_end_to_end_degenerate_data_matches_timestamp_sort(
         self, tmp_path: Path
     ) -> None:

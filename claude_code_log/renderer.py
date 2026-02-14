@@ -558,6 +558,10 @@ def generate_template_messages(
     with log_timing("Session summary processing", t_start):
         session_summaries = prepare_session_summaries(messages)
 
+    # Extract session hierarchy from DAG
+    with log_timing("Extract session hierarchy", t_start):
+        session_hierarchy, _junction_targets = _extract_session_hierarchy(messages)
+
     # Filter messages (removes summaries, warmup, empty, etc.)
     with log_timing("Filter messages", t_start):
         filtered_messages = _filter_messages(messages)
@@ -573,14 +577,22 @@ def generate_template_messages(
     with log_timing(
         lambda: f"Render messages ({len(ctx.messages) if ctx else 0} messages)", t_start
     ):
-        ctx = _render_messages(filtered_messages, sessions, show_tokens_for_message)
+        ctx = _render_messages(
+            filtered_messages,
+            sessions,
+            show_tokens_for_message,
+            session_hierarchy,
+            session_summaries,
+        )
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []
     with log_timing(
         lambda: f"Session navigation building ({len(session_nav)} sessions)", t_start
     ):
-        session_nav = prepare_session_navigation(sessions, session_order, ctx)
+        session_nav = prepare_session_navigation(
+            sessions, session_order, ctx, session_hierarchy
+        )
 
     # Reorder messages so each session's messages follow their session header
     # This fixes interleaving that occurs when sessions are resumed
@@ -627,6 +639,48 @@ def generate_template_messages(
 # -- Session Utilities --------------------------------------------------------
 
 
+def _extract_session_hierarchy(
+    messages: list[TranscriptEntry],
+) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]]]:
+    """Extract session hierarchy from DAG for rendering.
+
+    Returns:
+        (hierarchy, junction_targets) where:
+        - hierarchy: session_id -> {parent_session_id, attachment_uuid, depth}
+        - junction_targets: uuid -> [target session IDs]
+    """
+    from .dag import build_dag_from_entries
+
+    tree = build_dag_from_entries(messages)
+
+    depth_cache: dict[str, int] = {}
+
+    def _depth(sid: str) -> int:
+        if sid in depth_cache:
+            return depth_cache[sid]
+        dl = tree.sessions.get(sid)
+        if dl is None or dl.parent_session_id is None:
+            depth_cache[sid] = 0
+            return 0
+        d = 1 + _depth(dl.parent_session_id)
+        depth_cache[sid] = d
+        return d
+
+    hierarchy: dict[str, dict[str, Any]] = {}
+    for sid, dag_line in tree.sessions.items():
+        hierarchy[sid] = {
+            "parent_session_id": dag_line.parent_session_id,
+            "attachment_uuid": dag_line.attachment_uuid,
+            "depth": _depth(sid),
+        }
+
+    junction_targets: dict[str, list[str]] = {}
+    for uuid, jp in tree.junction_points.items():
+        junction_targets[uuid] = jp.target_sessions
+
+    return hierarchy, junction_targets
+
+
 def prepare_session_summaries(messages: list[TranscriptEntry]) -> dict[str, str]:
     """Extract session summaries from messages.
 
@@ -669,6 +723,7 @@ def prepare_session_navigation(
     sessions: dict[str, dict[str, Any]],
     session_order: list[str],
     ctx: RenderingContext,
+    session_hierarchy: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Prepare session navigation data for template rendering.
 
@@ -676,6 +731,7 @@ def prepare_session_navigation(
         sessions: Dictionary mapping session_id to session info dict
         session_order: List of session IDs in display order
         ctx: RenderingContext with session_first_message indices
+        session_hierarchy: Optional hierarchy data from _extract_session_hierarchy()
 
     Returns:
         List of session navigation dicts for template rendering
@@ -716,6 +772,9 @@ def prepare_session_navigation(
         # Get message_index for session header (for unified d-{index} links)
         message_index = ctx.session_first_message.get(session_id)
 
+        # Get hierarchy data
+        hier = (session_hierarchy or {}).get(session_id, {})
+
         session_nav.append(
             {
                 "id": session_id,
@@ -729,6 +788,8 @@ def prepare_session_navigation(
                 if session_info["first_user_message"] != ""
                 else "[No user message found in session.]",
                 "token_summary": token_summary,
+                "parent_session_id": hier.get("parent_session_id"),
+                "depth": hier.get("depth", 0),
             }
         )
 
@@ -1683,6 +1744,8 @@ def _render_messages(
     messages: list[TranscriptEntry],
     sessions: dict[str, dict[str, Any]],
     show_tokens_for_message: set[str],
+    session_hierarchy: dict[str, dict[str, Any]] | None = None,
+    session_summaries: dict[str, str] | None = None,
 ) -> RenderingContext:
     """Pass 2: Render pre-filtered messages to TemplateMessage objects.
 
@@ -1699,6 +1762,8 @@ def _render_messages(
         messages: Pre-filtered list of transcript entries from _collect_session_info
         sessions: Session metadata from _collect_session_info
         show_tokens_for_message: Set of message UUIDs that should display tokens
+        session_hierarchy: Optional hierarchy data from _extract_session_hierarchy()
+        session_summaries: Optional session summaries for parent backlinks
 
     Returns:
         RenderingContext with all TemplateMessage objects registered
@@ -1777,11 +1842,19 @@ def _render_messages(
                 timestamp="",
                 uuid="",
             )
+            hier = (session_hierarchy or {}).get(session_id, {})
+            parent_sid = hier.get("parent_session_id")
             session_header_content = SessionHeaderMessage(
                 session_header_meta,
                 title=session_title,
                 session_id=session_id,
                 summary=current_session_summary,
+                parent_session_id=parent_sid,
+                parent_session_summary=(session_summaries or {}).get(parent_sid)
+                if parent_sid
+                else None,
+                depth=hier.get("depth", 0),
+                attachment_uuid=hier.get("attachment_uuid"),
             )
             # Register and track session's first message
             session_header = TemplateMessage(session_header_content)

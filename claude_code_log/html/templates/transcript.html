@@ -100,7 +100,7 @@
     {% if is_session_header(message) %}
     <div class="session-divider"></div>
     <div class='message session-header' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'>
-        <div class='header'>Session: {{ html_content }}</div>
+        <div class='header'>Session: {{ html_content|safe }}</div>
         {% if message.has_children %}
         <div class='fold-bar' data-message-id='{{ message.message_id }}' data-border-color='session-header'>
             {% if message.immediate_children_count == message.total_descendants_count %}

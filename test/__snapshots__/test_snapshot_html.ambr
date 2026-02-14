@@ -297,6 +297,18 @@
       margin-top: 2px;
   }
   
+  /* Child session hierarchy */
+  .session-child {
+      border-left: 3px solid var(--accent-color, #6c757d);
+  }
+  
+  .session-backlink {
+      font-size: 0.75em;
+      color: #6c757d;
+      display: block;
+      margin-bottom: 2px;
+  }
+  
   /* Project-specific session navigation */
   .project-sessions {
       margin-top: 15px;
@@ -1739,8 +1751,10 @@
       <div class='session-nav'>
           
           <a href='-Users-test-project-alpha/session-session-abc12345.html'
-              class='session-link'>
+              class='session-link'
+              >
               <div class='session-link-title'>
+                  
                   
                   Test session summary •
                   
@@ -3188,6 +3202,18 @@
       font-size: 0.8em;
       color: #6c757d;
       margin-top: 2px;
+  }
+  
+  /* Child session hierarchy */
+  .session-child {
+      border-left: 3px solid var(--accent-color, #6c757d);
+  }
+  
+  .session-backlink {
+      font-size: 0.75em;
+      color: #6c757d;
+      display: block;
+      margin-bottom: 2px;
   }
   
   /* Project-specific session navigation */
@@ -8165,6 +8191,18 @@
       font-size: 0.8em;
       color: #6c757d;
       margin-top: 2px;
+  }
+  
+  /* Child session hierarchy */
+  .session-child {
+      border-left: 3px solid var(--accent-color, #6c757d);
+  }
+  
+  .session-backlink {
+      font-size: 0.75em;
+      color: #6c757d;
+      display: block;
+      margin-bottom: 2px;
   }
   
   /* Project-specific session navigation */
@@ -13240,6 +13278,18 @@
       margin-top: 2px;
   }
   
+  /* Child session hierarchy */
+  .session-child {
+      border-left: 3px solid var(--accent-color, #6c757d);
+  }
+  
+  .session-backlink {
+      font-size: 0.75em;
+      color: #6c757d;
+      display: block;
+      margin-bottom: 2px;
+  }
+  
   /* Project-specific session navigation */
   .project-sessions {
       margin-top: 15px;
@@ -15121,8 +15171,10 @@
       <div class='session-nav'>
           
           <a href='#msg-d-0'
-              class='session-link'>
+              class='session-link'
+              >
               <div class='session-link-title'>
+                  
                   
                   session_
               </div>
@@ -15138,8 +15190,10 @@
           </a>
           
           <a href='#msg-d-4'
-              class='session-link'>
+              class='session-link'
+              >
               <div class='session-link-title'>
+                  
                   
                   User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. •
                   
@@ -18352,6 +18406,18 @@
       font-size: 0.8em;
       color: #6c757d;
       margin-top: 2px;
+  }
+  
+  /* Child session hierarchy */
+  .session-child {
+      border-left: 3px solid var(--accent-color, #6c757d);
+  }
+  
+  .session-backlink {
+      font-size: 0.75em;
+      color: #6c757d;
+      display: block;
+      margin-bottom: 2px;
   }
   
   /* Project-specific session navigation */
