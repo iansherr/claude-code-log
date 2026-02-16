@@ -4,10 +4,7 @@
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
-
-if TYPE_CHECKING:
-    from .cache import SessionCacheData
+from typing import Any, Optional
 
 from .models import ContentItem, TextContent, TranscriptEntry, UserTranscriptEntry
 from .factories import (
@@ -186,44 +183,6 @@ def extract_text_content_length(content: list[ContentItem]) -> int:
         if isinstance(item, TextContent):
             total_length += len(item.text.strip())
     return total_length
-
-
-def extract_working_directories(
-    entries: "list[TranscriptEntry] | list[SessionCacheData] | list[Any]",
-) -> list[str]:
-    """Extract unique working directories from a list of entries.
-
-    Ordered by timestamp (most recent first).
-
-    Args:
-        entries: List of TranscriptEntry or SessionCacheData to extract working directories from
-
-    Returns:
-        List of unique working directory paths found in the entries
-    """
-    # Import here to avoid circular dependency at runtime
-    from .cache import SessionCacheData
-
-    working_directories: dict[str, str] = {}
-
-    for entry in entries:
-        cwd = getattr(entry, "cwd", None)
-        if not cwd:
-            continue
-
-        # Get appropriate timestamp based on entry type
-        if isinstance(entry, SessionCacheData):
-            timestamp = entry.last_timestamp
-        elif hasattr(entry, "timestamp"):
-            timestamp = getattr(entry, "timestamp", "")
-        else:
-            timestamp = ""
-
-        working_directories[cwd] = timestamp
-
-    # Sort by timestamp (most recent first) and return just the paths
-    sorted_dirs = sorted(working_directories.items(), key=lambda x: x[1], reverse=True)
-    return [path for path, _ in sorted_dirs]
 
 
 # IDE tag patterns imported from factories for compact preview rendering
