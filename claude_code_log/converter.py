@@ -1132,39 +1132,6 @@ def convert_jsonl_to(
     return output_path
 
 
-def has_cache_changes(
-    project_dir: Path,
-    cache_manager: Optional[CacheManager],
-    from_date: Optional[str] = None,
-    to_date: Optional[str] = None,
-) -> bool:
-    """Check if cache needs updating (fast mtime comparison only).
-
-    Returns True if there are modified files or cache is stale.
-    Does NOT load any messages - that's deferred to ensure_fresh_cache.
-    """
-    if cache_manager is None:
-        return True  # No cache means we need to process
-
-    jsonl_files = list(project_dir.glob("*.jsonl"))
-    if not jsonl_files:
-        return False
-
-    # Get cached project data
-    cached_project_data = cache_manager.get_cached_project_data()
-
-    # Check various invalidation conditions
-    modified_files = cache_manager.get_modified_files(jsonl_files)
-
-    return (
-        cached_project_data is None
-        or from_date is not None
-        or to_date is not None
-        or bool(modified_files)
-        or (cached_project_data.total_message_count == 0 and bool(jsonl_files))
-    )
-
-
 def ensure_fresh_cache(
     project_dir: Path,
     cache_manager: Optional[CacheManager],
@@ -1175,7 +1142,6 @@ def ensure_fresh_cache(
     """Ensure cache is fresh and populated. Returns True if cache was updated.
 
     This does the heavy lifting of loading and parsing files.
-    Call has_cache_changes() first for a fast check.
     """
     if cache_manager is None:
         return False
