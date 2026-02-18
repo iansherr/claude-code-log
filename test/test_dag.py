@@ -943,3 +943,141 @@ class TestNestedFork:
         result = traverse_session_tree(tree)
         uuids = [e.uuid for e in result]  # type: ignore[union-attr]
         assert uuids == ["a", "b", "c", "d", "f", "g", "e"]
+
+
+def _make_entry(
+    etype: str,
+    uuid: str,
+    parent: str | None,
+    ts: str,
+    session: str = "s1",
+    text: str = "",
+) -> dict:
+    """Helper to build a minimal transcript entry dict."""
+    base = {
+        "type": etype,
+        "timestamp": ts,
+        "parentUuid": parent,
+        "isSidechain": False,
+        "userType": "human",
+        "cwd": "/tmp",
+        "sessionId": session,
+        "version": "1.0.0",
+        "uuid": uuid,
+    }
+    if etype == "user":
+        base["message"] = {
+            "role": "user",
+            "content": [{"type": "text", "text": text or uuid}],
+        }
+    elif etype == "assistant":
+        base["requestId"] = f"req_{uuid}"
+        base["message"] = {
+            "id": uuid,
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-3-sonnet",
+            "content": [{"type": "text", "text": text or uuid}],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 10, "output_tokens": 5},
+        }
+    elif etype == "system":
+        base["message"] = {"content": []}
+    return base
+
+
+class TestCompactionReplay:
+    """Context compaction replays should not create branches."""
+
+    def test_same_timestamp_children_not_forked(self) -> None:
+        """Multiple children with identical timestamps are compaction replays."""
+        # a → sys → replay1, replay2, replay3 (all same ts)
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("system", "sys", "a", "2025-07-01T10:01:00.000Z"),
+            _make_entry("assistant", "r1", "sys", "2025-07-01T10:02:00.000Z"),
+            _make_entry("assistant", "r2", "sys", "2025-07-01T10:02:00.000Z"),
+            _make_entry("assistant", "r3", "sys", "2025-07-01T10:02:00.000Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # Should be a single linear session, no branches
+        assert "s1" in tree.sessions
+        assert tree.sessions["s1"].uuids == ["a", "sys", "r1"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 0
+
+    def test_different_timestamps_create_branches(self) -> None:
+        """Children with different timestamps are real forks (rewinds)."""
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("assistant", "b", "a", "2025-07-01T10:01:00.000Z"),
+            _make_entry("user", "c", "b", "2025-07-01T10:02:00.000Z"),
+            _make_entry("user", "d", "b", "2025-07-01T10:05:00.000Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # Trunk stops at b, two branches
+        assert tree.sessions["s1"].uuids == ["a", "b"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 2
+
+
+class TestToolResultStitching:
+    """Tool-result side-branches should be stitched into the main chain."""
+
+    def test_single_tool_result_stitched(self) -> None:
+        """A(tool_use) → U(result) + A(next) should become linear."""
+        # a → tool_use → tool_result (dead end) + next_assistant
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("assistant", "tool1", "a", "2025-07-01T10:01:00.000Z"),
+            _make_entry("user", "result1", "tool1", "2025-07-01T10:01:00.100Z"),
+            _make_entry("assistant", "tool2", "tool1", "2025-07-01T10:01:00.200Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # Should be linear: a → tool1 → result1 → tool2
+        assert tree.sessions["s1"].uuids == ["a", "tool1", "result1", "tool2"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 0
+
+    def test_multiple_tool_results_stitched(self) -> None:
+        """Multiple parallel tool_use with results should all be stitched."""
+        # a → tool1 → result1 (dead end) + result2 (dead end) + tool2
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("assistant", "tool1", "a", "2025-07-01T10:01:00.000Z"),
+            _make_entry("user", "res1", "tool1", "2025-07-01T10:01:00.100Z"),
+            _make_entry("user", "res2", "tool1", "2025-07-01T10:01:00.150Z"),
+            _make_entry("assistant", "tool2", "tool1", "2025-07-01T10:01:00.200Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # Should be linear: a → tool1 → res1 → res2 → tool2
+        assert tree.sessions["s1"].uuids == ["a", "tool1", "res1", "res2", "tool2"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 0
+
+    def test_user_child_with_descendants_not_stitched(self) -> None:
+        """If the user child has descendants, it's not a dead-end
+        tool result — treat as a real fork."""
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("assistant", "b", "a", "2025-07-01T10:01:00.000Z"),
+            _make_entry("user", "c", "b", "2025-07-01T10:02:00.000Z"),
+            _make_entry("assistant", "d", "b", "2025-07-01T10:03:00.000Z"),
+            # c has a descendant — it's NOT a dead end
+            _make_entry("assistant", "e", "c", "2025-07-01T10:04:00.000Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # Should be a fork at b with two branches
+        assert tree.sessions["s1"].uuids == ["a", "b"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 2

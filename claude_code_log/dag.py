@@ -14,6 +14,8 @@ from .models import (
     TranscriptEntry,
     SummaryTranscriptEntry,
     QueueOperationTranscriptEntry,
+    UserTranscriptEntry,
+    AssistantTranscriptEntry,
 )
 
 logger = logging.getLogger(__name__)
@@ -147,10 +149,14 @@ def build_dag(nodes: dict[str, MessageNode]) -> None:
                 parent.children_uuids.append(node.uuid)
             else:
                 logger.warning(
-                    "Orphan node %s: parentUuid %s not found in loaded data",
+                    "Orphan node %s: parentUuid %s not found in loaded data"
+                    " (promoting to root)",
                     node.uuid,
                     node.parent_uuid,
                 )
+                # Clear the dangling parent so this node becomes a root
+                # and can participate in DAG walks
+                node.parent_uuid = None
 
     # Validate: no cycles (walk parent chain for each node)
     for node in nodes.values():
@@ -172,12 +178,75 @@ def build_dag(nodes: dict[str, MessageNode]) -> None:
 # =============================================================================
 
 
+def _collect_descendants(
+    uuid: str,
+    session_uuids: set[str],
+    nodes: dict[str, MessageNode],
+    result: set[str],
+) -> None:
+    """Recursively collect a node and all its same-session descendants."""
+    if uuid in result:
+        return
+    result.add(uuid)
+    node = nodes.get(uuid)
+    if node is None:
+        return
+    for child in node.children_uuids:
+        if child in session_uuids:
+            _collect_descendants(child, session_uuids, nodes, result)
+
+
+def _stitch_tool_results(
+    children: list[str],
+    session_uuids: set[str],
+    nodes: dict[str, MessageNode],
+) -> Optional[list[str]]:
+    """Detect and stitch tool-result side-branches into a linear chain.
+
+    When the assistant makes multiple tool calls in one turn, the JSONL
+    records both the next tool_use and the tool_result as children of the
+    current tool_use entry, creating a false fork.  Pattern:
+
+        A(tool_use) → U(tool_result)   [dead-end side-branch]
+                    → A(next tool_use) [main chain continues]
+
+    This function detects the pattern and returns a stitched ordering
+    [U(result), A(next)] so the caller can extend the chain linearly.
+    Returns None if the pattern doesn't match.
+    """
+    # Separate into user (tool_result) and assistant (continuation) children
+    user_children = [
+        c for c in children if isinstance(nodes[c].entry, UserTranscriptEntry)
+    ]
+    assistant_children = [
+        c for c in children if isinstance(nodes[c].entry, AssistantTranscriptEntry)
+    ]
+
+    if not user_children or not assistant_children:
+        return None  # Not the tool_result pattern
+
+    # Verify user children are dead ends (no same-session descendants)
+    for uc in user_children:
+        unode = nodes[uc]
+        if any(c in session_uuids for c in unode.children_uuids):
+            return None  # User child has continuation — not a dead end
+
+    # All assistant children must form a single continuation chain
+    if len(assistant_children) != 1:
+        return None  # Multiple assistant continuations — ambiguous
+
+    # Stitch: user results first (sorted by timestamp), then the
+    # single assistant continuation
+    user_children.sort(key=lambda c: nodes[c].timestamp)
+    return user_children + assistant_children
+
+
 def _walk_session_with_forks(
     root: MessageNode,
     session_id: str,
     session_uuids: set[str],
     nodes: dict[str, MessageNode],
-) -> list[SessionDAGLine]:
+) -> tuple[list[SessionDAGLine], set[str]]:
     """Walk a session's DAG from root, splitting into separate DAG-lines at fork points.
 
     Uses a queue-based approach to handle nested forks:
@@ -188,11 +257,13 @@ def _walk_session_with_forks(
     4. Update MessageNode.session_id for branch nodes
 
     Returns:
-        List of SessionDAGLine objects (trunk first, then branches)
+        Tuple of (DAG-line list, set of UUIDs intentionally skipped as
+        compaction replays).
     """
     # Queue entries: (start_uuid, dag_line_id, parent_dag_line_id)
     queue: list[tuple[str, str, Optional[str]]] = [(root.uuid, session_id, None)]
     result: list[SessionDAGLine] = []
+    skipped: set[str] = set()  # Compaction replay UUIDs
 
     while queue:
         start_uuid, line_id, parent_line_id = queue.pop(0)
@@ -215,13 +286,39 @@ def _walk_session_with_forks(
             elif len(same_session_children) == 1:
                 current = nodes[same_session_children[0]]
             else:
-                # Fork point: stop chain here, push each child as a branch
-                # Sort children chronologically for deterministic order
+                # Multiple same-session children. Distinguish real forks
+                # from artifacts (see dev-docs/dag.md caveats).
                 same_session_children.sort(key=lambda c: nodes[c].timestamp)
-                for child_uuid in same_session_children:
-                    branch_id = f"{line_id}@{child_uuid[:12]}"
-                    queue.append((child_uuid, branch_id, line_id))
-                current = None
+
+                stitched = _stitch_tool_results(
+                    same_session_children, session_uuids, nodes
+                )
+                if stitched is not None:
+                    # Tool-result side-branches were stitched into the
+                    # chain. Extend chain and continue with the tail.
+                    if is_branch:
+                        for su in stitched[:-1]:
+                            nodes[su].session_id = line_id
+                    chain.extend(stitched[:-1])
+                    current = nodes[stitched[-1]]
+                else:
+                    unique_timestamps = {
+                        nodes[c].timestamp for c in same_session_children
+                    }
+                    if len(unique_timestamps) == 1:
+                        # Same timestamp = compaction replay: follow only
+                        # the first child (original chain), skip replays
+                        # and all their descendants.
+                        current = nodes[same_session_children[0]]
+                        for sc in same_session_children[1:]:
+                            _collect_descendants(sc, session_uuids, nodes, skipped)
+                    else:
+                        # Different timestamps = real fork (rewind).
+                        # Stop chain here, push each child as a branch.
+                        for child_uuid in same_session_children:
+                            branch_id = f"{line_id}@{child_uuid[:12]}"
+                            queue.append((child_uuid, branch_id, line_id))
+                        current = None
 
         if chain:
             first_ts = nodes[chain[0]].timestamp
@@ -239,7 +336,7 @@ def _walk_session_with_forks(
                 dag_line.attachment_uuid = parent_uuid
             result.append(dag_line)
 
-    return result
+    return result, skipped
 
 
 def extract_session_dag_lines(
@@ -284,21 +381,34 @@ def extract_session_dag_lines(
             )
             continue
 
+        # Sort roots by timestamp (earliest first = primary root)
+        roots.sort(key=lambda n: n.timestamp)
         if len(roots) > 1:
-            # Multiple roots - pick the earliest by timestamp
-            roots.sort(key=lambda n: n.timestamp)
             logger.warning(
-                "Session %s: %d roots found, using earliest (%s)",
+                "Session %s: %d roots found, walking all from earliest (%s)",
                 session_id,
                 len(roots),
                 roots[0].uuid,
             )
 
-        # Walk with fork detection
-        dag_lines = _walk_session_with_forks(roots[0], session_id, session_uuids, nodes)
+        # Walk from ALL roots to maximize coverage (orphan-promoted roots
+        # create disconnected subtrees that must each be walked)
+        dag_lines: list[SessionDAGLine] = []
+        walked_uuids: set[str] = set()
+        skipped_uuids: set[str] = set()
+        for root in roots:
+            if root.uuid in walked_uuids:
+                continue
+            root_lines, root_skipped = _walk_session_with_forks(
+                root, session_id, session_uuids, nodes
+            )
+            for dl in root_lines:
+                walked_uuids.update(dl.uuids)
+            skipped_uuids.update(root_skipped)
+            dag_lines.extend(root_lines)
 
-        # Check coverage: all session nodes should be in some DAG-line
-        covered = sum(len(dl.uuids) for dl in dag_lines)
+        # Check coverage: walked + intentionally skipped (compaction replays)
+        covered = len(walked_uuids) + len(skipped_uuids)
         if covered < len(snodes):
             logger.warning(
                 "Session %s: DAG walk covers %d of %d nodes, "
@@ -314,7 +424,22 @@ def extract_session_dag_lines(
                 first_timestamp=sorted_nodes[0].timestamp,
             )
         else:
-            for dag_line in dag_lines:
+            # Merge non-branch DAG-lines that share the same session_id
+            # (happens when multiple roots exist due to orphan promotion)
+            trunk_lines = [dl for dl in dag_lines if dl.session_id == session_id]
+            branch_lines = [dl for dl in dag_lines if dl.session_id != session_id]
+            if trunk_lines:
+                # Merge all trunk lines into one, ordered by first_timestamp
+                trunk_lines.sort(key=lambda dl: dl.first_timestamp)
+                merged_uuids: list[str] = []
+                for tl in trunk_lines:
+                    merged_uuids.extend(tl.uuids)
+                sessions[session_id] = SessionDAGLine(
+                    session_id=session_id,
+                    uuids=merged_uuids,
+                    first_timestamp=trunk_lines[0].first_timestamp,
+                )
+            for dag_line in branch_lines:
                 sessions[dag_line.session_id] = dag_line
 
     return sessions

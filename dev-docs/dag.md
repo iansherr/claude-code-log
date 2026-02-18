@@ -231,12 +231,63 @@ boundaries. This is both correct and faster.
 
 ---
 
+## Caveats
+
+### Context Compaction Replays
+
+When Claude Code compacts context (inserting a `SummaryTranscriptEntry`), it
+**replays** the conversation from a certain point with **new UUIDs** but the
+**same `parentUuid` and timestamp** as the original entries. This creates
+multiple same-session children from a single parent — structurally identical
+to a user rewind (fork), but semantically a replay.
+
+**Distinguishing heuristic**: timestamps.
+
+- **Real fork (rewind)**: the user goes back and types a new message at a
+  different time → children have **different** timestamps.
+- **Compaction replay**: the system re-emits the same turn → children share
+  the **same** timestamp as the original.
+
+When `_walk_session_with_forks()` encounters a node with multiple same-session
+children that all share the same timestamp, it follows only the **first**
+child (the original chain) and ignores the later replay chains. This avoids
+creating hundreds of false branch pseudo-sessions in long-running sessions
+with frequent compaction.
+
+The heuristic is validated on real data: across all fork points, forks
+partition cleanly into same-timestamp (compaction) vs different-timestamp
+(rewind) groups, with no mixed cases observed.
+
+### Tool-Result Side-Branches
+
+When the assistant makes **multiple tool calls** in one turn, the JSONL
+records both the next `tool_use` and the previous `tool_result` as children
+of the same parent entry:
+
+```
+A(tool_use₁) → U(tool_result₁)   [dead-end side-branch]
+             → A(tool_use₂)      [main chain continues]
+```
+
+This creates a false fork at each multi-tool-call point. The fix
+(`_stitch_tool_results()`) detects the pattern — User (dead-end) + Assistant
+(continuation) children — and stitches the tool results into the main chain:
+`A(tool_use₁) → U(tool_result₁) → A(tool_use₂) → ...`
+
+Detection criteria:
+- At least one User child and exactly one Assistant child
+- All User children are dead ends (no same-session descendants)
+- User children are tool_result entries inserted before the continuation
+
+---
+
 ## Assertions / Invariants
 
 These should be checked at runtime (log warnings, don't crash):
 
 1. **Session linearity**: Each session's messages form a single chain
-   (no branching within a `sessionId`)
+   (no branching within a `sessionId`), except for explicit user rewinds
+   which create within-session forks rendered as branch pseudo-sessions
 2. **DAG acyclicity**: No cycles in `parentUuid` chains
 3. **Unique ownership**: After deduplication, each `uuid` belongs to
    exactly one session
