@@ -230,6 +230,21 @@ pre {
     bottom: 200px;
 }
 
+.debug-toggle.floating-btn {
+    bottom: 260px;
+    border-radius: 6px;
+    width: 38px;
+    height: 28px;
+    font-size: 0.65em;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-weight: 600;
+}
+
+.debug-toggle.floating-btn.active {
+    background-color: #d4e8f7;
+    color: #333;
+}
+
 @media (max-width: 1280px) {
     .header > span:first-child {
         flex: auto;

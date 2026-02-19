@@ -141,6 +141,7 @@
                 {% endif %}
             </div>
         </div>
+        {% if message.meta %}<div class='debug-info'>{{ message.meta.uuid[:12] }}{% if message.meta.parent_uuid %} &rarr; {{ message.meta.parent_uuid[:12] }}{% endif %}</div>{% endif %}
         <div class='content{% if markdown %} markdown{% endif %}'>{{ html_content | safe }}</div>
         {% if message.junction_forward_links %}
         <div class='junction-forward-links'>
@@ -177,6 +178,7 @@
     <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
     <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
     <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
+    <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
     <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
 
     <script>
@@ -184,6 +186,7 @@
             const toggleButton = document.getElementById('toggleDetails');
             const timelineButton = document.getElementById('toggleTimeline');
             const filterButton = document.getElementById('filterMessages');
+            const debugButton = document.getElementById('toggleDebug');
             const filterToolbar = document.querySelector('.filter-toolbar');
             const selectAllButton = document.getElementById('selectAll');
             const selectNoneButton = document.getElementById('selectNone');
@@ -192,6 +195,12 @@
 
             // Timezone conversion (included as component)
             {% include 'components/timezone_converter.js' %}
+
+            // Debug UUID toggle
+            debugButton.addEventListener('click', function () {
+                document.body.classList.toggle('show-debug-info');
+                debugButton.classList.toggle('active');
+            });
 
             // Parse URL parameters
             function getUrlParams() {

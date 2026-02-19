@@ -242,6 +242,21 @@
       bottom: 200px;
   }
   
+  .debug-toggle.floating-btn {
+      bottom: 260px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -2214,6 +2229,21 @@
       bottom: 200px;
   }
   
+  .debug-toggle.floating-btn {
+      bottom: 260px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -3117,6 +3147,20 @@
   .ansi-bg-magenta { background-color: #bc3fbc; }
   .ansi-bg-cyan { background-color: #11a8cd; }
   .ansi-bg-white { background-color: #e5e5e5; }
+  
+  /* Debug UUID info */
+  .debug-info {
+      display: none;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.7em;
+      color: #999;
+      padding: 2px 0;
+      letter-spacing: 0.02em;
+  }
+  
+  .show-debug-info .debug-info {
+      display: block;
+  }
   
   /* Bright background colors */
   .ansi-bg-bright-black { background-color: #666666; }
@@ -5259,6 +5303,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
           
@@ -5289,6 +5334,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_002</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>I'd be happy to help you understand Python decorators! A decorator is a design pattern that allows you to modify or extend the behavior of functions or classes without permanently modifying their code.</p>
   <p>Here's a simple example:</p>
   <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
@@ -5327,6 +5373,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
           
@@ -5355,6 +5402,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
           
@@ -5373,6 +5421,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
           
@@ -5393,6 +5442,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_006</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! I've created an example of a parameterized decorator. Here's how it works:</p>
   <ol>
   <li><strong><code>repeat(times)</code></strong> - This is the decorator factory that takes parameters</li>
@@ -5424,6 +5474,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
           
@@ -5452,6 +5503,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
           
@@ -5470,6 +5522,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_009</div>
           <div class='content'><pre>Hello, Alice!
   Hello, Alice!
   Hello, Alice!</pre></div>
@@ -5492,6 +5545,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_010</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! As you can see, the <code>@repeat(3)</code> decorator successfully made the <code>greet</code> function execute three times, printing &quot;Hello, Alice!&quot; three times.</p>
   <p>This demonstrates the power of parameterized decorators - you can customize their behavior by passing arguments to the decorator factory. Some common use cases include:</p>
   <ul>
@@ -5519,6 +5573,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
           
@@ -5529,6 +5584,7 @@
       <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
+      <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -5536,6 +5592,7 @@
               const toggleButton = document.getElementById('toggleDetails');
               const timelineButton = document.getElementById('toggleTimeline');
               const filterButton = document.getElementById('filterMessages');
+              const debugButton = document.getElementById('toggleDebug');
               const filterToolbar = document.querySelector('.filter-toolbar');
               const selectAllButton = document.getElementById('selectAll');
               const selectNoneButton = document.getElementById('selectNone');
@@ -5658,6 +5715,12 @@
       // Execute immediately - assumes this is included within a DOMContentLoaded handler
       convertTimestampsToLocalTimezone();
   })();
+  
+              // Debug UUID toggle
+              debugButton.addEventListener('click', function () {
+                  document.body.classList.toggle('show-debug-info');
+                  debugButton.classList.toggle('active');
+              });
   
               // Parse URL parameters
               function getUrlParams() {
@@ -7283,6 +7346,21 @@
       bottom: 200px;
   }
   
+  .debug-toggle.floating-btn {
+      bottom: 260px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -8186,6 +8264,20 @@
   .ansi-bg-magenta { background-color: #bc3fbc; }
   .ansi-bg-cyan { background-color: #11a8cd; }
   .ansi-bg-white { background-color: #e5e5e5; }
+  
+  /* Debug UUID info */
+  .debug-info {
+      display: none;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.7em;
+      color: #999;
+      padding: 2px 0;
+      letter-spacing: 0.02em;
+  }
+  
+  .show-debug-info .debug-info {
+      display: block;
+  }
   
   /* Bright background colors */
   .ansi-bg-bright-black { background-color: #666666; }
@@ -10328,6 +10420,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_001</div>
           <div class='content'><pre>Here&#x27;s a message with some **markdown** formatting, `inline code`, and even a [link](https://example.com). Let&#x27;s see how it renders!</pre></div>
           
           
@@ -10358,6 +10451,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_002</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Great example! Markdown formatting is indeed supported. Here are some more examples:</p>
   <h2>Headers work too</h2>
   <h3>Sublevel headers</h3>
@@ -10415,6 +10509,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_003</div>
           <div class='content'><pre>Let&#x27;s test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</pre></div>
           
           
@@ -10443,6 +10538,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_004</div>
           <div class='content'><table class='tool-params-table'>
               <tr>
                   <td class='tool-param-key'>test_param</td>
@@ -10466,6 +10562,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_005</div>
           <div class='content'><pre>Error: Tool execution failed with error: Command not found</pre></div>
           
           
@@ -10484,6 +10581,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_007</div>
           <div class='content'><code>test-command</code><br><strong>Args:</strong> --verbose --output /tmp/test.log<br><strong>Content:</strong><pre>This is the actual command content with some JSON structure and escaped characters: &quot;quotes&quot; and 
   line breaks
   </pre></div>
@@ -10504,6 +10602,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_008</div>
           <div class='content'><pre class='command-output-content'>Command output here:
   Line 1 of output
   Line 2 of output
@@ -10543,6 +10642,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_009</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>I see the long Lorem ipsum text wraps nicely! Long text handling is important for readability. The CSS should handle word wrapping automatically.</p>
   </div></div>
           
@@ -10572,6 +10672,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_009</div>
           <div class='content'><div class='multiedit-tool-content'><div class='multiedit-file-path'>📝 /tmp/complex_example.py</div><div class='multiedit-count'>Applying 1 edits</div><div class='multiedit-item'><div class='multiedit-item-header'>Edit #1</div><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>#!/usr/bin/env python3</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>Complex example with multiple operations.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import json</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import sys</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>from typing import List, Dict, Any</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def process_data(items: List[Dict[str, Any]]) -&gt; None:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    Process a list of data items.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    for item in items:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        print(f&quot;Processing: {item[&#x27;name&#x27;]}&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        if item.get(&#x27;active&#x27;, False):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Active&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        else:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Inactive&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>if __name__ == &quot;__main__&quot;:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    sample_data = [</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 1&quot;, &quot;active&quot;: True},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 2&quot;, &quot;active&quot;: False},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 3&quot;, &quot;active&quot;: True}</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    ]</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    process_data(sample_data)</div></div></div></div></div>
           
           
@@ -10590,6 +10691,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_011</div>
           <div class='content'><pre>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</pre></div>
           
           
@@ -10608,6 +10710,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>edge_010</div>
           <div class='content'><pre>wow error</pre></div>
           
           
@@ -10644,6 +10747,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>assistant_00 &rarr; assistant_00</div>
           <div class='content'><table class='tool-params-table'>
               <tr>
                   <td class='tool-param-key'>todos</td>
@@ -10695,6 +10799,7 @@
       <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
+      <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -10702,6 +10807,7 @@
               const toggleButton = document.getElementById('toggleDetails');
               const timelineButton = document.getElementById('toggleTimeline');
               const filterButton = document.getElementById('filterMessages');
+              const debugButton = document.getElementById('toggleDebug');
               const filterToolbar = document.querySelector('.filter-toolbar');
               const selectAllButton = document.getElementById('selectAll');
               const selectNoneButton = document.getElementById('selectNone');
@@ -10824,6 +10930,12 @@
       // Execute immediately - assumes this is included within a DOMContentLoaded handler
       convertTimestampsToLocalTimezone();
   })();
+  
+              // Debug UUID toggle
+              debugButton.addEventListener('click', function () {
+                  document.body.classList.toggle('show-debug-info');
+                  debugButton.classList.toggle('active');
+              });
   
               // Parse URL parameters
               function getUrlParams() {
@@ -12449,6 +12561,21 @@
       bottom: 200px;
   }
   
+  .debug-toggle.floating-btn {
+      bottom: 260px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -13352,6 +13479,20 @@
   .ansi-bg-magenta { background-color: #bc3fbc; }
   .ansi-bg-cyan { background-color: #11a8cd; }
   .ansi-bg-white { background-color: #e5e5e5; }
+  
+  /* Debug UUID info */
+  .debug-info {
+      display: none;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.7em;
+      color: #999;
+      padding: 2px 0;
+      letter-spacing: 0.02em;
+  }
+  
+  .show-debug-info .debug-info {
+      display: block;
+  }
   
   /* Bright background colors */
   .ansi-bg-bright-black { background-color: #666666; }
@@ -15557,6 +15698,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>session_b_00</div>
           <div class='content'><pre>This is from a different session file to test multi-session handling.</pre></div>
           
           
@@ -15587,6 +15729,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>session_b_00</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Indeed! This message is from a different JSONL file, which should help test the session divider logic. Only the first session should show a divider.</p>
   </div></div>
           
@@ -15606,6 +15749,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>session_b_00</div>
           <div class='content'><pre>Perfect! This should appear without any session divider above it.</pre></div>
           
           
@@ -15646,6 +15790,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
           
@@ -15676,6 +15821,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_002</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>I'd be happy to help you understand Python decorators! A decorator is a design pattern that allows you to modify or extend the behavior of functions or classes without permanently modifying their code.</p>
   <p>Here's a simple example:</p>
   <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
@@ -15714,6 +15860,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
           
@@ -15742,6 +15889,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
           
@@ -15760,6 +15908,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
           
@@ -15780,6 +15929,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_006</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! I've created an example of a parameterized decorator. Here's how it works:</p>
   <ol>
   <li><strong><code>repeat(times)</code></strong> - This is the decorator factory that takes parameters</li>
@@ -15811,6 +15961,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
           
@@ -15839,6 +15990,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
           
@@ -15857,6 +16009,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_009</div>
           <div class='content'><pre>Hello, Alice!
   Hello, Alice!
   Hello, Alice!</pre></div>
@@ -15879,6 +16032,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_010</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! As you can see, the <code>@repeat(3)</code> decorator successfully made the <code>greet</code> function execute three times, printing &quot;Hello, Alice!&quot; three times.</p>
   <p>This demonstrates the power of parameterized decorators - you can customize their behavior by passing arguments to the decorator factory. Some common use cases include:</p>
   <ul>
@@ -15906,6 +16060,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
           
@@ -15916,6 +16071,7 @@
       <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
+      <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -15923,6 +16079,7 @@
               const toggleButton = document.getElementById('toggleDetails');
               const timelineButton = document.getElementById('toggleTimeline');
               const filterButton = document.getElementById('filterMessages');
+              const debugButton = document.getElementById('toggleDebug');
               const filterToolbar = document.querySelector('.filter-toolbar');
               const selectAllButton = document.getElementById('selectAll');
               const selectNoneButton = document.getElementById('selectNone');
@@ -16045,6 +16202,12 @@
       // Execute immediately - assumes this is included within a DOMContentLoaded handler
       convertTimestampsToLocalTimezone();
   })();
+  
+              // Debug UUID toggle
+              debugButton.addEventListener('click', function () {
+                  document.body.classList.toggle('show-debug-info');
+                  debugButton.classList.toggle('active');
+              });
   
               // Parse URL parameters
               function getUrlParams() {
@@ -17670,6 +17833,21 @@
       bottom: 200px;
   }
   
+  .debug-toggle.floating-btn {
+      bottom: 260px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -18573,6 +18751,20 @@
   .ansi-bg-magenta { background-color: #bc3fbc; }
   .ansi-bg-cyan { background-color: #11a8cd; }
   .ansi-bg-white { background-color: #e5e5e5; }
+  
+  /* Debug UUID info */
+  .debug-info {
+      display: none;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.7em;
+      color: #999;
+      padding: 2px 0;
+      letter-spacing: 0.02em;
+  }
+  
+  .show-debug-info .debug-info {
+      display: block;
+  }
   
   /* Bright background colors */
   .ansi-bg-bright-black { background-color: #666666; }
@@ -20715,6 +20907,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
           
@@ -20745,6 +20938,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_002</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>I'd be happy to help you understand Python decorators! A decorator is a design pattern that allows you to modify or extend the behavior of functions or classes without permanently modifying their code.</p>
   <p>Here's a simple example:</p>
   <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
@@ -20783,6 +20977,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
           
@@ -20811,6 +21006,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
           
@@ -20829,6 +21025,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
           
@@ -20849,6 +21046,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_006</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! I've created an example of a parameterized decorator. Here's how it works:</p>
   <ol>
   <li><strong><code>repeat(times)</code></strong> - This is the decorator factory that takes parameters</li>
@@ -20880,6 +21078,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
           
@@ -20908,6 +21107,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
           
@@ -20926,6 +21126,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_009</div>
           <div class='content'><pre>Hello, Alice!
   Hello, Alice!
   Hello, Alice!</pre></div>
@@ -20948,6 +21149,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_010</div>
           <div class='content markdown'><div class="assistant-text markdown"><p>Perfect! As you can see, the <code>@repeat(3)</code> decorator successfully made the <code>greet</code> function execute three times, printing &quot;Hello, Alice!&quot; three times.</p>
   <p>This demonstrates the power of parameterized decorators - you can customize their behavior by passing arguments to the decorator factory. Some common use cases include:</p>
   <ul>
@@ -20975,6 +21177,7 @@
                   
               </div>
           </div>
+          <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
           
@@ -20985,6 +21188,7 @@
       <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
+      <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -20992,6 +21196,7 @@
               const toggleButton = document.getElementById('toggleDetails');
               const timelineButton = document.getElementById('toggleTimeline');
               const filterButton = document.getElementById('filterMessages');
+              const debugButton = document.getElementById('toggleDebug');
               const filterToolbar = document.querySelector('.filter-toolbar');
               const selectAllButton = document.getElementById('selectAll');
               const selectNoneButton = document.getElementById('selectNone');
@@ -21114,6 +21319,12 @@
       // Execute immediately - assumes this is included within a DOMContentLoaded handler
       convertTimestampsToLocalTimezone();
   })();
+  
+              // Debug UUID toggle
+              debugButton.addEventListener('click', function () {
+                  document.body.classList.toggle('show-debug-info');
+                  debugButton.classList.toggle('active');
+              });
   
               // Parse URL parameters
               function getUrlParams() {

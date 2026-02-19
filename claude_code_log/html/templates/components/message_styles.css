@@ -897,6 +897,20 @@ details summary {
 .ansi-bg-cyan { background-color: #11a8cd; }
 .ansi-bg-white { background-color: #e5e5e5; }
 
+/* Debug UUID info */
+.debug-info {
+    display: none;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.7em;
+    color: #999;
+    padding: 2px 0;
+    letter-spacing: 0.02em;
+}
+
+.show-debug-info .debug-info {
+    display: block;
+}
+
 /* Bright background colors */
 .ansi-bg-bright-black { background-color: #666666; }
 .ansi-bg-bright-red { background-color: #f14c4c; }
