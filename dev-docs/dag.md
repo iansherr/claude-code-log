@@ -262,22 +262,30 @@ partition cleanly into same-timestamp (compaction) vs different-timestamp
 
 When the assistant makes **multiple tool calls** in one turn, the JSONL
 records both the next `tool_use` and the previous `tool_result` as children
-of the same parent entry:
+of the same parent entry. Two variants exist:
 
+**Variant 1** — User child is immediate dead end:
 ```
 A(tool_use₁) → U(tool_result₁)   [dead-end side-branch]
              → A(tool_use₂)      [main chain continues]
 ```
 
-This creates a false fork at each multi-tool-call point. The fix
-(`_stitch_tool_results()`) detects the pattern — User (dead-end) + Assistant
-(continuation) children — and stitches the tool results into the main chain:
-`A(tool_use₁) → U(tool_result₁) → A(tool_use₂) → ...`
+**Variant 2** — User child continues, Assistant subtree dead-ends:
+```
+A(tool_use₁) → U(tool_result₁) → A(response) → ...  [main chain]
+             → A(tool_use₂) → ... → dead ends        [progress artifact]
+```
+
+Both variants create false forks. The fix (`_stitch_tool_results()`) detects
+the pattern and stitches dead-end children into the chain before the
+continuation child. Subtree descendants of dead-end children are collected
+into the `skipped` set for coverage accounting.
 
 Detection criteria:
-- At least one User child and exactly one Assistant child
-- All User children are dead ends (no same-session descendants)
-- User children are tool_result entries inserted before the continuation
+- At least one User child and at least one Assistant child
+- Variant 1: all User children are immediate dead ends + single Assistant
+- Variant 2: exactly one User child has continuation, all Assistant subtrees
+  are dead ends (checked recursively via `_is_subtree_dead_end()`)
 
 ---
 

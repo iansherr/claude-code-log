@@ -1063,21 +1063,44 @@ class TestToolResultStitching:
         branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
         assert branch_count == 0
 
-    def test_user_child_with_descendants_not_stitched(self) -> None:
-        """If the user child has descendants, it's not a dead-end
-        tool result — treat as a real fork."""
+    def test_user_child_with_continuation_stitched(self) -> None:
+        """Variant 2: User child continues, Assistant subtree dead-ends.
+        Should stitch linearly with dead-end first, then continuation."""
         data = [
             _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
             _make_entry("assistant", "b", "a", "2025-07-01T10:01:00.000Z"),
             _make_entry("user", "c", "b", "2025-07-01T10:02:00.000Z"),
             _make_entry("assistant", "d", "b", "2025-07-01T10:03:00.000Z"),
-            # c has a descendant — it's NOT a dead end
+            # c continues (not a dead end), d is a leaf (dead end)
             _make_entry("assistant", "e", "c", "2025-07-01T10:04:00.000Z"),
         ]
         entries = [create_transcript_entry(d) for d in data]
         tree = build_dag_from_entries(entries)
 
-        # Should be a fork at b with two branches
-        assert tree.sessions["s1"].uuids == ["a", "b"]
+        # Should stitch: dead-end d first, then continuing c
+        assert tree.sessions["s1"].uuids == ["a", "b", "d", "c", "e"]
         branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
-        assert branch_count == 2
+        assert branch_count == 0
+
+    def test_assistant_subtree_dead_end_stitched(self) -> None:
+        """Variant 2 with deeper dead-end: Assistant child has a subtree
+        that eventually terminates, User child continues."""
+        data = [
+            _make_entry("user", "a", None, "2025-07-01T10:00:00.000Z"),
+            _make_entry("assistant", "b", "a", "2025-07-01T10:01:00.000Z"),
+            # b forks into assistant d (dead-end subtree) and user c (continues)
+            _make_entry("assistant", "d", "b", "2025-07-01T10:02:00.000Z"),
+            _make_entry("user", "c", "b", "2025-07-01T10:02:50.000Z"),
+            # d's subtree: d → d2 → d3 (all dead ends)
+            _make_entry("assistant", "d2", "d", "2025-07-01T10:02:01.000Z"),
+            _make_entry("user", "d3", "d2", "2025-07-01T10:02:02.000Z"),
+            # c continues the main chain
+            _make_entry("assistant", "e", "c", "2025-07-01T10:03:00.000Z"),
+        ]
+        entries = [create_transcript_entry(d) for d in data]
+        tree = build_dag_from_entries(entries)
+
+        # d's subtree dead-ends, c continues: stitch d first, then c
+        assert tree.sessions["s1"].uuids == ["a", "b", "d", "c", "e"]
+        branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
+        assert branch_count == 0

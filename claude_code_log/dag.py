@@ -196,6 +196,31 @@ def _collect_descendants(
             _collect_descendants(child, session_uuids, nodes, result)
 
 
+def _is_subtree_dead_end(
+    uuid: str,
+    session_uuids: set[str],
+    nodes: dict[str, MessageNode],
+    max_depth: int = 20,
+) -> bool:
+    """Check if a node's subtree eventually terminates (no continuation).
+
+    A subtree is a dead end if every leaf within the session has no
+    same-session children.  Walks depth-first with a depth limit to
+    avoid runaway traversals.
+    """
+    stack: list[tuple[str, int]] = [(uuid, 0)]
+    while stack:
+        current, depth = stack.pop()
+        children = [c for c in nodes[current].children_uuids if c in session_uuids]
+        if not children:
+            continue  # Leaf — dead end, keep checking siblings
+        if depth >= max_depth:
+            return False  # Too deep to tell — assume not dead end
+        for c in children:
+            stack.append((c, depth + 1))
+    return True
+
+
 def _stitch_tool_results(
     children: list[str],
     session_uuids: set[str],
@@ -205,14 +230,19 @@ def _stitch_tool_results(
 
     When the assistant makes multiple tool calls in one turn, the JSONL
     records both the next tool_use and the tool_result as children of the
-    current tool_use entry, creating a false fork.  Pattern:
+    current tool_use entry, creating a false fork.  Two variants:
 
+    Variant 1 — User child is immediate dead end:
         A(tool_use) → U(tool_result)   [dead-end side-branch]
                     → A(next tool_use) [main chain continues]
 
-    This function detects the pattern and returns a stitched ordering
-    [U(result), A(next)] so the caller can extend the chain linearly.
-    Returns None if the pattern doesn't match.
+    Variant 2 — User child continues, Assistant subtree dead-ends:
+        A(tool_use) → U(tool_result) → A(response) → ...  [main chain]
+                    → A(tool_use) → ... → dead ends       [progress artifact]
+
+    Returns a stitched ordering placing dead-end children first, then
+    the single continuation child.  Returns None if the pattern doesn't
+    match.
     """
     # Separate into user (tool_result) and assistant (continuation) children
     user_children = [
@@ -225,20 +255,44 @@ def _stitch_tool_results(
     if not user_children or not assistant_children:
         return None  # Not the tool_result pattern
 
-    # Verify user children are dead ends (no same-session descendants)
-    for uc in user_children:
-        unode = nodes[uc]
-        if any(c in session_uuids for c in unode.children_uuids):
-            return None  # User child has continuation — not a dead end
+    # Check variant 1: all user children are immediate dead ends
+    user_all_dead = all(
+        not any(c in session_uuids for c in nodes[uc].children_uuids)
+        for uc in user_children
+    )
 
-    # All assistant children must form a single continuation chain
-    if len(assistant_children) != 1:
-        return None  # Multiple assistant continuations — ambiguous
+    if user_all_dead:
+        # Variant 1: user dead ends + single assistant continuation
+        if len(assistant_children) != 1:
+            return None
+        user_children.sort(key=lambda c: nodes[c].timestamp)
+        return user_children + assistant_children
 
-    # Stitch: user results first (sorted by timestamp), then the
-    # single assistant continuation
-    user_children.sort(key=lambda c: nodes[c].timestamp)
-    return user_children + assistant_children
+    # Check variant 2: assistant subtrees are dead ends,
+    # exactly one user child continues
+    user_with_cont = [
+        uc
+        for uc in user_children
+        if any(c in session_uuids for c in nodes[uc].children_uuids)
+    ]
+    if len(user_with_cont) != 1:
+        return None  # Ambiguous — multiple user continuations
+
+    # Verify all assistant children's subtrees are dead ends
+    for ac in assistant_children:
+        if not _is_subtree_dead_end(ac, session_uuids, nodes):
+            return None
+
+    # Verify remaining user children (without continuation) are dead ends
+    user_dead = [uc for uc in user_children if uc not in user_with_cont]
+    for uc in user_dead:
+        if not _is_subtree_dead_end(uc, session_uuids, nodes):
+            return None
+
+    # Stitch: dead-end children first, then the continuing user child
+    dead_ends = user_dead + assistant_children
+    dead_ends.sort(key=lambda c: nodes[c].timestamp)
+    return dead_ends + user_with_cont
 
 
 def _walk_session_with_forks(
@@ -295,10 +349,13 @@ def _walk_session_with_forks(
                 )
                 if stitched is not None:
                     # Tool-result side-branches were stitched into the
-                    # chain. Extend chain and continue with the tail.
-                    if is_branch:
-                        for su in stitched[:-1]:
+                    # chain. The last element is the continuation; all
+                    # others are dead-end nodes whose subtree descendants
+                    # must be skipped.
+                    for su in stitched[:-1]:
+                        if is_branch:
                             nodes[su].session_id = line_id
+                        _collect_descendants(su, session_uuids, nodes, skipped)
                     chain.extend(stitched[:-1])
                     current = nodes[stitched[-1]]
                 else:
