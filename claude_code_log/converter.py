@@ -482,9 +482,11 @@ def deduplicate_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntr
                     content_key = item.tool_use_id
                     break
             else:
-                # No tool result found - this is a user text message
+                # No tool result found - this is a user text message.
+                # Use uuid to keep distinct messages (even at same timestamp)
+                # so DAG parent references remain valid.
                 is_user_text = True
-                # content_key stays empty (dedupe by timestamp alone)
+                content_key = message.uuid
         elif isinstance(message, SummaryTranscriptEntry):
             # Summaries have no timestamp or uuid - use leafUuid to keep them distinct
             content_key = message.leafUuid
