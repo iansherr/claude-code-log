@@ -7,7 +7,6 @@ no tools, no thinking, no system messages.
 
 import json
 import shutil
-import tempfile
 import uuid
 from pathlib import Path
 
@@ -200,6 +199,7 @@ class TestFilterCompact:
         result = _filter_compact(messages)
         assert len(result) == 1
         assistant = result[0]
+        assert isinstance(assistant, AssistantTranscriptEntry)
         for item in assistant.message.content:
             assert not isinstance(item, ThinkingContent)
 
@@ -228,7 +228,9 @@ class TestFilterCompact:
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
         result = _filter_compact(messages)
         assert len(result) == 2
-        assert all(not m.isSidechain for m in result)
+        for m in result:
+            assert isinstance(m, (UserTranscriptEntry, AssistantTranscriptEntry))
+            assert not m.isSidechain
 
     def test_does_not_mutate_original(self, tmp_path):
         """Filtering creates copies, not mutations of the original."""
@@ -239,9 +241,11 @@ class TestFilterCompact:
             ),
         ]
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
-        original_content_count = len(messages[0].message.content)
+        first = messages[0]
+        assert isinstance(first, AssistantTranscriptEntry)
+        original_content_count = len(first.message.content)
         _filter_compact(messages)
-        assert len(messages[0].message.content) == original_content_count
+        assert len(first.message.content) == original_content_count
 
 
 # -- Integration tests: generate_template_messages with compact ---------------
