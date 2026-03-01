@@ -19,11 +19,13 @@ from .models import (
     MessageMeta,
     MessageType,
     TranscriptEntry,
+    AssistantMessageModel,
     AssistantTranscriptEntry,
     PassthroughTranscriptEntry,
     SystemTranscriptEntry,
     SummaryTranscriptEntry,
     QueueOperationTranscriptEntry,
+    UserMessageModel,
     UserTranscriptEntry,
     ContentItem,
     TextContent,
@@ -1832,15 +1834,19 @@ def _filter_compact(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
         # Drop sidechain (subagent) messages
         if message.isSidechain:
             continue
-        text_items = [
+        text_items: list[ContentItem] = [
             item
             for item in message.message.content
             if not isinstance(item, _strip_types)
         ]
         if text_items:
             msg_copy = copy(message)
-            msg_copy.message = copy(message.message)
-            msg_copy.message.content = text_items
+            msg_model = copy(message.message)
+            msg_model.content = text_items
+            if isinstance(msg_copy, UserTranscriptEntry):
+                msg_copy.message = cast("UserMessageModel", msg_model)
+            else:
+                msg_copy.message = cast("AssistantMessageModel", msg_model)
             filtered.append(msg_copy)
     return filtered
 
