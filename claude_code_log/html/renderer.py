@@ -557,7 +557,7 @@ class HtmlRenderer(Renderer):
 
         # Get root messages (tree) and session navigation from format-neutral renderer
         root_messages, session_nav, _ = generate_template_messages(
-            messages, session_tree=session_tree, compact=self.compact
+            messages, session_tree=session_tree, shallow=self.shallow
         )
 
         # Flatten tree via pre-order traversal, formatting content along the way

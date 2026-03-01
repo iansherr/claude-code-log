@@ -879,7 +879,7 @@ class MarkdownRenderer(Renderer):
 
         # Get root messages (tree), session navigation, and rendering context
         root_messages, session_nav, ctx = generate_template_messages(
-            messages, session_tree=session_tree, compact=self.compact
+            messages, session_tree=session_tree, shallow=self.shallow
         )
         self._ctx = ctx
 

@@ -898,7 +898,7 @@ def _generate_paginated_html(
     working_directories: List[str],
     silent: bool = False,
     session_tree: Optional[SessionTree] = None,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> Path:
     """Generate paginated HTML files for combined transcript.
 
@@ -1055,7 +1055,7 @@ def _generate_paginated_html(
         # Generate HTML for this page
         page_title = f"{title} - Page {page_num}" if page_num > 1 else title
         page_renderer = HtmlRenderer()
-        page_renderer.compact = compact
+        page_renderer.shallow = shallow
         html_content = page_renderer.generate(
             page_messages,
             page_title,
@@ -1121,7 +1121,7 @@ def convert_jsonl_to(
     silent: bool = False,
     image_export_mode: Optional[str] = None,
     page_size: int = 2000,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> Path:
     """Convert JSONL transcript(s) to the specified format.
 
@@ -1137,7 +1137,7 @@ def convert_jsonl_to(
         image_export_mode: Image export mode ("placeholder", "embedded", "referenced").
         page_size: Maximum messages per page for combined transcript pagination.
             If None, uses format default (embedded for HTML, referenced for Markdown).
-        compact: If True, render only user and assistant text messages.
+        shallow: If True, render only user and assistant text messages.
     """
     if not input_path.exists():
         raise FileNotFoundError(f"Input path not found: {input_path}")
@@ -1236,7 +1236,7 @@ def convert_jsonl_to(
 
     # Generate combined output file (check if regeneration needed)
     assert output_path is not None
-    renderer = get_renderer(format, image_export_mode, compact=compact)
+    renderer = get_renderer(format, image_export_mode, shallow=shallow)
 
     # Decide whether to use pagination (HTML only, directory mode, no date filter)
     use_pagination = False
@@ -1288,7 +1288,7 @@ def convert_jsonl_to(
             working_directories,
             silent=silent,
             session_tree=session_tree,
-            compact=compact,
+            shallow=shallow,
         )
     else:
         # Use single-file generation for small projects or filtered views
@@ -1344,7 +1344,7 @@ def convert_jsonl_to(
             image_export_mode,
             silent=silent,
             session_tree=session_tree,
-            compact=compact,
+            shallow=shallow,
         )
 
     return output_path
@@ -1696,7 +1696,7 @@ def _generate_individual_session_files(
     image_export_mode: Optional[str] = None,
     silent: bool = False,
     session_tree: Optional[SessionTree] = None,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> int:
     """Generate individual files for each session in the specified format.
 
@@ -1736,7 +1736,7 @@ def _generate_individual_session_files(
     project_title = get_project_display_name(output_dir.name, working_directories)
 
     # Get renderer once outside the loop
-    renderer = get_renderer(format, image_export_mode, compact=compact)
+    renderer = get_renderer(format, image_export_mode, shallow=shallow)
     regenerated_count = 0
 
     # Generate HTML file for each session
@@ -2000,7 +2000,7 @@ def process_projects_hierarchy(
     image_export_mode: Optional[str] = None,
     silent: bool = True,
     page_size: int = 2000,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> Path:
     """Process the entire ~/.claude/projects/ hierarchy and create linked output files.
 
@@ -2157,7 +2157,7 @@ def process_projects_hierarchy(
                     silent=silent,
                     image_export_mode=image_export_mode,
                     page_size=page_size,
-                    compact=compact,
+                    shallow=shallow,
                 )
 
                 # Track timing

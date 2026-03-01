@@ -514,7 +514,7 @@ def _clear_output_files(input_path: Path, all_projects: bool, file_ext: str) -> 
     help="Export a single session by ID (full ID or prefix). Project path is optional — looks up the session globally via cache.",
 )
 @click.option(
-    "--compact",
+    "--shallow",
     is_flag=True,
     help="Render only user and assistant text messages (no tools, system, or thinking)",
 )
@@ -541,7 +541,7 @@ def main(
     image_export_mode: Optional[str],
     page_size: int,
     session_id: Optional[str],
-    compact: bool,
+    shallow: bool,
     debug: bool,
 ) -> None:
     """Convert Claude transcript JSONL files to HTML or Markdown.
@@ -751,7 +751,7 @@ def main(
                 output_format,
                 image_export_mode,
                 page_size=page_size,
-                compact=compact,
+                shallow=shallow,
             )
 
             # Count processed projects
@@ -804,7 +804,7 @@ def main(
             not no_cache,
             image_export_mode=image_export_mode,
             page_size=page_size,
-            compact=compact,
+            shallow=shallow,
         )
         if input_path.is_file():
             click.echo(f"Successfully converted {input_path} to {output_path}")

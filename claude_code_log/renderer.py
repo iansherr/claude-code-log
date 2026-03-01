@@ -569,7 +569,7 @@ class TemplateSummary:
 def generate_template_messages(
     messages: list[TranscriptEntry],
     session_tree: Optional["SessionTree"] = None,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> Tuple[list[TemplateMessage], list[dict[str, Any]], RenderingContext]:
     """Generate root messages and session navigation from transcript messages.
 
@@ -616,10 +616,10 @@ def generate_template_messages(
     with log_timing("Filter messages", t_start):
         filtered_messages = _filter_messages(messages)
 
-    # Compact mode: keep only user and assistant text messages (no tools, system, thinking)
-    if compact:
-        with log_timing("Compact filter", t_start):
-            filtered_messages = _filter_compact(filtered_messages)
+    # Shallow mode: keep only user and assistant text messages (no tools, system, thinking)
+    if shallow:
+        with log_timing("Shallow filter", t_start):
+            filtered_messages = _filter_shallow(filtered_messages)
 
     # Pass 1: Collect session metadata and token tracking
     with log_timing("Collect session info", t_start):
@@ -684,10 +684,10 @@ def generate_template_messages(
                     fork_msg.junction_forward_links.clear()
                     fork_msg.fork_point_preview = ""
 
-    # Compact post-render: remove text-derived types (bash, slash commands, etc.)
-    if compact:
-        with log_timing("Compact post-render filter", t_start):
-            ctx.messages = _filter_compact_template_messages(ctx.messages)
+    # Shallow post-render: remove text-derived types (bash, slash commands, etc.)
+    if shallow:
+        with log_timing("Shallow post-render filter", t_start):
+            ctx.messages = _filter_shallow_template_messages(ctx.messages)
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []
@@ -1818,8 +1818,8 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
     return filtered
 
 
-def _filter_compact(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
-    """Filter messages for compact mode: keep only user and assistant text.
+def _filter_shallow(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
+    """Filter messages for shallow mode: keep only user and assistant text.
 
     Strips tool items from user entries and thinking/tool items from assistant
     entries. System, summary, queue-operation, and sidechain entries are removed.
@@ -1851,13 +1851,13 @@ def _filter_compact(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
     return filtered
 
 
-# Content classes to exclude in compact mode post-render.
+# Content classes to exclude in shallow mode post-render.
 # These are text-derived types created by the user factory that we don't want
-# in a compact view (bash commands, slash command prompts, compacted summaries).
+# in a shallow view (bash commands, slash command prompts, compacted summaries).
 # We check by class rather than message_type string because several of these
 # classes (SlashCommandMessage, CommandOutputMessage, CompactedSummaryMessage)
 # return "user" as their message_type.
-_COMPACT_EXCLUDE_CLASSES = (
+_SHALLOW_EXCLUDE_CLASSES = (
     BashInputMessage,
     BashOutputMessage,
     SlashCommandMessage,
@@ -1867,19 +1867,19 @@ _COMPACT_EXCLUDE_CLASSES = (
 )
 
 
-def _filter_compact_template_messages(
+def _filter_shallow_template_messages(
     messages: list[TemplateMessage],
 ) -> list[TemplateMessage]:
-    """Post-render filter for compact mode: remove text-derived message types.
+    """Post-render filter for shallow mode: remove text-derived message types.
 
     After _render_messages creates TemplateMessages, some user text content
     gets classified into special types (bash commands, slash commands, etc.)
-    that should be excluded from compact output.
+    that should be excluded from shallow output.
     """
     return [
         msg
         for msg in messages
-        if not isinstance(msg.content, _COMPACT_EXCLUDE_CLASSES)
+        if not isinstance(msg.content, _SHALLOW_EXCLUDE_CLASSES)
         and not msg.is_sidechain
     ]
 
@@ -2477,7 +2477,7 @@ class Renderer:
     - Subclasses override methods to implement format-specific rendering
     """
 
-    compact: bool = False
+    shallow: bool = False
 
     def _dispatch_format(self, obj: Any, message: TemplateMessage) -> str:
         """Dispatch to format_{ClassName}(obj, message) based on object type."""
@@ -2757,7 +2757,7 @@ class Renderer:
 def get_renderer(
     format: str,
     image_export_mode: Optional[str] = None,
-    compact: bool = False,
+    shallow: bool = False,
 ) -> Renderer:
     """Get a renderer instance for the specified format.
 
@@ -2765,7 +2765,7 @@ def get_renderer(
         format: The output format ("html", "md", or "markdown").
         image_export_mode: Image export mode ("placeholder", "embedded", "referenced").
             If None, defaults to "embedded" for HTML and "referenced" for Markdown.
-        compact: If True, render only user and assistant text messages.
+        shallow: If True, render only user and assistant text messages.
 
     Returns:
         A Renderer instance for the specified format.
@@ -2787,7 +2787,7 @@ def get_renderer(
         renderer = MarkdownRenderer(image_export_mode=mode)
     else:
         raise ValueError(f"Unsupported format: {format}")
-    renderer.compact = compact
+    renderer.shallow = shallow
     return renderer
 
 
