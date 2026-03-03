@@ -16,6 +16,7 @@ from claude_code_log.converter import (
     _repair_parent_chains,
 )
 from claude_code_log.models import (
+    BaseTranscriptEntry,
     SummaryTranscriptEntry,
     QueueOperationTranscriptEntry,
 )
@@ -474,6 +475,8 @@ class TestRepairParentChains:
 
         messages = load_transcript(tmp_path / "session.jsonl", silent=True)
         _repair_parent_chains(messages, {})
+        assert isinstance(messages[0], BaseTranscriptEntry)
+        assert isinstance(messages[1], BaseTranscriptEntry)
         assert messages[0].parentUuid is None
         assert messages[1].parentUuid == "a"
 
@@ -490,6 +493,7 @@ class TestRepairParentChains:
         progress_chain = {"p1": None}
         _repair_parent_chains(messages, progress_chain)
         # user(a).parentUuid was "p1" (progress), repaired to None
+        assert isinstance(messages[0], BaseTranscriptEntry)
         assert messages[0].parentUuid is None
 
     def test_chained_progress_gap(self, tmp_path: Path) -> None:
@@ -509,6 +513,7 @@ class TestRepairParentChains:
         _repair_parent_chains(messages, progress_chain)
         # user(a).parentUuid was "p2", should walk through p2→p1→real_parent
         user_a = [m for m in messages if getattr(m, "uuid", None) == "a"][0]
+        assert isinstance(user_a, BaseTranscriptEntry)
         assert user_a.parentUuid == "real_parent"
 
 
