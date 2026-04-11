@@ -134,6 +134,13 @@ class TestGrepMarkdown:
         assert "Grep" in title
         assert "TODO" in title
 
+    def test_markdown_format_without_glob(self):
+        inp = GrepInput(pattern="test")
+        msg = _make_grep_message(inp)
+        renderer = MarkdownRenderer()
+        body = renderer.format_GrepInput(inp, msg)
+        assert body == ""
+
     def test_markdown_format_with_glob(self):
         inp = GrepInput(pattern="test", glob="*.py")
         msg = _make_grep_message(inp)
