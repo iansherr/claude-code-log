@@ -389,32 +389,55 @@
       line-height: 1.3;
   }
   
-  /* Within-session fork styles */
-  .junction-forward-links {
+  /* Fork point element — standalone structural element after a fork message */
+  .fork-point {
+      margin: 8px 0 4px 0;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      border-left: 3px solid #adb5bd;
+  }
+  
+  .fork-point-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-secondary, #495057);
+  }
+  
+  .fork-point-branches {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 0.8em;
+      flex-direction: column;
+      gap: 2px;
+      padding-left: 12px;
   }
   
-  .junction-link {
-      color: #6c757d;
+  .fork-point-branch {
+      display: block;
       text-decoration: none;
-      padding: 2px 6px;
-      border: 1px dashed #adb5bd;
-      border-radius: 3px;
-      transition: background-color 0.2s;
+      color: var(--text-muted, #6c757d);
+      padding: 2px 0;
+      transition: color 0.2s;
   }
   
-  .junction-link:hover {
-      background-color: #e9ecef;
-      color: var(--text-secondary);
+  .fork-point-branch:hover {
+      color: var(--text-secondary, #495057);
+  }
+  
+  /* Branch header back-reference to fork point */
+  .branch-from {
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      margin-top: 2px;
   }
   
   .branch-backlink {
-      border-left: 2px dashed #888;
-      padding-left: 6px;
+      text-decoration: none;
+      color: var(--text-muted, #6c757d);
+      transition: color 0.2s;
+  }
+  
+  .branch-backlink:hover {
+      color: var(--text-secondary, #495057);
   }
   
   /* Fork point and branch nav items — lightweight text links, not cards */
@@ -2818,6 +2841,19 @@
   
   /* Branch headers (within-session forks) — indent set via inline
      style based on tree depth (margin-left: depth*2em). */
+  .branch-header {
+      background-color: transparent;
+      box-shadow: none;
+      border: none;
+      border-left: 3px solid #adb5bd;
+      padding: 8px 14px;
+      margin: 4px 0 8px 0;
+  }
+  
+  .branch-header .header {
+      font-size: 1em;
+      margin-bottom: 0;
+  }
   
   .session-subtitle {
       font-size: 0.9em;
@@ -3396,32 +3432,55 @@
       line-height: 1.3;
   }
   
-  /* Within-session fork styles */
-  .junction-forward-links {
+  /* Fork point element — standalone structural element after a fork message */
+  .fork-point {
+      margin: 8px 0 4px 0;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      border-left: 3px solid #adb5bd;
+  }
+  
+  .fork-point-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-secondary, #495057);
+  }
+  
+  .fork-point-branches {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 0.8em;
+      flex-direction: column;
+      gap: 2px;
+      padding-left: 12px;
   }
   
-  .junction-link {
-      color: #6c757d;
+  .fork-point-branch {
+      display: block;
       text-decoration: none;
-      padding: 2px 6px;
-      border: 1px dashed #adb5bd;
-      border-radius: 3px;
-      transition: background-color 0.2s;
+      color: var(--text-muted, #6c757d);
+      padding: 2px 0;
+      transition: color 0.2s;
   }
   
-  .junction-link:hover {
-      background-color: #e9ecef;
-      color: var(--text-secondary);
+  .fork-point-branch:hover {
+      color: var(--text-secondary, #495057);
+  }
+  
+  /* Branch header back-reference to fork point */
+  .branch-from {
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      margin-top: 2px;
   }
   
   .branch-backlink {
-      border-left: 2px dashed #888;
-      padding-left: 6px;
+      text-decoration: none;
+      color: var(--text-muted, #6c757d);
+      transition: color 0.2s;
+  }
+  
+  .branch-backlink:hover {
+      color: var(--text-secondary, #495057);
   }
   
   /* Fork point and branch nav items — lightweight text links, not cards */
@@ -5291,6 +5350,7 @@
       
       
       
+      
       <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -5304,7 +5364,6 @@
           <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
               
@@ -5316,6 +5375,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -5355,8 +5415,8 @@
   </code></pre>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -5374,7 +5434,6 @@
           <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
               
@@ -5386,6 +5445,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -5403,8 +5463,8 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
       </div>
+      
       
       
       
@@ -5422,8 +5482,8 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -5456,8 +5516,8 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -5475,7 +5535,6 @@
           <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
               
@@ -5487,6 +5546,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -5504,8 +5564,8 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
       </div>
+      
       
       
       
@@ -5525,8 +5585,8 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -5555,8 +5615,8 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -5574,8 +5634,8 @@
           <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
-          
       </div>
+      
       
       
   
@@ -7933,6 +7993,19 @@
   
   /* Branch headers (within-session forks) — indent set via inline
      style based on tree depth (margin-left: depth*2em). */
+  .branch-header {
+      background-color: transparent;
+      box-shadow: none;
+      border: none;
+      border-left: 3px solid #adb5bd;
+      padding: 8px 14px;
+      margin: 4px 0 8px 0;
+  }
+  
+  .branch-header .header {
+      font-size: 1em;
+      margin-bottom: 0;
+  }
   
   .session-subtitle {
       font-size: 0.9em;
@@ -8511,32 +8584,55 @@
       line-height: 1.3;
   }
   
-  /* Within-session fork styles */
-  .junction-forward-links {
+  /* Fork point element — standalone structural element after a fork message */
+  .fork-point {
+      margin: 8px 0 4px 0;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      border-left: 3px solid #adb5bd;
+  }
+  
+  .fork-point-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-secondary, #495057);
+  }
+  
+  .fork-point-branches {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 0.8em;
+      flex-direction: column;
+      gap: 2px;
+      padding-left: 12px;
   }
   
-  .junction-link {
-      color: #6c757d;
+  .fork-point-branch {
+      display: block;
       text-decoration: none;
-      padding: 2px 6px;
-      border: 1px dashed #adb5bd;
-      border-radius: 3px;
-      transition: background-color 0.2s;
+      color: var(--text-muted, #6c757d);
+      padding: 2px 0;
+      transition: color 0.2s;
   }
   
-  .junction-link:hover {
-      background-color: #e9ecef;
-      color: var(--text-secondary);
+  .fork-point-branch:hover {
+      color: var(--text-secondary, #495057);
+  }
+  
+  /* Branch header back-reference to fork point */
+  .branch-from {
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      margin-top: 2px;
   }
   
   .branch-backlink {
-      border-left: 2px dashed #888;
-      padding-left: 6px;
+      text-decoration: none;
+      color: var(--text-muted, #6c757d);
+      transition: color 0.2s;
+  }
+  
+  .branch-backlink:hover {
+      color: var(--text-secondary, #495057);
   }
   
   /* Fork point and branch nav items — lightweight text links, not cards */
@@ -10406,6 +10502,7 @@
       
       
       
+      
       <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -10419,7 +10516,6 @@
           <div class='debug-info'>edge_001</div>
           <div class='content'><pre>Here&#x27;s a message with some **markdown** formatting, `inline code`, and even a [link](https://example.com). Let&#x27;s see how it renders!</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
               
@@ -10431,6 +10527,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -10489,8 +10586,8 @@
   <p>The markdown renderer handles all of this automatically!</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -10508,7 +10605,6 @@
           <div class='debug-info'>edge_003</div>
           <div class='content'><pre>Let&#x27;s test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
               
@@ -10520,6 +10616,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -10542,8 +10639,8 @@
               </tr>
           </table></div>
           
-          
       </div>
+      
       
       
       
@@ -10561,8 +10658,8 @@
           <div class='debug-info'>edge_005</div>
           <div class='content'><pre>Error: Tool execution failed with error: Command not found</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -10582,8 +10679,8 @@
   line breaks
   </pre></div>
           
-          
       </div>
+      
       
       
       
@@ -10606,7 +10703,6 @@
   Status: SUCCESS
   Timestamp: 2025-06-14T11:02:20Z</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-7' data-border-color='user command-output'>
               
               
@@ -10622,6 +10718,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -10642,7 +10739,6 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>I see the long Lorem ipsum text wraps nicely! Long text handling is important for readability. The CSS should handle word wrapping automatically.</p>
   </div></div>
           
-          
           <div class='fold-bar' data-message-id='d-8' data-border-color='assistant'>
               
               
@@ -10654,6 +10750,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -10671,8 +10768,8 @@
           <div class='debug-info'>edge_009</div>
           <div class='content'><div class='multiedit-tool-content'><div class='multiedit-file-path'>📝 /tmp/complex_example.py</div><div class='multiedit-count'>Applying 1 edits</div><div class='multiedit-item'><div class='multiedit-item-header'>Edit #1</div><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>#!/usr/bin/env python3</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>Complex example with multiple operations.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import json</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import sys</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>from typing import List, Dict, Any</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def process_data(items: List[Dict[str, Any]]) -&gt; None:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    Process a list of data items.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    for item in items:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        print(f&quot;Processing: {item[&#x27;name&#x27;]}&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        if item.get(&#x27;active&#x27;, False):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Active&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        else:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Inactive&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>if __name__ == &quot;__main__&quot;:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    sample_data = [</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 1&quot;, &quot;active&quot;: True},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 2&quot;, &quot;active&quot;: False},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 3&quot;, &quot;active&quot;: True}</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    ]</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    process_data(sample_data)</div></div></div></div></div>
           
-          
       </div>
+      
       
       
       
@@ -10690,8 +10787,8 @@
           <div class='debug-info'>edge_011</div>
           <div class='content'><pre>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -10709,8 +10806,8 @@
           <div class='debug-info'>edge_010</div>
           <div class='content'><pre>wow error</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -10729,6 +10826,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -10787,8 +10885,8 @@
               </tr>
           </table></div>
           
-          
       </div>
+      
       
       
   
@@ -13146,6 +13244,19 @@
   
   /* Branch headers (within-session forks) — indent set via inline
      style based on tree depth (margin-left: depth*2em). */
+  .branch-header {
+      background-color: transparent;
+      box-shadow: none;
+      border: none;
+      border-left: 3px solid #adb5bd;
+      padding: 8px 14px;
+      margin: 4px 0 8px 0;
+  }
+  
+  .branch-header .header {
+      font-size: 1em;
+      margin-bottom: 0;
+  }
   
   .session-subtitle {
       font-size: 0.9em;
@@ -13724,32 +13835,55 @@
       line-height: 1.3;
   }
   
-  /* Within-session fork styles */
-  .junction-forward-links {
+  /* Fork point element — standalone structural element after a fork message */
+  .fork-point {
+      margin: 8px 0 4px 0;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      border-left: 3px solid #adb5bd;
+  }
+  
+  .fork-point-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-secondary, #495057);
+  }
+  
+  .fork-point-branches {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 0.8em;
+      flex-direction: column;
+      gap: 2px;
+      padding-left: 12px;
   }
   
-  .junction-link {
-      color: #6c757d;
+  .fork-point-branch {
+      display: block;
       text-decoration: none;
-      padding: 2px 6px;
-      border: 1px dashed #adb5bd;
-      border-radius: 3px;
-      transition: background-color 0.2s;
+      color: var(--text-muted, #6c757d);
+      padding: 2px 0;
+      transition: color 0.2s;
   }
   
-  .junction-link:hover {
-      background-color: #e9ecef;
-      color: var(--text-secondary);
+  .fork-point-branch:hover {
+      color: var(--text-secondary, #495057);
+  }
+  
+  /* Branch header back-reference to fork point */
+  .branch-from {
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      margin-top: 2px;
   }
   
   .branch-backlink {
-      border-left: 2px dashed #888;
-      padding-left: 6px;
+      text-decoration: none;
+      color: var(--text-muted, #6c757d);
+      transition: color 0.2s;
+  }
+  
+  .branch-backlink:hover {
+      color: var(--text-secondary, #495057);
   }
   
   /* Fork point and branch nav items — lightweight text links, not cards */
@@ -15682,6 +15816,7 @@
       
       
       
+      
       <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -15695,7 +15830,6 @@
           <div class='debug-info'>session_b_00</div>
           <div class='content'><pre>This is from a different session file to test multi-session handling.</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
               
@@ -15707,6 +15841,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -15727,8 +15862,8 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Indeed! This message is from a different JSONL file, which should help test the session divider logic. Only the first session should show a divider.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -15746,8 +15881,8 @@
           <div class='debug-info'>session_b_00</div>
           <div class='content'><pre>Perfect! This should appear without any session divider above it.</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -15774,6 +15909,7 @@
       
       
       
+      
       <div class='message user d-4' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤷 User</span>
@@ -15787,7 +15923,6 @@
           <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-5' data-border-color='user'>
               
               
@@ -15799,6 +15934,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -15838,8 +15974,8 @@
   </code></pre>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -15857,7 +15993,6 @@
           <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
               
@@ -15869,6 +16004,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -15886,8 +16022,8 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
       </div>
+      
       
       
       
@@ -15905,8 +16041,8 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -15939,8 +16075,8 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -15958,7 +16094,6 @@
           <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-11' data-border-color='user'>
               
               
@@ -15970,6 +16105,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -15987,8 +16123,8 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
       </div>
+      
       
       
       
@@ -16008,8 +16144,8 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -16038,8 +16174,8 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -16057,8 +16193,8 @@
           <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
-          
       </div>
+      
       
       
   
@@ -18416,6 +18552,19 @@
   
   /* Branch headers (within-session forks) — indent set via inline
      style based on tree depth (margin-left: depth*2em). */
+  .branch-header {
+      background-color: transparent;
+      box-shadow: none;
+      border: none;
+      border-left: 3px solid #adb5bd;
+      padding: 8px 14px;
+      margin: 4px 0 8px 0;
+  }
+  
+  .branch-header .header {
+      font-size: 1em;
+      margin-bottom: 0;
+  }
   
   .session-subtitle {
       font-size: 0.9em;
@@ -18994,32 +19143,55 @@
       line-height: 1.3;
   }
   
-  /* Within-session fork styles */
-  .junction-forward-links {
+  /* Fork point element — standalone structural element after a fork message */
+  .fork-point {
+      margin: 8px 0 4px 0;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      border-left: 3px solid #adb5bd;
+  }
+  
+  .fork-point-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-secondary, #495057);
+  }
+  
+  .fork-point-branches {
       display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 0.8em;
+      flex-direction: column;
+      gap: 2px;
+      padding-left: 12px;
   }
   
-  .junction-link {
-      color: #6c757d;
+  .fork-point-branch {
+      display: block;
       text-decoration: none;
-      padding: 2px 6px;
-      border: 1px dashed #adb5bd;
-      border-radius: 3px;
-      transition: background-color 0.2s;
+      color: var(--text-muted, #6c757d);
+      padding: 2px 0;
+      transition: color 0.2s;
   }
   
-  .junction-link:hover {
-      background-color: #e9ecef;
-      color: var(--text-secondary);
+  .fork-point-branch:hover {
+      color: var(--text-secondary, #495057);
+  }
+  
+  /* Branch header back-reference to fork point */
+  .branch-from {
+      font-size: 0.85em;
+      color: var(--text-muted, #6c757d);
+      margin-top: 2px;
   }
   
   .branch-backlink {
-      border-left: 2px dashed #888;
-      padding-left: 6px;
+      text-decoration: none;
+      color: var(--text-muted, #6c757d);
+      transition: color 0.2s;
+  }
+  
+  .branch-backlink:hover {
+      color: var(--text-secondary, #495057);
   }
   
   /* Fork point and branch nav items — lightweight text links, not cards */
@@ -20889,6 +21061,7 @@
       
       
       
+      
       <div class='message user d-0' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -20902,7 +21075,6 @@
           <div class='debug-info'>msg_001</div>
           <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
               
@@ -20914,6 +21086,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -20953,8 +21126,8 @@
   </code></pre>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -20972,7 +21145,6 @@
           <div class='debug-info'>msg_003</div>
           <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
               
@@ -20984,6 +21156,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -21001,8 +21174,8 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
       </div>
+      
       
       
       
@@ -21020,8 +21193,8 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -21054,8 +21227,8 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -21073,7 +21246,6 @@
           <div class='debug-info'>msg_007</div>
           <div class='content'><pre>Can you run that example to show the output?</pre></div>
           
-          
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
               
@@ -21085,6 +21257,7 @@
           </div>
           
       </div>
+      
       
       
       
@@ -21102,8 +21275,8 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
       </div>
+      
       
       
       
@@ -21123,8 +21296,8 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
       </div>
+      
       
       
       
@@ -21153,8 +21326,8 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
       </div>
+      
       
       
       
@@ -21172,8 +21345,8 @@
           <div class='debug-info'>msg_011</div>
           <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
           
-          
       </div>
+      
       
       
   

@@ -98,9 +98,9 @@
 
     {% for message, message_title, html_content, formatted_timestamp in messages %}
     {% if is_session_header(message) %}
-    <div class="session-divider"></div>
+    {% if not message.is_branch_header %}<div class="session-divider"></div>{% endif %}
     <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
-        <div class='header'>Session: {{ html_content|safe }}</div>
+        <div class='header'>{% if message.is_branch_header %}&#x21b3; {% else %}Session: {% endif %}{{ html_content|safe }}</div>
         {% if message.has_children %}
         <div class='fold-bar' data-message-id='{{ message.message_id }}' data-border-color='session-header'>
             {% if message.immediate_children_count == message.total_descendants_count %}
@@ -143,13 +143,6 @@
         </div>
         {% if message.meta %}<div class='debug-info'>{{ message.meta.uuid[:12] }}{% if message.meta.parent_uuid %} &rarr; {{ message.meta.parent_uuid[:12] }}{% endif %}</div>{% endif %}
         <div class='content{% if markdown %} markdown{% endif %}'>{{ html_content | safe }}</div>
-        {% if message.junction_forward_links %}
-        <div class='junction-forward-links'>
-            {% for branch_sid, branch_idx in message.junction_forward_links %}
-            <a href='#msg-d-{{ branch_idx }}' class='junction-link'>&#x2192; {{ branch_sid.split('@')[-1][:8] }}</a>
-            {% endfor %}
-        </div>
-        {% endif %}
         {% if message.has_children %}
         <div class='fold-bar' data-message-id='{{ message.message_id }}' data-border-color='{{ msg_css_class }}'>
             {% if message.immediate_children_count == message.total_descendants_count %}
@@ -171,6 +164,17 @@
             {% endif %}
         </div>
         {% endif %}
+    </div>
+    {% endif %}
+    {% if message.junction_forward_links %}
+    {# Fork point element — rendered OUTSIDE the message box as a structural navigation element #}
+    <div class='fork-point{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}'>
+        <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
+        <div class='fork-point-branches'>
+            {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
+            <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
     {% endfor %}

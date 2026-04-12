@@ -89,23 +89,24 @@ def format_session_header_content(content: SessionHeaderMessage) -> str:
     """
     escaped_title = html.escape(content.title)
     if content.is_branch and content.parent_message_index is not None:
-        # Branch header: backlink to fork point with context
-        fork_label = "fork point"
+        # Branch header: compact with back-reference to fork point
+        fork_backref = ""
         if content.parent_session_summary:
-            escaped_summary = html.escape(content.parent_session_summary)
-            fork_label = escaped_summary
-        # Show original session ID for context
-        orig_id = ""
-        if content.original_session_id:
-            orig_id = html.escape(content.original_session_id[:8])
-        link = (
-            f'<a href="#msg-d-{content.parent_message_index}" '
-            f'class="session-backlink branch-backlink">'
-            f"&#x21b3; branched from {fork_label}</a>"
-        )
-        return (
-            f"{orig_id} {link}{escaped_title}" if orig_id else f"{link}{escaped_title}"
-        )
+            escaped_fork = html.escape(content.parent_session_summary)
+            fork_backref = (
+                f'<div class="branch-from">'
+                f'from <a href="#msg-d-{content.parent_message_index}" '
+                f'class="branch-backlink">'
+                f"&#x2442; Fork point &bull; {escaped_fork}</a></div>"
+            )
+        else:
+            fork_backref = (
+                f'<div class="branch-from">'
+                f'from <a href="#msg-d-{content.parent_message_index}" '
+                f'class="branch-backlink">'
+                f"&#x2442; Fork point</a></div>"
+            )
+        return f"{escaped_title}{fork_backref}"
     if content.parent_session_id:
         parent_label = content.parent_session_summary or content.parent_session_id[:8]
         escaped_parent = html.escape(parent_label)

@@ -194,9 +194,12 @@ class TemplateMessage:
         # Within-session fork tracking: effective session/branch ID for grouping
         self._render_session_id: Optional[str] = None
 
-        # Junction forward links: [(branch_session_id, branch_header_msg_index)]
+        # Junction forward links: [(branch_sid, branch_header_msg_index, branch_preview)]
         # Set on messages that are fork points, for rendering forward links
-        self.junction_forward_links: list[tuple[str, Optional[int]]] = []
+        self.junction_forward_links: list[tuple[str, Optional[int], str]] = []
+
+        # Fork point preview text (short excerpt of fork point message content)
+        self.fork_point_preview: str = ""
 
     # -- Properties derived from content/meta --
 
@@ -633,18 +636,37 @@ def generate_template_messages(
     if ctx.junction_targets:
         # Build UUID → TemplateMessage index for fast lookup
         uuid_to_msg: dict[str, TemplateMessage] = {}
+        # Build msg_index → TemplateMessage for branch preview lookup
+        idx_to_msg: dict[int, TemplateMessage] = {}
         for msg in ctx.messages:
             if msg.meta.uuid:
                 uuid_to_msg[msg.meta.uuid] = msg
+            if msg.message_index is not None:
+                idx_to_msg[msg.message_index] = msg
         for uuid, target_sids in ctx.junction_targets.items():
             # Only add forward links for within-session fork branches
             branch_targets = [sid for sid in target_sids if "@" in sid]
             if branch_targets and uuid in uuid_to_msg:
                 fork_msg = uuid_to_msg[uuid]
+                fork_msg.fork_point_preview = _fork_point_preview(fork_msg, ctx)
                 for branch_sid in branch_targets:
                     branch_idx = ctx.session_first_message.get(branch_sid)
                     if branch_idx is not None:
-                        fork_msg.junction_forward_links.append((branch_sid, branch_idx))
+                        # Get branch preview from the branch header title
+                        branch_preview = ""
+                        branch_header = idx_to_msg.get(branch_idx)
+                        if branch_header and isinstance(
+                            branch_header.content, SessionHeaderMessage
+                        ):
+                            # Extract preview from branch title (e.g. "Branch • preview...")
+                            title = branch_header.content.title
+                            if " • " in title:
+                                branch_preview = title.split(" • ", 1)[1]
+                            else:
+                                branch_preview = title
+                        fork_msg.junction_forward_links.append(
+                            (branch_sid, branch_idx, branch_preview)
+                        )
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []

@@ -567,6 +567,19 @@
 
 /* Branch headers (within-session forks) — indent set via inline
    style based on tree depth (margin-left: depth*2em). */
+.branch-header {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    border-left: 3px solid #adb5bd;
+    padding: 8px 14px;
+    margin: 4px 0 8px 0;
+}
+
+.branch-header .header {
+    font-size: 1em;
+    margin-bottom: 0;
+}
 
 .session-subtitle {
     font-size: 0.9em;
