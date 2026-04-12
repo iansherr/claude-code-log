@@ -429,6 +429,107 @@ class TestCLIMainCommand:
         assert output_path.exists()
 
 
+class TestSessionIdOption:
+    """Tests for --session-id CLI option."""
+
+    def test_session_id_no_path_not_in_cache_errors(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ):
+        """--session-id without path and no cache match exits with error."""
+        monkeypatch.setenv("CLAUDE_CODE_LOG_CACHE_PATH", str(tmp_path / "test.db"))
+        runner = CliRunner()
+        result = runner.invoke(main, ["--session-id", "abc12345"])
+        assert result.exit_code != 0
+        assert "not found" in result.output.lower()
+
+    def test_session_id_no_path_global_lookup(
+        self, cli_projects_setup: ProjectsSetup, sample_jsonl_content: list[dict]
+    ):
+        """--session-id without path finds session via cache global lookup."""
+        project_dir = create_project_with_jsonl(
+            cli_projects_setup.projects_dir, "my-project", sample_jsonl_content
+        )
+        runner = CliRunner()
+        # First, generate with path to populate cache
+        result = runner.invoke(main, [str(project_dir), "--session-id", "session-1"])
+        assert result.exit_code == 0
+
+        # Now use --session-id without path, relying on global cache lookup
+        result = runner.invoke(
+            main,
+            [
+                "--session-id",
+                "session-1",
+                "--projects-dir",
+                str(cli_projects_setup.projects_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Successfully exported session" in result.output
+
+    def test_session_id_valid_full_id(
+        self, cli_projects_setup: ProjectsSetup, sample_jsonl_content: list[dict]
+    ):
+        """--session-id with a valid full session ID generates file and prints success."""
+        project_dir = create_project_with_jsonl(
+            cli_projects_setup.projects_dir, "my-project", sample_jsonl_content
+        )
+        runner = CliRunner()
+        result = runner.invoke(main, [str(project_dir), "--session-id", "session-1"])
+        assert result.exit_code == 0
+        assert "Successfully exported session" in result.output
+        # Generated file must exist
+        assert len(list(project_dir.glob("session-session-1.*"))) > 0
+
+    def test_session_id_prefix(
+        self, cli_projects_setup: ProjectsSetup, sample_jsonl_content: list[dict]
+    ):
+        """--session-id with a unique prefix resolves to the full ID."""
+        project_dir = create_project_with_jsonl(
+            cli_projects_setup.projects_dir, "my-project", sample_jsonl_content
+        )
+        runner = CliRunner()
+        # "sess" is a valid prefix of "session-1"
+        result = runner.invoke(main, [str(project_dir), "--session-id", "sess"])
+        assert result.exit_code == 0
+        assert "Successfully exported session" in result.output
+
+    def test_session_id_unknown_exits_nonzero(
+        self, cli_projects_setup: ProjectsSetup, sample_jsonl_content: list[dict]
+    ):
+        """--session-id with an unknown ID exits non-zero."""
+        project_dir = create_project_with_jsonl(
+            cli_projects_setup.projects_dir, "my-project", sample_jsonl_content
+        )
+        runner = CliRunner()
+        result = runner.invoke(
+            main, [str(project_dir), "--session-id", "zzzzzzzz-does-not-exist"]
+        )
+        assert result.exit_code != 0
+
+    def test_session_id_with_output_flag(
+        self, cli_projects_setup: ProjectsSetup, sample_jsonl_content: list[dict]
+    ):
+        """--session-id combined with --output writes to the specified path."""
+        project_dir = create_project_with_jsonl(
+            cli_projects_setup.projects_dir, "my-project", sample_jsonl_content
+        )
+        output_path = cli_projects_setup.projects_dir / "custom-session.html"
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                str(project_dir),
+                "--session-id",
+                "session-1",
+                "--output",
+                str(output_path),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+
 class TestCLIErrorHandling:
     """Tests for CLI error handling paths."""
 
