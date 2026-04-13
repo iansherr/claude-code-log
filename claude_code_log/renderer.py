@@ -662,12 +662,19 @@ def generate_template_messages(
                             # Extract preview from branch title (e.g. "Branch • preview...")
                             title = branch_header.content.title
                             if " • " in title:
-                                branch_preview = title.split(" • ", 1)[1]
-                            else:
-                                branch_preview = title
+                                preview = title.split(" • ", 1)[1]
+                                # Distinguish real content from UUID fallback
+                                uuid_fragment = branch_sid.split("@")[-1][:8]
+                                if preview != uuid_fragment:
+                                    branch_preview = preview
                         fork_msg.junction_forward_links.append(
                             (branch_sid, branch_idx, branch_preview)
                         )
+                # Elide fork points without at least 2 non-empty branches
+                non_empty = sum(1 for _, _, p in fork_msg.junction_forward_links if p)
+                if non_empty < 2:
+                    fork_msg.junction_forward_links.clear()
+                    fork_msg.fork_point_preview = ""
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []

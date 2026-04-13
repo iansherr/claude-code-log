@@ -607,6 +607,10 @@ def deduplicate_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntr
         elif isinstance(message, SummaryTranscriptEntry):
             # Summaries have no timestamp or uuid - use leafUuid to keep them distinct
             content_key = message.leafUuid
+        elif isinstance(message, PassthroughTranscriptEntry):
+            # Passthrough entries are DAG chain nodes — use uuid to prevent
+            # false dedup of entries with the same timestamp (e.g. attachments)
+            content_key = message.uuid
 
         # Create deduplication key
         dedup_key = (message_type, timestamp, is_meta, session_id, content_key)
