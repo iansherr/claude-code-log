@@ -252,6 +252,180 @@ class TestFilterMinimal:
         assert len(first.message.content) == original_content_count
 
 
+# -- Tests for HIGH detail level -----------------------------------------------
+
+
+class TestHighTemplateMessages:
+    """Test --detail high through generate_template_messages."""
+
+    def test_high_keeps_tool_use(self, tmp_path):
+        """HIGH keeps tool_use messages (tools are valuable signal)."""
+        entries = [
+            _user_entry("Hello"),
+            _assistant_entry(
+                "Let me read that",
+                extra_content=[_tool_use_item("Read", "tool_read")],
+            ),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.HIGH
+        )
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "tool_use" in types
+
+    def test_high_keeps_tool_result(self, tmp_path):
+        """HIGH keeps tool_result messages."""
+        entries = [
+            _user_entry(
+                "",
+                extra_content=[_tool_result_item("tool_read")],
+            ),
+            _assistant_entry("Here's what I found"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.HIGH
+        )
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "tool_result" in types
+
+    def test_high_keeps_thinking(self, tmp_path):
+        """HIGH preserves thinking messages (not filtered at this level)."""
+        entries = [
+            _user_entry("What's 2+2?"),
+            _assistant_entry(
+                "4",
+                extra_content=[_thinking_item("The answer is obviously 4")],
+            ),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.HIGH
+        )
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "thinking" in types
+
+    def test_high_drops_system_messages(self, tmp_path):
+        """HIGH removes system messages (noise)."""
+        entries = [
+            _user_entry("Hello"),
+            _system_entry("System info message"),
+            _assistant_entry("Hi"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.HIGH
+        )
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "system" not in types
+
+    def test_high_drops_slash_commands(self, tmp_path):
+        """HIGH removes slash command messages."""
+        entries = [
+            _user_entry("/exit"),
+            _assistant_entry("Goodbye"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.HIGH)
+        for msg in ctx.messages:
+            assert msg.content.__class__.__name__ not in (
+                "SlashCommandMessage",
+                "UserSlashCommandMessage",
+            ), f"Slash command found in HIGH output: {msg.content.__class__.__name__}"
+
+
+# -- Tests for LOW detail level ------------------------------------------------
+
+
+class TestLowTemplateMessages:
+    """Test --detail low through generate_template_messages."""
+
+    def test_low_keeps_websearch(self, tmp_path):
+        """LOW keeps WebSearch tool_use/result (key signal)."""
+        entries = [
+            _user_entry("Search for Python docs"),
+            _assistant_entry(
+                "Searching...",
+                extra_content=[_tool_use_item("WebSearch", "tool_ws")],
+            ),
+            _user_entry(
+                "",
+                extra_content=[_tool_result_item("tool_ws")],
+                timestamp="2025-01-01T10:00:03Z",
+            ),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
+        tool_names = [
+            getattr(msg.content, "tool_name", None)
+            for msg in ctx.messages
+            if msg.content.message_type in ("tool_use", "tool_result")
+        ]
+        assert "WebSearch" in tool_names
+
+    def test_low_drops_read_tool(self, tmp_path):
+        """LOW drops Read tool_use/result (not a key signal)."""
+        entries = [
+            _user_entry("Read the file"),
+            _assistant_entry(
+                "Reading...",
+                extra_content=[_tool_use_item("Read", "tool_rd")],
+            ),
+            _user_entry(
+                "",
+                extra_content=[_tool_result_item("tool_rd")],
+                timestamp="2025-01-01T10:00:03Z",
+            ),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
+        tool_names = [
+            getattr(msg.content, "tool_name", None)
+            for msg in ctx.messages
+            if msg.content.message_type in ("tool_use", "tool_result")
+        ]
+        assert "Read" not in tool_names
+
+    def test_low_drops_thinking(self, tmp_path):
+        """LOW removes thinking messages."""
+        entries = [
+            _user_entry("What's 2+2?"),
+            _assistant_entry(
+                "4",
+                extra_content=[_thinking_item("The answer is obviously 4")],
+            ),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "thinking" not in types
+
+    def test_low_keeps_user_and_assistant(self, tmp_path):
+        """LOW still keeps user and assistant text messages."""
+        entries = [
+            _user_entry("Hello"),
+            _assistant_entry("Hi there!"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "user" in types
+        assert "assistant" in types
+
+    def test_low_drops_system_messages(self, tmp_path):
+        """LOW removes system messages (same as HIGH)."""
+        entries = [
+            _user_entry("Hello"),
+            _system_entry("System info"),
+            _assistant_entry("Hi"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
+        types = {msg.content.message_type for msg in ctx.messages}
+        assert "system" not in types
+
+
 # -- Integration tests: generate_template_messages with minimal ---------------
 
 
