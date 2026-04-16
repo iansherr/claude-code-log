@@ -1307,6 +1307,7 @@ def convert_jsonl_to(
                 or to_date is not None
                 or not output_path.exists()
                 or detail != DetailLevel.FULL
+                or compact
             )
         else:
             # Fallback: old logic for single file mode or no cache
@@ -1317,6 +1318,7 @@ def convert_jsonl_to(
                 or not output_path.exists()
                 or (input_path.is_dir() and cache_was_updated)
                 or detail != DetailLevel.FULL
+                or compact
             )
 
         if should_regenerate:
