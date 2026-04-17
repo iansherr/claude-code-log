@@ -1463,15 +1463,25 @@ def _build_message_hierarchy(messages: list[TemplateMessage]) -> None:
 
     Ancestry stores message_index integers. Templates prefix with "d-" for CSS classes.
 
+    Branch-headers (within-session forks) sit at fractional level 0.5 —
+    between the parent session-header (0) and user messages (1) — so they
+    nest under the parent session rather than restart the ancestry. This
+    lets fold controls on the parent session cascade into branch content.
+
     Args:
         messages: List of template messages in their final order (modified in place)
     """
-    # Stack of (level, message_index) tuples
-    hierarchy_stack: list[tuple[int, int]] = []
+    # Stack of (level, message_index) tuples. Levels may be fractional for
+    # within-session branch-headers; see class-level note.
+    hierarchy_stack: list[tuple[float, int]] = []
 
     for message in messages:
-        # Session headers are level 0
-        if message.is_session_header:
+        # Branch-headers sit between session (0) and user (1) so they stay
+        # within their parent session's ancestry chain.
+        current_level: float
+        if message.is_branch_header:
+            current_level = 0.5
+        elif message.is_session_header:
             current_level = 0
         else:
             # Determine level from message type and modifiers

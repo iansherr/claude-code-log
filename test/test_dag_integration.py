@@ -729,10 +729,16 @@ class TestWithinSessionForkRealData:
             result, session_tree=session_tree
         )
 
-        # Find branch headers
+        # Branch-headers live under their parent session (ancestry 0.5),
+        # so walk the full tree rather than inspecting only roots.
+        def walk(msgs):
+            for m in msgs:
+                yield m
+                yield from walk(m.children)
+
         branch_headers = [
             tm
-            for tm in root_messages
+            for tm in walk(root_messages)
             if isinstance(tm.content, SessionHeaderMessage) and tm.content.is_branch
         ]
         assert len(branch_headers) >= 2

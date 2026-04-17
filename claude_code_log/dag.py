@@ -398,8 +398,13 @@ def _walk_session_with_forks(
                 # alongside a SessionStart:resume attachment.  Neither
                 # branch carries conversation, so collapse them all as
                 # structural side-branches and end the chain here.
+                # The subtree check is defense-in-depth: today passthrough
+                # entries are leaves, but a future passthrough type with
+                # conversational descendants must fall through to the
+                # normal fork logic.
                 if all(
                     isinstance(nodes[c].entry, PassthroughTranscriptEntry)
+                    and _is_structural_subtree(c, session_uuids, nodes)
                     for c in same_session_children
                 ):
                     for pc in same_session_children:

@@ -99,7 +99,7 @@
     {% for message, message_title, html_content, formatted_timestamp in messages %}
     {% if is_session_header(message) %}
     {% if not message.is_branch_header %}<div class="session-divider"></div>{% endif %}
-    <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
+    <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
         <div class='header'>{% if message.is_branch_header %}&#x21b3; {% else %}Session: {% endif %}{{ html_content|safe }}</div>
         {% if message.has_children %}
         <div class='fold-bar' data-message-id='{{ message.message_id }}' data-border-color='session-header'>
