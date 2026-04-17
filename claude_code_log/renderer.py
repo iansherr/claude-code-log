@@ -2080,8 +2080,10 @@ def _render_messages(
                 ctx.register(system_msg)
             continue
 
-        # Skip summary messages (should be filtered in pass 1, but be defensive)
-        if isinstance(message, SummaryTranscriptEntry):
+        # Skip summary and passthrough entries (should be filtered in pass 1,
+        # but be defensive — they lack .message / BaseTranscriptEntry fields
+        # used by the rendering path below)
+        if isinstance(message, (SummaryTranscriptEntry, PassthroughTranscriptEntry)):
             continue
 
         # Handle queue-operation 'remove' messages as user messages
