@@ -1772,7 +1772,7 @@ def generate_single_session_file(
     ensure_fresh_cache(input_path, cache_manager, silent=True)
 
     # Load messages from JSONL files
-    messages = load_directory_transcripts(input_path, cache_manager)
+    messages, _session_tree = load_directory_transcripts(input_path, cache_manager)
 
     # Collect all known session IDs: from loaded messages + cache metadata
     all_session_ids: set[str] = {
