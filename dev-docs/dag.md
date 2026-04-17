@@ -332,12 +332,21 @@ graph TD
 Detected by `_is_subtree_dead_end()`: exactly one user child has a live
 continuation; every assistant child's subtree dead-ends within the session.
 
-#### Structural-only fork — all children are passthrough
+#### Structural-side-branch collapse — at most one non-structural sibling
 
-Every same-session child is a `PassthroughTranscriptEntry` (attachments,
-`hook_success`, `SessionStart:resume`), often at far-apart timestamps so
-the compaction-replay heuristic doesn't apply. Neither "branch" carries
-conversation.
+A `PassthroughTranscriptEntry` (attachment, `hook_success`,
+`SessionStart:resume`, `progress`) alongside a regular sibling is an
+artifact, not a fork. The DAG walker partitions children into
+`structural_kids` (passthrough roots with a structural subtree per
+`_is_structural_subtree`) and `non_structural`, then collapses when
+`structural_kids and len(non_structural) <= 1`. The chain continues
+through the single non-structural child, or terminates if there isn't
+one.
+
+This catches two real-world shapes with the same rule:
+
+**Shape A — all-passthrough:** two attachments on the same parent, often
+at far-apart timestamps so the compaction-replay heuristic doesn't apply.
 
 ```mermaid
 graph TD
@@ -347,11 +356,38 @@ graph TD
     class P1,P2 structural
 ```
 
-Handled directly in `_walk_session_with_forks` **before** `_stitch_tool_results`
-is called: when every child is a passthrough **and** each child's subtree
-is itself structural (defense-in-depth for hypothetical future passthrough
-types with conversational descendants), collapse all children into the
-chain and terminate there.
+Collapsed: both passthroughs appended to the chain (chronological), chain
+terminates (`current = None`).
+
+**Shape B — mixed user + progress sibling:** a conversational child
+alongside a bare `<progress>` leaf or chain. Previously fell through to
+the different-timestamps fork path and produced a spurious
+`Fork point (1 branches)` entry after `alice-fix-nav-anchors` pruned the
+dead-link side.
+
+```mermaid
+graph TD
+    A["A(assistant)"] --> U["U(next turn)"]
+    A --> P["🗿 progress (structural leaf or chain)"]
+    classDef structural fill:#eef,stroke:#99c
+    class P structural
+```
+
+Collapsed: `P` stitched chronologically into the chain, `current = U`
+continues the conversation.
+
+The partition is strict about what counts as structural: only
+`PassthroughTranscriptEntry` roots with a purely structural subtree
+qualify. A `UserTranscriptEntry` with a passthrough-only subtree (the
+Variant 1 shape in the next subsection) falls into `non_structural` and
+is handled by `_stitch_tool_results` instead — Variant 1 and the
+structural-collapse paths don't overlap.
+
+**Defense-in-depth** — the `_is_structural_subtree(c)` check is applied
+in addition to the `isinstance(c, PassthroughTranscriptEntry)` test.
+Today passthrough entries are always leaves, but if a future passthrough
+type ever carries conversational descendants, it will correctly fall
+through to the normal fork logic instead of masking the content.
 
 #### Summary of detection criteria
 
@@ -359,8 +395,8 @@ chain and terminate there.
 |---------|-----------|--------|
 | Variant 1 | `_is_structural_subtree(U)` true for every user child; exactly one assistant continuation | Splice user children ahead of assistant continuation |
 | Variant 2 | `_is_subtree_dead_end(A)` true for every assistant child; exactly one user continuation | Splice assistant children ahead of user continuation |
-| Structural-only | Every child is `PassthroughTranscriptEntry` with structural subtree | Collapse all into chain, end |
-| Real rewind | Multiple children with conversational subtrees at different timestamps | Real within-session fork → branch pseudo-sessions |
+| Structural side-branch collapse | At least one structural passthrough child; ≤1 non-structural child | Collapse structural children into chain; continue via the single non-structural (or terminate) |
+| Real rewind | Multiple non-structural children at different timestamps | Real within-session fork → branch pseudo-sessions |
 | Compaction replay | Multiple children sharing the same timestamp | Follow first, skip rest (see next section) |
 
 Subtree descendants of stitched/collapsed side-branch nodes are added to
@@ -410,12 +446,47 @@ graph TB
 This keeps the signal useful: orphan user/assistant entries still surface
 as warnings; routine `/compact` multi-root sessions stay quiet.
 
-**Nav landmarks** (`build_session_nav` in renderer.py): each
+**Nav landmarks** (`prepare_session_navigation` in renderer.py): each
 `CompactedSummaryMessage` in a session becomes an `is_compaction_point`
 nav item (📦 glyph, solid border, depth = parent+1), chronologically
 ordered. Clicking jumps to the summary's `#msg-d-X` anchor so the reader
 can jump to any compaction point from the session index. Compact points
 inside a branch are correctly scoped via `render_session_id`.
+
+**Enriched label** — the landmark label surfaces the pre-compaction
+token count and timestamp read from the preceding `system/compact_boundary`
+entry's `compactMetadata`:
+
+```
+📦 Conversation compacted (115k tokens) • 2026-04-14 09:09:28
+```
+
+Plumbing:
+
+- `SystemTranscriptEntry.compactMetadata: Optional[dict]` (models.py)
+  carries the raw JSONL field (`preTokens`, `trigger`, `postTokens`,
+  `durationMs`).
+- `SystemMessage.compact_pre_tokens: Optional[int]` and
+  `SystemMessage.compact_trigger: Optional[str]` are populated at
+  factory time (`create_system_message`) only for
+  `subtype == "compact_boundary"`, with `isinstance()` guards against
+  malformed JSONL.
+- `_compact_nav_label(comp_msg, uuid_to_msg)` walks from the
+  `CompactedSummaryMessage` to its parent via `meta.parent_uuid`, reads
+  the token count off the parent's `SystemMessage` when available, and
+  formats `preTokens // 1000` as `Nk tokens` (sub-1000 values render
+  verbatim).
+
+The label degrades gracefully whenever any step is missing — no
+`parent_uuid`, parent filtered out (e.g. at `HIGH` detail level), parent
+isn't a `SystemMessage`, or `compact_pre_tokens` is None/zero — by
+dropping the `(Nk tokens)` fragment while still appending the summary's
+own timestamp. Older transcripts without `compactMetadata` get
+`Conversation compacted • <timestamp>`.
+
+`compact_trigger` (`"manual"` / `"auto"`) is plumbed but not yet
+rendered; visualization is deferred pending a decision on whether to
+distinguish the two in the label glyph or suffix.
 
 ---
 
