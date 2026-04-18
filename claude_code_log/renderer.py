@@ -693,7 +693,8 @@ def generate_template_messages(
     # Detail-level post-render: remove text-derived types per level
     if detail != DetailLevel.FULL:
         with log_timing(f"Detail post-render filter ({detail.value})", t_start):
-            ctx.messages = _filter_template_by_detail(ctx.messages, detail)
+            filtered = _filter_template_by_detail(ctx.messages, detail)
+            _reindex_filtered_context(ctx, filtered)
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []
@@ -2018,6 +2019,43 @@ def _filter_by_detail(
                 msg_copy.message = cast("AssistantMessageModel", msg_model)
             filtered.append(msg_copy)
     return filtered
+
+
+def _reindex_filtered_context(
+    ctx: RenderingContext, filtered: list[TemplateMessage]
+) -> None:
+    """Rebuild index references after the detail-level filter drops messages.
+
+    `RenderingContext.get(i)` treats `message_index` as a position in
+    `ctx.messages`, and several downstream passes (pair identification,
+    session nav) use stored `message_index` values to look things up.
+    When `_filter_template_by_detail` drops messages, the surviving
+    entries still carry their original indices — so `ctx.get()` returns
+    the wrong message and session navigation points at stale anchors.
+
+    Rewrite `ctx.messages` to the filtered list and remap every index
+    reference to the new positions. Entries whose targets were filtered
+    out are dropped (session_first_message) or unset (pair_first,
+    pair_last), letting later passes regenerate them from scratch.
+    """
+    index_remap: dict[int, int] = {}
+    for new_idx, msg in enumerate(filtered):
+        old_idx = msg.message_index
+        if old_idx is not None:
+            index_remap[old_idx] = new_idx
+        msg.message_index = new_idx
+        msg.content.message_index = new_idx
+        # Pair linkage is re-established post-filter by
+        # `_identify_message_pairs`; clear any stale references first.
+        msg.pair_first = None
+        msg.pair_last = None
+
+    ctx.messages = filtered
+    ctx.session_first_message = {
+        sid: new_idx
+        for sid, old_idx in ctx.session_first_message.items()
+        if (new_idx := index_remap.get(old_idx)) is not None
+    }
 
 
 def _filter_template_by_detail(
