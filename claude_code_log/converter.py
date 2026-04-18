@@ -1842,6 +1842,8 @@ def generate_single_session_file(
     output: Optional[Path] = None,
     use_cache: bool = True,
     image_export_mode: Optional[str] = None,
+    detail: DetailLevel = DetailLevel.FULL,
+    compact: bool = False,
 ) -> Path:
     """Generate a single session output file for the given session ID.
 
@@ -1852,6 +1854,8 @@ def generate_single_session_file(
         output: Optional output file path (defaults to session-{id}.{ext} in input_path)
         use_cache: Whether to use caching
         image_export_mode: Image export mode
+        detail: Output detail level.
+        compact: Whether to merge consecutive same-type headings (Markdown only).
 
     Returns:
         Path to the generated file
@@ -1948,7 +1952,7 @@ def generate_single_session_file(
         output_file = input_path / f"session-{matched_id}.{ext}"
 
     # Generate content and write
-    renderer = get_renderer(format, image_export_mode)
+    renderer = get_renderer(format, image_export_mode, detail=detail, compact=compact)
     session_content = renderer.generate_session(
         session_messages, matched_id, session_title, cache_manager, output_dir
     )

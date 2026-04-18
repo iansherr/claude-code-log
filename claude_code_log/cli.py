@@ -725,6 +725,8 @@ def main(
                 output,
                 not no_cache,
                 image_export_mode,
+                detail=detail_level,
+                compact=compact,
             )
             click.echo(f"Successfully exported session to {output_path}")
             if open_browser:
