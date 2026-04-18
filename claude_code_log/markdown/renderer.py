@@ -838,18 +838,25 @@ class MarkdownRenderer(Renderer):
         # Heading with title (skip if empty)
         title = self.title_content(msg)
         if title:
-            msg_type = msg.content.message_type
+            # Track the *rendered* heading category, not `msg_type`: a
+            # paired `ThinkingMessage` renders an "🤖 Assistant: ..."
+            # title, so a following standalone Assistant reuses that
+            # category and should be compacted even though the raw
+            # `message_type` strings differ ("thinking" vs "assistant").
+            # The category is everything before the first ":" in the
+            # rendered title (e.g. "🤖 Assistant", "🤷 User").
+            heading_category = title.split(":", 1)[0].strip()
 
-            # Compact mode: suppress heading for consecutive same-type messages
-            # Reset tracking on session boundaries
+            # Compact mode: suppress heading for consecutive same-category
+            # messages. Reset tracking on session boundaries.
             if is_session_header:
-                self._last_message_type = None
+                self._last_heading_category = None
             suppress_heading = (
                 self.compact
                 and not is_session_header
-                and msg_type == self._last_message_type
+                and heading_category == self._last_heading_category
             )
-            self._last_message_type = msg_type
+            self._last_heading_category = heading_category
 
             if not suppress_heading:
                 heading_level = min(level, 6)  # Markdown max is h6
@@ -887,7 +894,7 @@ class MarkdownRenderer(Renderer):
         """Generate Markdown from transcript messages."""
         self._output_dir = output_dir
         self._image_counter = 0
-        self._last_message_type: Optional[str] = None
+        self._last_heading_category: Optional[str] = None
 
         if not title:
             title = "Claude Transcript"
