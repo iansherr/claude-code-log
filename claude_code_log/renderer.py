@@ -2177,6 +2177,24 @@ def _reorder_session_template_messages(
     return result
 
 
+def _queue_op_content_as_list(
+    content: Any,
+) -> list[ContentItem]:
+    """Normalise `QueueOperationTranscriptEntry.content` to a ContentItem list.
+
+    The Pydantic model allows `content` to be a plain string (raw
+    steering text) or a list of content items. Several filter passes
+    reason about the content as a uniform list, so wrap a non-empty
+    string in a single `TextContent` and fall through to `[]` for
+    None / empty / other shapes.
+    """
+    if isinstance(content, list):
+        return content  # type: ignore[return-value]
+    if isinstance(content, str) and content.strip():
+        return [TextContent(type="text", text=content)]
+    return []
+
+
 def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
     """Filter messages to those that should be rendered.
 
@@ -2221,8 +2239,7 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
         # Get message content for filtering checks
         message_content: list[ContentItem]
         if isinstance(message, QueueOperationTranscriptEntry):
-            content = message.content
-            message_content = content if isinstance(content, list) else []
+            message_content = _queue_op_content_as_list(message.content)
         else:
             message_content = message.message.content
 
@@ -2324,13 +2341,17 @@ def _filter_by_detail(
         # HIGH: no content-item stripping needed
         strip_types = ()
 
-    # MINIMAL and USER_ONLY keep queue-operation entries so their
-    # UserSteeringMessage survives — steering prompts carry real user
-    # intent and belong in any view that claims to preserve the user's
-    # side of the conversation. HIGH/LOW continue to drop them.
-    allowed_types: tuple[type, ...] = (UserTranscriptEntry, AssistantTranscriptEntry)
-    if detail in (DetailLevel.MINIMAL, DetailLevel.USER_ONLY):
-        allowed_types = (*allowed_types, QueueOperationTranscriptEntry)
+    # Queue-operation entries (carrying UserSteeringMessage) pass through
+    # at every non-FULL detail level. Steering is user-authored content
+    # and belongs in any view of the user's side of the conversation —
+    # the post-render exclude chains (_HIGH/_LOW/_MINIMAL/_USER_ONLY)
+    # don't list UserSteeringMessage, so this allowlist is sufficient
+    # to keep it visible everywhere we already keep assistant/user text.
+    allowed_types: tuple[type, ...] = (
+        UserTranscriptEntry,
+        AssistantTranscriptEntry,
+        QueueOperationTranscriptEntry,
+    )
 
     filtered: list[TranscriptEntry] = []
     for message in messages:
@@ -2593,7 +2614,7 @@ def _collect_session_info(
 
         # Get message content
         if isinstance(message, QueueOperationTranscriptEntry):
-            message_content = message.content if message.content else []
+            message_content = _queue_op_content_as_list(message.content)
         else:
             message_content = message.message.content  # type: ignore
 

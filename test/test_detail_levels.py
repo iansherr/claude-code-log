@@ -1348,6 +1348,110 @@ class TestUserOnlyTemplateMessages:
         assert len(ctx_user.messages) < len(ctx_min.messages)
 
 
+class TestSteeringHierarchy:
+    """UserSteeringMessage must survive at every non-FULL detail level.
+
+    The documented hierarchy is `full > high > low > minimal > user-only`
+    — whatever a lower level keeps, higher levels keep. Steering is
+    user-authored content, so it belongs in every view that preserves
+    the user's side of the conversation.
+    """
+
+    @staticmethod
+    def _write_with_steering(tmp_path: Path) -> Path:
+        import json as _json
+
+        entries = [
+            _user_entry("Do it", timestamp="2025-01-01T10:00:00Z"),
+            _assistant_entry("OK", timestamp="2025-01-01T10:00:01Z"),
+        ]
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            "\n".join(_json.dumps(e) for e in entries)
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    "content": [
+                        {"type": "text", "text": "Also add auth"},
+                    ],
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    @pytest.mark.parametrize(
+        "level",
+        [
+            DetailLevel.HIGH,
+            DetailLevel.LOW,
+            DetailLevel.MINIMAL,
+            DetailLevel.USER_ONLY,
+        ],
+    )
+    def test_steering_survives_at_every_non_full_level(self, tmp_path, level):
+        path = self._write_with_steering(tmp_path)
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=level)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering = [
+            msg.content
+            for msg in ctx.messages
+            if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering) == 1, (
+            f"Level {level.value} should keep UserSteeringMessage; got "
+            f"content types: {[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
+
+class TestSteeringStringContent:
+    """`QueueOperationTranscriptEntry.content` can be a plain string
+    (not just a list of ContentItem). The filter pipeline used to coerce
+    non-list content to `[]`, silently dropping steering; verify it now
+    survives as a UserSteeringMessage."""
+
+    def test_string_content_becomes_steering_message(self, tmp_path):
+        import json as _json
+
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            _json.dumps(_user_entry("Start"))
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    # String content, not a list — the interesting case.
+                    "content": "Actually, use Postgres not MySQL",
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.MINIMAL)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering = [
+            msg for msg in ctx.messages if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering) == 1, (
+            f"String-content queue-op should become a UserSteeringMessage; "
+            f"got: {[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
+
 class TestUserOnlyCli:
     def test_cli_accepts_user_only(self, tmp_path):
         jsonl = tmp_path / "session.jsonl"
