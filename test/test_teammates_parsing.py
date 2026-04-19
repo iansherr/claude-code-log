@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
+from claude_code_log.converter import (
+    load_directory_transcripts,
+    load_transcript,
+)
 from claude_code_log.factories.agent_metadata_factory import (
     parse_agent_result_metadata,
 )
@@ -24,6 +32,7 @@ from claude_code_log.factories.tool_factory import (
 )
 from claude_code_log.models import (
     AgentResultMetadata,
+    AssistantTranscriptEntry,
     MessageMeta,
     SendMessageInput,
     SendMessageOutput,
@@ -38,6 +47,8 @@ from claude_code_log.models import (
     TeamDeleteInput,
     TeamDeleteOutput,
     ToolResultContent,
+    ToolUseContent,
+    UserTranscriptEntry,
 )
 
 
@@ -383,3 +394,193 @@ class TestTeammateToolOutputs:
         assert out.success is True
         assert out.target == "alice"
         assert out.request_id == "shutdown-1@alice"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end fixture integration
+# ---------------------------------------------------------------------------
+
+FIXTURE_DIR = Path(__file__).parent / "test_data" / "teammates"
+MAIN_SESSION = "ef000000-0000-4000-8000-000000000001"
+MAIN_JSONL = FIXTURE_DIR / f"{MAIN_SESSION}.jsonl"
+ALICE_AGENT_ID = "aaaa111111111111"
+BOB_AGENT_ID = "bbbb222222222222"
+
+
+@pytest.fixture(scope="module")
+def fixture_messages() -> list:
+    return load_transcript(MAIN_JSONL, cache_manager=None, silent=True)
+
+
+@pytest.fixture(scope="module")
+def fixture_dag() -> tuple[list, object]:
+    return load_directory_transcripts(FIXTURE_DIR, cache_manager=None, silent=True)
+
+
+class TestTeammatesFixtureLoading:
+    def test_main_and_both_subagents_load(self, fixture_messages: list) -> None:
+        # 22 main + 3 alice + 3 bob = 28 entries
+        assert len(fixture_messages) == 28
+
+    def test_alice_subagent_linked_via_primary_path(
+        self, fixture_messages: list
+    ) -> None:
+        alice_entries = [
+            m for m in fixture_messages if getattr(m, "agentId", None) == ALICE_AGENT_ID
+        ]
+        assert len(alice_entries) >= 4  # tool_result + 3 subagent entries
+
+    def test_bob_subagent_linked_via_prompt_hash(self, fixture_messages: list) -> None:
+        bob_entries = [
+            m for m in fixture_messages if getattr(m, "agentId", None) == BOB_AGENT_ID
+        ]
+        # Without the fallback bob wouldn't be linked at all (0 entries).
+        assert len(bob_entries) >= 4
+
+    def test_bob_tool_result_back_patched_with_agentid(
+        self, fixture_messages: list
+    ) -> None:
+        # Find the tool_result for bob's Task and confirm the prompt-hash
+        # fallback set its agentId.
+        tool_use_id: str | None = None
+        for m in fixture_messages:
+            if isinstance(m, AssistantTranscriptEntry):
+                for item in m.message.content:
+                    if (
+                        isinstance(item, ToolUseContent)
+                        and item.name == "Task"
+                        and item.input.get("name") == "bob"
+                    ):
+                        tool_use_id = item.id
+                        break
+        assert tool_use_id is not None
+
+        for m in fixture_messages:
+            if not isinstance(m, UserTranscriptEntry):
+                continue
+            for c in m.message.content:
+                if isinstance(c, ToolResultContent) and c.tool_use_id == tool_use_id:
+                    assert m.agentId == BOB_AGENT_ID
+                    return
+        pytest.fail("bob tool_result not found")
+
+
+class TestTeammatesIntegrateAgentEntries:
+    def test_synthetic_session_ids_per_agent(self, fixture_dag: tuple) -> None:
+        messages, _ = fixture_dag
+        alice_sessions = {
+            m.sessionId
+            for m in messages
+            if isinstance(m, (AssistantTranscriptEntry, UserTranscriptEntry))
+            and getattr(m, "isSidechain", False)
+            and getattr(m, "agentId", None) == ALICE_AGENT_ID
+        }
+        bob_sessions = {
+            m.sessionId
+            for m in messages
+            if isinstance(m, (AssistantTranscriptEntry, UserTranscriptEntry))
+            and getattr(m, "isSidechain", False)
+            and getattr(m, "agentId", None) == BOB_AGENT_ID
+        }
+        assert alice_sessions == {f"{MAIN_SESSION}#agent-{ALICE_AGENT_ID}"}
+        assert bob_sessions == {f"{MAIN_SESSION}#agent-{BOB_AGENT_ID}"}
+
+    def test_each_agent_root_anchored_to_its_tool_result(
+        self, fixture_dag: tuple
+    ) -> None:
+        messages, _ = fixture_dag
+
+        # Anchor UUID for each agent = the tool_result entry carrying its agentId
+        anchors: dict[str, str] = {}
+        for m in messages:
+            if (
+                isinstance(m, UserTranscriptEntry)
+                and not m.isSidechain
+                and m.agentId in {ALICE_AGENT_ID, BOB_AGENT_ID}
+            ):
+                anchors[m.agentId] = m.uuid
+
+        assert set(anchors) == {ALICE_AGENT_ID, BOB_AGENT_ID}, anchors
+
+        # Every sidechain root (parentUuid -> anchor uuid) for each agent
+        # must point to that agent's anchor.
+        for m in messages:
+            if not isinstance(m, UserTranscriptEntry):
+                continue
+            if not m.isSidechain:
+                continue
+            if not m.agentId:
+                continue
+            # First message of each sidechain: parentUuid now anchored
+            # (we crafted the fixture so the first alice/bob sidechain
+            # entry's parentUuid was None).
+            if m.uuid.startswith("aaaaaaaa-0000-4000-8000-000000000001") or (
+                m.uuid.startswith("bbbbbbbb-0000-4000-8000-000000000001")
+            ):
+                assert m.parentUuid == anchors[m.agentId]
+
+
+class TestTeammatesFactoryIntegration:
+    def test_alice_task_output_metadata_populated(self, fixture_messages: list) -> None:
+        """Parse the fixture via the factory pipeline and confirm the
+        alice Task tool_result carries an AgentResultMetadata with the
+        values embedded in the markdown tail."""
+        from claude_code_log.factories.tool_factory import create_tool_output
+
+        found_alice_metadata = False
+        for m in fixture_messages:
+            if not isinstance(m, UserTranscriptEntry):
+                continue
+            for c in m.message.content:
+                if (
+                    isinstance(c, ToolResultContent)
+                    and m.agentId == ALICE_AGENT_ID
+                    and c.tool_use_id.startswith("tu_Task_")
+                ):
+                    parsed = create_tool_output("Task", c)
+                    # Typed TaskOutput with structured metadata
+                    assert hasattr(parsed, "metadata")
+                    meta = getattr(parsed, "metadata")
+                    assert meta is not None
+                    assert meta.agent_id == ALICE_AGENT_ID
+                    assert meta.total_tokens == 12345
+                    assert meta.tool_uses == 5
+                    assert meta.duration_ms == 60000
+                    # Body stripped of the metadata tail
+                    result_text = getattr(parsed, "result")
+                    assert "Relay tests added" in result_text
+                    assert "agentId:" not in result_text
+                    found_alice_metadata = True
+        assert found_alice_metadata
+
+    def test_teammate_message_content_parsed(self, fixture_messages: list) -> None:
+        """The user entry carrying multiple <teammate-message> blocks becomes
+        a TeammateMessage content model through the user_factory pipeline."""
+        from claude_code_log.factories.user_factory import create_user_message
+        from claude_code_log.factories.meta_factory import create_meta
+        from claude_code_log.models import TeammateMessage
+
+        batched: list[TeammateMessage] = []
+        for m in fixture_messages:
+            # Restrict to main-session user entries (bob's subagent first
+            # message is also a teammate-message wrapper, but that's the
+            # subject of the prompt-hash test above).
+            if not isinstance(m, UserTranscriptEntry) or m.isSidechain:
+                continue
+            meta = create_meta(m)
+            text_bits: list[str] = []
+            for c in m.message.content:
+                if hasattr(c, "text"):
+                    text_bits.append(getattr(c, "text"))
+            text = "\n".join(text_bits)
+            content = create_user_message(meta, list(m.message.content), text)
+            if isinstance(content, TeammateMessage):
+                batched.append(content)
+
+        # Expect two: U14 (single alice block), U15 (alice+bob+system)
+        assert len(batched) == 2
+        block_counts = sorted(len(b.blocks) for b in batched)
+        assert block_counts == [1, 3]
+        # System block flagged in the mixed entry
+        mixed = next(b for b in batched if len(b.blocks) == 3)
+        assert any(blk.is_system for blk in mixed.blocks)

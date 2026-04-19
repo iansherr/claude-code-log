@@ -59,7 +59,6 @@ from ..models import (
     TaskListItem,
     TaskListOutput,
     TaskOutput,
-    TaskStatusChange,
     TaskUpdateOutput,
     TeamCreateOutput,
     TeamDeleteOutput,
@@ -702,10 +701,12 @@ def _try_load_json_text(tool_result: ToolResultContent) -> Optional[dict[str, An
     if not text:
         return None
     try:
-        data = json.loads(text)
+        data: Any = json.loads(text)
     except (json.JSONDecodeError, ValueError):
         return None
-    return data if isinstance(data, dict) else None
+    if isinstance(data, dict):
+        return cast(dict[str, Any], data)
+    return None
 
 
 _TASK_CREATE_RE = re.compile(

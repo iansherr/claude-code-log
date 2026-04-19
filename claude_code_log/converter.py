@@ -534,11 +534,7 @@ def _collect_unresolved_task_results(
         if not isinstance(msg, AssistantTranscriptEntry):
             continue
         for item in msg.message.content:
-            if (
-                isinstance(item, ToolUseContent)
-                and item.name == "Task"
-                and isinstance(item.input, dict)
-            ):
+            if isinstance(item, ToolUseContent) and item.name == "Task":
                 prompt = item.input.get("prompt")
                 if isinstance(prompt, str) and prompt:
                     task_prompts[item.id] = prompt
@@ -574,23 +570,27 @@ def _read_first_message_text(agent_file: Path) -> Optional[str]:
                     break
             else:
                 return None
-        entry = json.loads(line)
+        entry: Any = json.loads(line)
     except (OSError, json.JSONDecodeError):
         return None
     if not isinstance(entry, dict):
         return None
 
-    message = entry.get("message")
+    entry_dict = cast(dict[str, Any], entry)
+    message = entry_dict.get("message")
     if not isinstance(message, dict):
         return None
-    content = message.get("content")
+    message_dict = cast(dict[str, Any], message)
+    content = message_dict.get("content")
     if isinstance(content, str):
         return content
     if isinstance(content, list):
         texts: list[str] = []
-        for item in content:
-            if isinstance(item, dict) and item.get("type") == "text":
-                texts.append(str(item.get("text", "")))
+        for item in cast(list[Any], content):
+            if isinstance(item, dict):
+                item_dict = cast(dict[str, Any], item)
+                if item_dict.get("type") == "text":
+                    texts.append(str(item_dict.get("text", "")))
         return "\n".join(texts) if texts else None
     return None
 
