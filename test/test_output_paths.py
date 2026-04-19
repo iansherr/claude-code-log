@@ -305,7 +305,14 @@ class TestCacheVariantCoexistence:
         _write_session(tmp_path / "sess1.jsonl", "sess1")
         # First: render FULL, populates cache for default variant.
         full1 = convert_jsonl_to("html", tmp_path, silent=True)
-        full_mtime = full1.stat().st_mtime
+        # `st_mtime_ns` has nanosecond resolution on platforms that support
+        # it (ext4/APFS/NTFS), avoiding the 1s/2s granularity wobble on
+        # FAT32 or older HFS+. Pair with inode for extra robustness —
+        # a rewrite-in-place on some filesystems preserves the inode, but
+        # a delete+recreate flips it.
+        full_stat = full1.stat()
+        full_mtime_ns = full_stat.st_mtime_ns
+        full_ino = full_stat.st_ino
 
         # Render LOW — must NOT touch the FULL file's cache row.
         low = convert_jsonl_to("html", tmp_path, silent=True, detail=DetailLevel.LOW)
@@ -314,9 +321,10 @@ class TestCacheVariantCoexistence:
 
         # Second FULL render must hit cache (file untouched).
         full2 = convert_jsonl_to("html", tmp_path, silent=True)
-        assert full2.stat().st_mtime == full_mtime, (
-            "Second FULL render should be a cache hit — file was rewritten"
-        )
+        full2_stat = full2.stat()
+        assert (
+            full2_stat.st_mtime_ns == full_mtime_ns and full2_stat.st_ino == full_ino
+        ), "Second FULL render should be a cache hit — file was rewritten"
 
     def test_low_render_does_not_delete_full_pages(self, tmp_path: Path) -> None:
         _write_session(tmp_path / "sess1.jsonl", "sess1")
@@ -554,24 +562,30 @@ class TestPaginatedVariantCoexistence:
         FULL again. All page files for both variants must coexist; the
         second FULL render must be a cache hit; LOW must not delete any
         FULL page file."""
-        # Two sessions, each with multiple messages — with page_size=2 we
-        # get at least 2 pages per variant.
+        # Two sessions of 6 messages each, `page_size=2` → pagination
+        # is deterministic: `_assign_sessions_to_pages` sorts by
+        # `first_timestamp` (Python's stable sort) and packs one session
+        # per page while honouring the size cap, so we reliably get at
+        # least `combined_transcripts.html` + `_2.html`.
         _write_session(tmp_path / "sessA.jsonl", "sessA", num_messages=6)
         _write_session(tmp_path / "sessB.jsonl", "sessB", num_messages=6)
 
         full_page1 = convert_jsonl_to("html", tmp_path, silent=True, page_size=2)
         assert full_page1.name == "combined_transcripts.html"
         full_page2 = tmp_path / "combined_transcripts_2.html"
-        # At minimum we expect the first page; pagination may or may not
-        # split further depending on DAG ordering, but *some* page-2
-        # variant should exist (this is the setup we're testing against
-        # — if it doesn't, increase num_messages).
         assert full_page2.exists(), (
             f"Expected pagination to produce page 2; "
             f"dir contents: {sorted(p.name for p in tmp_path.glob('*.html'))}"
         )
-        full_page1_mtime = full_page1.stat().st_mtime
-        full_page2_mtime = full_page2.stat().st_mtime
+        # `st_mtime_ns` + inode is robust across filesystems: mtime
+        # alone has 1s/2s granularity on FAT32 and older HFS+, so a
+        # rewrite-within-same-second would be invisible to `st_mtime`.
+        # `_ns` gives nanosecond resolution on ext4/APFS/NTFS; inode
+        # shifts under delete+recreate even when mtime happens to match.
+        full_page1_stat = full_page1.stat()
+        full_page2_stat = full_page2.stat()
+        full_page1_sig = (full_page1_stat.st_mtime_ns, full_page1_stat.st_ino)
+        full_page2_sig = (full_page2_stat.st_mtime_ns, full_page2_stat.st_ino)
 
         # Render LOW — must produce its own variant files and leave
         # FULL's alone.
@@ -588,13 +602,19 @@ class TestPaginatedVariantCoexistence:
         # FULL's page files must be untouched.
         assert full_page1.exists()
         assert full_page2.exists()
-        assert full_page1.stat().st_mtime == full_page1_mtime
-        assert full_page2.stat().st_mtime == full_page2_mtime
+        fp1 = full_page1.stat()
+        fp2 = full_page2.stat()
+        assert (fp1.st_mtime_ns, fp1.st_ino) == full_page1_sig
+        assert (fp2.st_mtime_ns, fp2.st_ino) == full_page2_sig
 
         # Second FULL render must hit the cache — no page files rewritten.
         full_page1_again = convert_jsonl_to("html", tmp_path, silent=True, page_size=2)
         assert full_page1_again == full_page1
-        assert full_page1.stat().st_mtime == full_page1_mtime, (
-            "Second FULL render should have been a cache hit"
+        fp1_again = full_page1.stat()
+        fp2_again = full_page2.stat()
+        assert (fp1_again.st_mtime_ns, fp1_again.st_ino) == full_page1_sig, (
+            "Second FULL render should have been a cache hit (page 1)"
         )
-        assert full_page2.stat().st_mtime == full_page2_mtime
+        assert (fp2_again.st_mtime_ns, fp2_again.st_ino) == full_page2_sig, (
+            "Second FULL render should have been a cache hit (page 2)"
+        )
