@@ -603,16 +603,14 @@ class UserSteeringMessage(UserTextMessage):
 
 
 @dataclass
-class TeammateMessage(MessageContent):
-    """Content for a single <teammate-message> block within a user entry.
-
-    Teammate messages are emitted by the team-lead session when the
-    experimental teammates feature (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
-    is active. One User entry may contain several `<teammate-message>` blocks,
-    each produced as its own TeammateMessage by the teammate factory.
+class TeammateMessageBlock:
+    """A single <teammate-message> block extracted from a User entry.
 
     `is_system=True` corresponds to blocks with teammate_id="system"
     (e.g. teammate_terminated notifications).
+
+    This is a plain data container — the renderer-facing MessageContent
+    wrapper is TeammateMessage (which holds one or more of these blocks).
     """
 
     teammate_id: str
@@ -620,6 +618,24 @@ class TeammateMessage(MessageContent):
     color: Optional[str] = None
     summary: Optional[str] = None
     is_system: bool = False
+
+
+@dataclass
+class TeammateMessage(MessageContent):
+    """Content for one or more <teammate-message> blocks in a single User entry.
+
+    Teammate messages are emitted when the experimental teammates feature
+    (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) is active. A single User
+    entry may carry several `<teammate-message>` blocks — potentially from
+    different teammates — so the factory groups them into `blocks` and
+    preserves any non-matching surrounding text in `leading_text` /
+    `trailing_text`. The renderer decides whether to present each block
+    as its own card or merge them into one.
+    """
+
+    blocks: list[TeammateMessageBlock] = field(default_factory=list)
+    leading_text: Optional[str] = None
+    trailing_text: Optional[str] = None
 
     @property
     def message_type(self) -> str:

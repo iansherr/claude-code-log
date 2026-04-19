@@ -5,7 +5,13 @@ from __future__ import annotations
 from claude_code_log.factories.agent_metadata_factory import (
     parse_agent_result_metadata,
 )
-from claude_code_log.models import AgentResultMetadata
+from claude_code_log.factories.teammate_factory import (
+    create_teammate_message,
+    find_team_lead_body,
+    has_teammate_message,
+    iter_teammate_blocks,
+)
+from claude_code_log.models import AgentResultMetadata, MessageMeta
 
 
 class TestAgentResultMetadata:
@@ -94,3 +100,99 @@ class TestAgentResultMetadata:
     def test_result_object_type(self) -> None:
         _, meta = parse_agent_result_metadata("agentId: abc\n")
         assert isinstance(meta, AgentResultMetadata)
+
+
+def _meta() -> MessageMeta:
+    return MessageMeta(session_id="s", timestamp="t", uuid="u")
+
+
+SINGLE_BLOCK = (
+    '<teammate-message teammate_id="alice" color="blue" '
+    'summary="relay tests complete">\n'
+    "Relay coverage is now 96%.\n"
+    "</teammate-message>"
+)
+
+MULTI_BLOCK = (
+    '<teammate-message teammate_id="alice" color="blue">\n'
+    "alice heartbeat: still here.\n"
+    "</teammate-message>\n\n"
+    '<teammate-message teammate_id="bob" color="green" summary="done">\n'
+    "All server tests pass.\n"
+    "</teammate-message>\n\n"
+    '<teammate-message teammate_id="system">\n'
+    "teammate_terminated: alice exited cleanly\n"
+    "</teammate-message>"
+)
+
+
+class TestTeammateMessageParser:
+    def test_has_teammate_message_detects(self) -> None:
+        assert has_teammate_message(SINGLE_BLOCK) is True
+        assert has_teammate_message("no tags here") is False
+        assert has_teammate_message("<teammate-message") is False  # no close tag
+
+    def test_iter_returns_blocks_in_order(self) -> None:
+        ids = [b.teammate_id for b in iter_teammate_blocks(MULTI_BLOCK)]
+        assert ids == ["alice", "bob", "system"]
+
+    def test_single_block_attributes_and_body(self) -> None:
+        blocks = list(iter_teammate_blocks(SINGLE_BLOCK))
+        assert len(blocks) == 1
+        b = blocks[0]
+        assert b.teammate_id == "alice"
+        assert b.color == "blue"
+        assert b.summary == "relay tests complete"
+        assert b.body == "Relay coverage is now 96%."
+        assert b.is_system is False
+
+    def test_block_without_summary(self) -> None:
+        text = (
+            '<teammate-message teammate_id="alice" color="blue">\n'
+            "plain body\n"
+            "</teammate-message>"
+        )
+        b = next(iter_teammate_blocks(text))
+        assert b.summary is None
+        assert b.color == "blue"
+
+    def test_system_block_flagged(self) -> None:
+        blocks = list(iter_teammate_blocks(MULTI_BLOCK))
+        system_block = blocks[-1]
+        assert system_block.is_system is True
+        assert "teammate_terminated" in system_block.body
+
+    def test_create_returns_none_without_block(self) -> None:
+        assert create_teammate_message(_meta(), "just some text") is None
+
+    def test_create_batch_single_block(self) -> None:
+        content = create_teammate_message(_meta(), SINGLE_BLOCK)
+        assert content is not None
+        assert len(content.blocks) == 1
+        assert content.blocks[0].teammate_id == "alice"
+        assert content.leading_text is None
+        assert content.trailing_text is None
+        assert content.message_type == "teammate"
+        assert content.has_markdown is True
+
+    def test_create_batch_mixed_teammates(self) -> None:
+        content = create_teammate_message(_meta(), MULTI_BLOCK)
+        assert content is not None
+        assert [b.teammate_id for b in content.blocks] == ["alice", "bob", "system"]
+
+    def test_leading_and_trailing_text_preserved(self) -> None:
+        text = f"Before text\n\n{SINGLE_BLOCK}\n\nAfter text"
+        content = create_teammate_message(_meta(), text)
+        assert content is not None
+        assert content.leading_text == "Before text"
+        assert content.trailing_text == "After text"
+
+    def test_find_team_lead_body(self) -> None:
+        wrapped = (
+            '<teammate-message teammate_id="team-lead" color="cyan">\n'
+            "do the thing\n"
+            "</teammate-message>"
+        )
+        assert find_team_lead_body(wrapped) == "do the thing"
+        assert find_team_lead_body(SINGLE_BLOCK) is None
+        assert find_team_lead_body("") is None

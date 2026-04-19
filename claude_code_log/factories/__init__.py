@@ -39,6 +39,13 @@ from .assistant_factory import (
     create_assistant_message,
     create_thinking_message,
 )
+from .teammate_factory import (
+    # Teammate-message parsing
+    create_teammate_message,
+    find_team_lead_body,
+    has_teammate_message,
+    iter_teammate_blocks,
+)
 from .tool_factory import (
     # Tool message creation
     create_tool_input,
@@ -109,6 +116,11 @@ __all__ = [
     # Assistant message creation
     "create_assistant_message",
     "create_thinking_message",
+    # Teammate-message parsing
+    "create_teammate_message",
+    "find_team_lead_body",
+    "has_teammate_message",
+    "iter_teammate_blocks",
     # Tool message creation
     "create_tool_input",
     "create_tool_use_message",
