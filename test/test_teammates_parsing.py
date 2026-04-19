@@ -190,7 +190,7 @@ class TestTeammateMessageParser:
             "plain body\n"
             "</teammate-message>"
         )
-        b = next(iter_teammate_blocks(text))
+        b = next(iter(iter_teammate_blocks(text)))
         assert b.summary is None
         assert b.color == "blue"
 

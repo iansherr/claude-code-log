@@ -633,7 +633,9 @@ class TeammateMessage(MessageContent):
     as its own card or merge them into one.
     """
 
-    blocks: list[TeammateMessageBlock] = field(default_factory=list)
+    blocks: list[TeammateMessageBlock] = field(
+        default_factory=lambda: list[TeammateMessageBlock]()
+    )
     leading_text: Optional[str] = None
     trailing_text: Optional[str] = None
 
