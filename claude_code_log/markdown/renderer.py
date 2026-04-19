@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 from ..cache import get_library_version
+from ..html.utils import is_well_formed_html, render_user_markdown
 from ..utils import generate_unified_diff, strip_error_tags
 from ..models import (
     AssistantTextMessage,
@@ -144,6 +145,52 @@ def _table_cell(value: Any) -> str:
     None is rendered as an empty cell.
     """
     return str(value or "").replace("\n", "<br>").replace("|", r"\|")
+
+
+# Matches raw HTML/XML-like tags, both opening (possibly with attributes
+# or self-closing) and closing. The tag name must start with a letter and
+# may include digits/hyphens. After the tag name we require whitespace,
+# ``/``, or ``>`` — that keeps CommonMark autolinks like
+# ``<https://example.com>`` from matching (the ``:`` after ``https``
+# would violate the pattern).
+_HTML_TAG_RE = re.compile(r"(?<!`)(</?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^>]*)?/?>)(?!`)")
+_FENCE_OPEN_RE = re.compile(r"^\s{0,3}(```+|~~~+)")
+
+
+def _protect_html_tags(text: str) -> str:
+    """Wrap raw HTML/XML tags in inline code backticks.
+
+    Mirrors the HTML renderer's ``escape=True`` policy for user content:
+    tags that a user typed (``<script>``, ``<details>``, bare ``<br>``,
+    …) are rendered as literal text in any downstream Markdown viewer
+    rather than interpreted as HTML. Without this, a permissive viewer
+    could execute ``<script>`` or interpret ``<iframe>`` — the HTML
+    output escapes them via mistune's ``escape=True``; the Markdown
+    output delegates to the viewer, so we need to neutralise tags at
+    emission time.
+
+    Walks the text line-by-line, skipping fenced code blocks
+    (````` ``` ````` or ``~~~``) since their contents already render as
+    literal text. Inline code spans are skipped via a backtick-adjacency
+    check in the regex (tags already surrounded by backticks are left
+    alone).
+    """
+    out: list[str] = []
+    fence_delim: Optional[str] = None
+    for line in text.split("\n"):
+        stripped_leading = line.lstrip()
+        if fence_delim is not None:
+            out.append(line)
+            if stripped_leading.startswith(fence_delim):
+                fence_delim = None
+            continue
+        fence_match = _FENCE_OPEN_RE.match(line)
+        if fence_match:
+            fence_delim = fence_match.group(1)
+            out.append(line)
+            continue
+        out.append(_HTML_TAG_RE.sub(r"`\1`", line))
+    return "\n".join(out)
 
 
 class MarkdownRenderer(Renderer):
@@ -395,15 +442,30 @@ class MarkdownRenderer(Renderer):
     def format_UserTextMessage(
         self, content: UserTextMessage, _: TemplateMessage
     ) -> str:
-        """Format → fenced code block(s) with user text."""
+        """Format → user text as Markdown when clean, else fenced code.
+
+        Mirrors the HTML renderer's dual-view gate: try rendering the
+        text as Markdown; if mistune produces well-formed HTML the
+        source was recognisable Markdown (or plain text that happens not
+        to conflict with Markdown syntax), so emit the raw text inline
+        (headings/bold/lists render naturally downstream). Otherwise
+        wrap in a code fence so the literal content is preserved.
+
+        When emitting inline, raw HTML-like tags are wrapped in backticks
+        (see :func:`_protect_html_tags`) to keep parity with the HTML
+        path's ``escape=True`` safety posture.
+        """
         parts: list[str] = []
         for item in content.items:
             if isinstance(item, ImageContent):
                 parts.append(self._format_image(item))
             elif isinstance(item, TextContent):
                 if item.text.strip():
-                    # Use code fence to protect embedded markdown
-                    parts.append(self._code_fence(item.text))
+                    rendered = render_user_markdown(item.text)
+                    if is_well_formed_html(rendered):
+                        parts.append(_protect_html_tags(item.text))
+                    else:
+                        parts.append(self._code_fence(item.text))
         return "\n\n".join(parts)
 
     def title_UserTextMessage(

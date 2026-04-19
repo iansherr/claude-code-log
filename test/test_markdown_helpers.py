@@ -5,7 +5,7 @@ Tests for the private utility methods that handle content escaping and formattin
 
 import pytest
 
-from claude_code_log.markdown.renderer import MarkdownRenderer
+from claude_code_log.markdown.renderer import MarkdownRenderer, _protect_html_tags
 from claude_code_log.utils import strip_error_tags
 
 
@@ -300,3 +300,112 @@ class TestExcerpt:
         """Adds ellipsis when truncated."""
         result = renderer._excerpt("A very long text that exceeds limit", max_len=15)
         assert result.endswith("…")
+
+
+class TestProtectHtmlTags:
+    """Tests for the _protect_html_tags() module-level helper."""
+
+    def test_plain_text_unchanged(self):
+        """Text with no tags is returned verbatim."""
+        assert _protect_html_tags("just some prose") == "just some prose"
+
+    def test_wraps_bare_tag(self):
+        """Bare ``<br>`` is wrapped in backticks."""
+        assert _protect_html_tags("line one<br>line two") == "line one`<br>`line two"
+
+    def test_wraps_open_and_close(self):
+        """Both opening and closing tags are wrapped independently."""
+        result = _protect_html_tags("<script>alert(1)</script>")
+        assert result == "`<script>`alert(1)`</script>`"
+
+    def test_wraps_tag_with_attributes(self):
+        """Tags with attributes wrap whole-tag including attrs."""
+        assert _protect_html_tags('<a href="x">link</a>') == '`<a href="x">`link`</a>`'
+
+    def test_self_closing_tag(self):
+        """XHTML-style ``<br />`` is wrapped as one token."""
+        assert _protect_html_tags("text<br />more") == "text`<br />`more"
+
+    def test_inline_code_already_wrapped(self):
+        """A tag already inside inline code isn't double-wrapped."""
+        assert _protect_html_tags("use `<br>` here") == "use `<br>` here"
+
+    def test_autolink_not_wrapped(self):
+        """CommonMark autolink ``<https://...>`` is preserved."""
+        assert (
+            _protect_html_tags("see <https://example.com/path> for info")
+            == "see <https://example.com/path> for info"
+        )
+
+    def test_less_than_not_wrapped(self):
+        """Bare ``<3`` and ``<=`` aren't mistaken for tags."""
+        assert _protect_html_tags("x < 3 and x <= 5") == "x < 3 and x <= 5"
+
+    def test_inside_fenced_code_block(self):
+        """Tags inside a ``` fence stay untouched (already literal)."""
+        text = "Here is code:\n```html\n<script>x</script>\n```\nend"
+        assert _protect_html_tags(text) == text
+
+    def test_inside_tilde_fence(self):
+        """~~~ fences are respected just like ``` fences."""
+        text = "~~~\n<br>\n~~~"
+        assert _protect_html_tags(text) == text
+
+    def test_tag_outside_fence_when_mixed(self):
+        """A tag outside a fence is wrapped even when another is in a fence."""
+        text = "Outside <br> tag.\n\n```\n<br> inside fence\n```\nAfter <hr>."
+        expected = "Outside `<br>` tag.\n\n```\n<br> inside fence\n```\nAfter `<hr>`."
+        assert _protect_html_tags(text) == expected
+
+    def test_multiple_tags_on_one_line(self):
+        """Multiple tags on the same line are each wrapped."""
+        assert (
+            _protect_html_tags("<b>bold</b> and <i>italic</i>")
+            == "`<b>`bold`</b>` and `<i>`italic`</i>`"
+        )
+
+
+class TestFormatUserTextMessage:
+    """Integration tests for MarkdownRenderer.format_UserTextMessage().
+
+    These cover the Markdown dual-view gate introduced in the user-
+    markdown PR: clean Markdown is emitted inline (with HTML-tag
+    protection), ill-formed output falls back to a code fence.
+    """
+
+    def _make(self, text: str):
+        from claude_code_log.models import MessageMeta, TextContent, UserTextMessage
+
+        return UserTextMessage(
+            meta=MessageMeta.empty(),
+            items=[TextContent(type="text", text=text)],
+        )
+
+    def test_clean_markdown_emitted_inline(self, renderer):
+        """`# heading` and `**bold**` pass the gate → raw Markdown out."""
+        content = self._make("# Hi\n\n**bold**")
+        result = renderer.format_UserTextMessage(content, None)
+        assert result == "# Hi\n\n**bold**"
+
+    def test_plain_text_emitted_inline(self, renderer):
+        """Plain prose renders cleanly → emitted as-is (no code fence)."""
+        content = self._make("please review the PR when you have time")
+        result = renderer.format_UserTextMessage(content, None)
+        assert result == "please review the PR when you have time"
+
+    def test_raw_html_tags_protected_inline(self, renderer):
+        """Clean Markdown with bare ``<script>`` gets the tag wrapped in backticks."""
+        content = self._make("Please run <script>alert(1)</script> safely.")
+        result = renderer.format_UserTextMessage(content, None)
+        assert result == "Please run `<script>`alert(1)`</script>` safely."
+
+    def test_ill_formed_falls_back_to_code_fence(self, renderer, monkeypatch):
+        """When the Markdown gate rejects the output, code-fence it."""
+        # Force the gate to fail by monkey-patching render_user_markdown
+        # to return deliberately ill-formed HTML.
+        import claude_code_log.markdown.renderer as mr
+
+        monkeypatch.setattr(mr, "render_user_markdown", lambda _t: "<p>unclosed")
+        content = self._make("anything")
+        result = renderer.format_UserTextMessage(content, None)
+        assert result == "```\nanything\n```"
