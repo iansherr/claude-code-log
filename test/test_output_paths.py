@@ -20,12 +20,13 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from claude_code_log.cache import CacheManager
+from claude_code_log.cli import main as cli_main
 from claude_code_log.converter import (
     _enumerate_project_variants,
     _get_page_html_path,
@@ -394,14 +395,14 @@ class TestEnumerateProjectVariants:
 
 class TestCliHelpText:
     def test_compact_help_notes_markdown_only(self) -> None:
-        result = subprocess.run(
-            ["uv", "run", "claude-code-log", "--help"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # Combined text: flatten whitespace since click wraps help lines.
-        flat = re.sub(r"\s+", " ", result.stdout)
+        # `CliRunner` invokes the click entry point in-process — no
+        # dependency on `uv` or an installed `claude-code-log` console
+        # script, so the test stays hermetic across CI matrices, editable
+        # dev shells, and plain pip/venv setups.
+        result = CliRunner().invoke(cli_main, ["--help"])
+        assert result.exit_code == 0
+        # Flatten whitespace since click wraps help lines.
+        flat = re.sub(r"\s+", " ", result.output)
         assert "--compact" in flat
         assert "Markdown-only" in flat, (
             f"Expected 'Markdown-only' note in --compact help; got:\n{flat}"
