@@ -164,10 +164,31 @@ def test_is_well_formed_html_unit() -> None:
     assert is_well_formed_html("<ul><li>a</li><li>b</li></ul>")
     assert is_well_formed_html("")  # empty is trivially balanced
 
+    # Mistune emits XHTML self-closing syntax for void elements
+    # (<br />, <hr />, <img />). `handle_startendtag` must not
+    # double-count these as an unbalanced open+close.
+    assert is_well_formed_html("<p>hi<br />there</p>")
+    assert is_well_formed_html("<hr />")
+    assert is_well_formed_html('<img src="x" alt="y" />')
+
     # Unbalanced cases → fall back to raw.
     assert not is_well_formed_html("<p>hi")
     assert not is_well_formed_html("<p>hi</em>")  # mismatched close
     assert not is_well_formed_html("</p>")  # stray close
+
+
+def test_user_markdown_with_newline_keeps_dual_view() -> None:
+    """Regression: mistune turns a newline in user text into a XHTML
+    `<br />`. `format_user_text_content` must keep the dual-view wrapper
+    rather than falling back to bare `<pre>`."""
+    from claude_code_log.html.user_formatters import format_user_text_content
+
+    out = format_user_text_content("line1\nline2")
+    assert "class='user-content'" in out
+    assert "class='user-md'" in out
+    assert "class='user-raw'" in out
+    # The rendered Markdown actually contains the self-closing <br />.
+    assert "<br />" in out or "<br/>" in out
 
 
 def test_render_user_markdown_escapes_html() -> None:

@@ -332,7 +332,10 @@ def is_well_formed_html(fragment: str) -> bool:
     - Tags remain open at end of input.
     - The parser raises (malformed start tag, bad attribute quoting, etc.).
 
-    Void elements (``<br>``, ``<img>``, …) don't push to the stack.
+    Void elements (``<br>``, ``<img>``, …) don't push to the stack, and
+    XHTML-style self-closing syntax (``<br />``, ``<hr />``) is treated
+    as equivalent — mistune emits XHTML self-closing for voids so the
+    check must accept both.
     """
     from html.parser import HTMLParser
 
@@ -356,6 +359,16 @@ def is_well_formed_html(fragment: str) -> bool:
                 )
                 return
             stack.pop()
+
+        def handle_startendtag(
+            self, tag: str, attrs: list[tuple[str, Optional[str]]]
+        ) -> None:
+            # ``<tag />`` — XHTML self-closing. The element opens and
+            # closes in one token, so neither push nor pop is needed.
+            # Don't fall through to the default implementation, which
+            # calls `handle_starttag` + `handle_endtag` and would make
+            # a non-void `<br />` look unbalanced.
+            return
 
         def error(
             self, message: str
