@@ -195,7 +195,10 @@ def format_teamdelete_input(_input: TeamDeleteInput) -> str:
     return '<div class="teammate-tool-card team-card team-delete-input"></div>'
 
 
-def format_teamdelete_output(output: TeamDeleteOutput) -> str:
+def format_teamdelete_output(
+    output: TeamDeleteOutput,
+    teammate_colors: Optional[dict[str, str]] = None,
+) -> str:
     status = "Deleted" if output.success else "Refused"
     rows: list[tuple[str, str]] = [("Status", escape_html(status))]
     if output.team_name:
@@ -203,7 +206,10 @@ def format_teamdelete_output(output: TeamDeleteOutput) -> str:
     if output.message:
         rows.append(("Message", escape_html(output.message)))
     if output.active_members:
-        badges = " ".join(_teammate_badge(m, None) for m in output.active_members)
+        badges = " ".join(
+            _teammate_badge(m, _lookup_color(teammate_colors, m))
+            for m in output.active_members
+        )
         rows.append(("Active members", badges))
     css = "team-card team-delete-output"
     if not output.success:

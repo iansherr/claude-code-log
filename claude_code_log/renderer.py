@@ -110,6 +110,14 @@ class RenderingContext:
     junction_targets: dict[str, list[str]] = field(
         default_factory=lambda: {}  # type: dict[str, list[str]]
     )
+    # teammate_id -> palette color name, accumulated from <teammate-message
+    # color="..."> blocks during the first pass. Downstream formatters
+    # (TaskUpdate owner badges, SendMessage recipient, TaskList rows) fall
+    # back to this map when the entry itself doesn't carry a color.
+    # First sighting wins (teammate colors are stable per-session).
+    teammate_colors: dict[str, str] = field(
+        default_factory=lambda: {}  # type: dict[str, str]
+    )
 
     def register(self, message: "TemplateMessage") -> int:
         """Register a TemplateMessage and assign its message_index.
@@ -739,6 +747,13 @@ def generate_template_messages(
     # - Remove last AssistantTextMessage (duplicate of Task output)
     with log_timing("Cleanup sidechain duplicates", t_start):
         _cleanup_sidechain_duplicates(root_messages)
+
+    # Accumulate teammate_id -> color map from <teammate-message color="...">
+    # blocks so downstream formatters (TaskUpdate owner badges, SendMessage
+    # recipient, TaskList rows) can colorize names the entry itself didn't
+    # annotate.
+    with log_timing("Collect teammate colors", t_start):
+        _populate_teammate_colors(ctx)
 
     return root_messages, session_nav, ctx
 
@@ -1700,6 +1715,31 @@ def _normalize_for_dedup(text: str) -> str:
     but not present in the sidechain assistant's final message.
     """
     return _AGENT_ID_LINE_PATTERN.sub("", text).strip()
+
+
+def _populate_teammate_colors(ctx: RenderingContext) -> None:
+    """Walk registered TemplateMessages and collect teammate colors.
+
+    Source of truth is the ``color`` attribute on each
+    ``<teammate-message>`` block (parsed by teammate_factory into
+    ``TeammateMessageBlock``). First sighting of a teammate_id with a
+    recognized color wins — teammate colors are stable per-session, and
+    any mismatch between two blocks for the same teammate_id would be a
+    transcript error rather than a rendering decision.
+    """
+    from .models import TeammateMessage
+
+    for template_msg in ctx.messages:
+        content = template_msg.content
+        if not isinstance(content, TeammateMessage):
+            continue
+        for block in content.blocks:
+            if (
+                block.teammate_id
+                and block.color
+                and block.teammate_id not in ctx.teammate_colors
+            ):
+                ctx.teammate_colors[block.teammate_id] = block.color
 
 
 def _cleanup_sidechain_duplicates(root_messages: list[TemplateMessage]) -> None:

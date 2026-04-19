@@ -196,6 +196,11 @@ class HtmlRenderer(Renderer):
         self.image_export_mode = image_export_mode
         self._output_dir: Path | None = None
         self._image_counter = 0
+        # teammate_id -> color palette name, populated from the
+        # RenderingContext at the start of each render pass so downstream
+        # formatters (TaskUpdate owner, SendMessage recipient, TaskList
+        # rows) can colorize names the entry itself didn't annotate.
+        self._teammate_colors: dict[str, str] = {}
 
     # -------------------------------------------------------------------------
     # Private Utility Methods
@@ -333,7 +338,7 @@ class HtmlRenderer(Renderer):
     def format_TaskInput(self, input: TaskInput, _: TemplateMessage) -> str:
         """Format → prompt text, plus teammate-spawn extras when relevant."""
         base = format_task_input(input)
-        extras = format_task_input_teammate_extras(input)
+        extras = format_task_input_teammate_extras(input, self._teammate_colors)
         return base + extras if extras else base
 
     def format_TodoWriteInput(self, input: TodoWriteInput, _: TemplateMessage) -> str:
@@ -376,7 +381,7 @@ class HtmlRenderer(Renderer):
 
     def format_TaskUpdateInput(self, input: TaskUpdateInput, _: TemplateMessage) -> str:
         """Format → task-update card (colored owner badge when present)."""
-        return _format_taskupdate_input(input)
+        return _format_taskupdate_input(input, self._teammate_colors)
 
     def format_TaskListInput(self, input: TaskListInput, _: TemplateMessage) -> str:
         """Format → empty placeholder (TaskList takes no params)."""
@@ -387,7 +392,7 @@ class HtmlRenderer(Renderer):
         self, input: SendMessageInput, _: TemplateMessage
     ) -> str:
         """Format → send-message card with colored recipient badge."""
-        return _format_sendmessage_input(input)
+        return _format_sendmessage_input(input, self._teammate_colors)
 
     def format_ToolUseContent(self, content: ToolUseContent, _: TemplateMessage) -> str:
         """Format → <table class='params'>key | value rows</table>."""
@@ -416,7 +421,7 @@ class HtmlRenderer(Renderer):
     def format_TaskOutput(self, output: TaskOutput, _: TemplateMessage) -> str:
         """Format → markdown of task result plus teammate-metadata extras."""
         base = format_task_output(output)
-        extras = format_task_output_teammate_extras(output)
+        extras = format_task_output_teammate_extras(output, self._teammate_colors)
         return base + extras if extras else base
 
     def format_AskUserQuestionOutput(
@@ -449,7 +454,7 @@ class HtmlRenderer(Renderer):
         self, output: TeamDeleteOutput, _: TemplateMessage
     ) -> str:
         """Format → success/refused notice; active members listed when blocked."""
-        return _format_teamdelete_output(output)
+        return _format_teamdelete_output(output, self._teammate_colors)
 
     def format_TaskCreateOutput(
         self, output: TaskCreateOutput, _: TemplateMessage
@@ -465,7 +470,7 @@ class HtmlRenderer(Renderer):
 
     def format_TaskListOutput(self, output: TaskListOutput, _: TemplateMessage) -> str:
         """Format → <table class='task-list'> with id/status/subject/owner."""
-        return _format_tasklist_output(output)
+        return _format_tasklist_output(output, self._teammate_colors)
 
     def format_SendMessageOutput(
         self, output: SendMessageOutput, _: TemplateMessage
@@ -660,9 +665,13 @@ class HtmlRenderer(Renderer):
             title = "Claude Transcript"
 
         # Get root messages (tree) and session navigation from format-neutral renderer
-        root_messages, session_nav, _ = generate_template_messages(
+        root_messages, session_nav, ctx = generate_template_messages(
             messages, session_tree=session_tree, detail=self.detail
         )
+        # Snapshot the teammate-color map onto the renderer so per-message
+        # format methods can consult it without threading ctx through every
+        # dispatch. Reset for subsequent renders on the same instance.
+        self._teammate_colors = dict(ctx.teammate_colors)
 
         # Flatten tree via pre-order traversal, formatting content along the way
         with log_timing("Content formatting (pre-order)", t_start):
