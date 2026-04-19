@@ -151,6 +151,22 @@ def _table_cell(value: Any) -> str:
     return str(value or "").replace("\n", "<br>").replace("|", r"\|")
 
 
+def _backtick_delimiter(text: str, minimum: int) -> str:
+    """Return a backtick run long enough to safely fence ``text``.
+
+    Mirrors the adaptive-delimiter logic in :meth:`MarkdownRenderer._code_fence`:
+    the delimiter is one backtick longer than the longest run that appears
+    in ``text``, so an HTML token carrying a ``\\``` in an attribute value
+    or a triple-fence inside block HTML can't prematurely close its
+    wrapper and re-expose markup to downstream renderers.
+    """
+    max_ticks = max(
+        (len(match.group(0)) for match in re.finditer(r"`+", text)),
+        default=0,
+    )
+    return "`" * max(minimum, max_ticks + 1)
+
+
 class _TagProtectingMarkdownRenderer(_MistuneMarkdownRenderer):
     """Mistune re-emitter that neutralises raw HTML tokens.
 
@@ -163,15 +179,21 @@ class _TagProtectingMarkdownRenderer(_MistuneMarkdownRenderer):
     fenced and indented code blocks, lists, tables, blockquotes — is
     emitted verbatim by the base class because the parser already
     classified it correctly.
+
+    Both hooks pick an adaptive backtick delimiter so that tokens
+    carrying backticks themselves (e.g. ``<span title="\\`">`` or block
+    HTML containing a ```\\`\\`\\```` fence) are still safely wrapped.
     """
 
     def inline_html(self, token: dict[str, Any], state: Any) -> str:
         raw = token.get("raw", "")
-        return f"`{raw}`"
+        delim = _backtick_delimiter(raw, minimum=1)
+        return f"{delim}{raw}{delim}"
 
     def block_html(self, token: dict[str, Any], state: Any) -> str:
         raw = token.get("raw", "").strip()
-        return f"```\n{raw}\n```\n\n"
+        fence = _backtick_delimiter(raw, minimum=3)
+        return f"{fence}\n{raw}\n{fence}\n\n"
 
 
 @functools.lru_cache(maxsize=1)

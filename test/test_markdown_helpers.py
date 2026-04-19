@@ -424,6 +424,34 @@ class TestProtectHtmlTags:
             == "text `<b>`bold`</b>` and `<i>`italic`</i>`"
         )
 
+    def test_inline_tag_with_backtick_in_attr(self):
+        """A tag carrying a ``\\``` in an attribute gets a 2-backtick
+        wrapper so the inner backtick doesn't close the span early."""
+        # Single-backtick wrap would be `` `<span title="`">` `` — the
+        # inner backtick closes the span and leaks the rest of the
+        # attribute as raw Markdown. Adaptive delimiter ⇒ 2 ticks.
+        out = _protect_html_tags('say <span title="`">x</span> please')
+        assert '``<span title="`">``' in out
+        # And the output is a valid Markdown fragment that renders
+        # with the tag inside <code>, not as a live element.
+        import mistune
+
+        rendered = str(mistune.create_markdown()(out))
+        assert "&lt;span" in rendered  # entity-escaped inside <code>
+        assert "<span title" not in rendered  # no live tag leakage
+
+    def test_block_html_with_inner_fence(self):
+        """Block HTML containing a ```` ``` ```` fence gets a longer
+        outer fence so the inner one doesn't close it prematurely."""
+        out = _protect_html_tags("para\n\n<div>\n```\n</div>")
+        # Outer fence must be longer than the 3-backtick run inside.
+        assert "````\n<div>\n```\n</div>\n````" in out
+        import mistune
+
+        rendered = str(mistune.create_markdown()(out))
+        assert "&lt;div&gt;" in rendered
+        assert "<div>" not in rendered.replace("&lt;div&gt;", "")
+
 
 class TestFormatUserTextMessage:
     """Integration tests for MarkdownRenderer.format_UserTextMessage().
