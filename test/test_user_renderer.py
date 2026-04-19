@@ -310,7 +310,8 @@ class TestFormatUserTextModelContent:
     """Tests for format_user_text_model_content() formatter function."""
 
     def test_format_user_text_basic(self):
-        """Test basic user text formatting."""
+        """User text is emitted as a dual view (rendered Markdown +
+        raw `<pre>`), with the raw view preserving the original text."""
         content = UserTextMessage(
             MessageMeta.empty(),
             items=[TextContent(type="text", text="User question here")],
@@ -318,7 +319,11 @@ class TestFormatUserTextModelContent:
 
         html = format_user_text_model_content(content)
 
-        assert "<pre>" in html
+        # Dual-view container with Markdown as default.
+        assert "user-content" in html
+        # Both views present; raw preserves the literal text.
+        assert "<pre class='user-raw'>User question here</pre>" in html
+        assert "class='user-md'" in html
         assert "User question here" in html
 
     def test_format_user_text_escapes_html(self):

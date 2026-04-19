@@ -27,7 +27,13 @@ from ..models import (
     UserTextMessage,
 )
 from .tool_formatters import render_params_table
-from .utils import escape_html, render_collapsible_code, render_markdown_collapsible
+from .utils import (
+    is_well_formed_html,
+    escape_html,
+    render_collapsible_code,
+    render_markdown_collapsible,
+    render_user_markdown,
+)
 
 
 # =============================================================================
@@ -180,17 +186,45 @@ def format_bash_output_content(
 def format_user_text_content(text: str) -> str:
     """Format plain user text content as HTML.
 
-    User text is displayed as-is in preformatted blocks to preserve
-    formatting and whitespace.
+    Tries to render the text as Markdown (with HTML escaping — users
+    typing raw ``<script>`` must not inject scripts). If the rendered
+    HTML is well-formed (balanced tags, no parser errors), both views
+    are emitted wrapped in a ``.user-content`` container with a
+    per-message toggle button. CSS+JS in the transcript template
+    defaults to showing the Markdown view and supports both per-message
+    and global toggles to flip to raw.
+
+    When the Markdown rendering is ill-formed (suggesting the source
+    wasn't actually Markdown — unclosed tags, mismatched nesting, etc.),
+    only the raw ``<pre>`` is emitted and no toggle is shown.
 
     Args:
         text: The raw user message text
 
     Returns:
-        HTML string with escaped text in a pre tag
+        HTML string: dual-view container when Markdown renders cleanly,
+        raw ``<pre>`` otherwise.
     """
     escaped_text = escape_html(text)
-    return f"<pre>{escaped_text}</pre>"
+    raw_block = f"<pre class='user-raw'>{escaped_text}</pre>"
+
+    rendered = render_user_markdown(text)
+    if not is_well_formed_html(rendered):
+        # Source probably wasn't Markdown — only show the raw view, no
+        # toggle. Use the bare <pre> form so styling matches legacy.
+        return f"<pre>{escaped_text}</pre>"
+
+    md_block = f"<div class='user-md'>{rendered}</div>"
+    toggle = (
+        "<button type='button' class='user-view-toggle' "
+        "aria-label='Toggle between Markdown and raw view' "
+        "title='Toggle Markdown / raw view'>raw</button>"
+    )
+    return (
+        f"<div class='user-content' data-user-view='md'>"
+        f"{toggle}{md_block}{raw_block}"
+        f"</div>"
+    )
 
 
 def format_user_text_model_content(

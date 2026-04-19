@@ -268,6 +268,110 @@ def render_markdown(text: str) -> str:
         return str(renderer(text))
 
 
+@functools.lru_cache(maxsize=1)
+def _get_user_markdown_renderer() -> mistune.Markdown:
+    """Markdown renderer for user-authored text.
+
+    Differs from the shared renderer in one critical way: ``escape=True``
+    so a user typing raw ``<script>`` or other HTML sees the literal
+    characters rendered as code, not injected into the DOM. Assistant
+    content uses ``escape=False`` deliberately (tool output renders
+    pre-formed HTML); user content must not bypass escaping.
+    """
+    return mistune.create_markdown(
+        plugins=[
+            "strikethrough",
+            "footnotes",
+            "table",
+            "url",
+            "task_lists",
+            "def_list",
+            _create_pygments_plugin(),
+        ],
+        escape=True,
+        hard_wrap=True,
+    )
+
+
+def render_user_markdown(text: str) -> str:
+    """Render user-authored Markdown with HTML escaping enabled."""
+    with timing_stat("_markdown_timings"):
+        renderer = _get_user_markdown_renderer()
+        return str(renderer(text))
+
+
+# HTML tags that are self-closing / void per the HTML spec — these do
+# not appear on the open-tag stack in `is_well_formed_html`.
+_VOID_HTML_TAGS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+)
+
+
+def is_well_formed_html(fragment: str) -> bool:
+    """Check that an HTML fragment has balanced open/close tags.
+
+    Uses stdlib `html.parser.HTMLParser` to walk the fragment, tracking
+    an open-tag stack. Returns False if:
+
+    - A close tag appears with no matching open tag on the stack.
+    - Tags remain open at end of input.
+    - The parser raises (malformed start tag, bad attribute quoting, etc.).
+
+    Void elements (``<br>``, ``<img>``, …) don't push to the stack.
+    """
+    from html.parser import HTMLParser
+
+    stack: list[str] = []
+    errors: list[str] = []
+
+    class _Checker(HTMLParser):
+        def handle_starttag(
+            self, tag: str, attrs: list[tuple[str, Optional[str]]]
+        ) -> None:
+            if tag not in _VOID_HTML_TAGS:
+                stack.append(tag)
+
+        def handle_endtag(self, tag: str) -> None:
+            if not stack:
+                errors.append(f"unexpected </{tag}>")
+                return
+            if stack[-1] != tag:
+                errors.append(
+                    f"mismatched close: expected </{stack[-1]}>, got </{tag}>"
+                )
+                return
+            stack.pop()
+
+        def error(
+            self, message: str
+        ) -> None:  # pragma: no cover — stdlib subclasses don't call this in 3.10+
+            errors.append(message)
+
+    parser = _Checker(convert_charrefs=True)
+    try:
+        parser.feed(fragment)
+        parser.close()
+    except Exception as exc:  # parser itself raised — treat as ill-formed
+        errors.append(str(exc))
+
+    return not errors and not stack
+
+
 # -- Collapsible Content Rendering --------------------------------------------
 
 

@@ -68,14 +68,16 @@ def test_server_side_markdown_rendering():
         test_file_path.unlink()
 
 
-def test_user_message_not_markdown_rendered():
-    """Test that user messages are not markdown rendered (shown as-is in pre tags)."""
+def test_user_message_markdown_rendered_with_raw_preserved():
+    """User messages are now rendered as Markdown by default (with a
+    toggle to raw). The raw text must still be preserved in the
+    `.user-raw` `<pre>` view so the user can switch to it."""
     user_message = {
         "type": "user",
         "timestamp": "2025-06-11T22:44:17.436Z",
         "parentUuid": None,
         "isSidechain": False,
-        "userType": "human",
+        "userType": "external",
         "cwd": "/tmp",
         "sessionId": "test_session",
         "version": "1.0.0",
@@ -85,7 +87,7 @@ def test_user_message_not_markdown_rendered():
             "content": [
                 {
                     "type": "text",
-                    "text": "# This should NOT be rendered\n\n**This should stay bold**",
+                    "text": "# A rendered heading\n\n**And some bold text**",
                 }
             ],
         },
@@ -100,27 +102,87 @@ def test_user_message_not_markdown_rendered():
         messages = load_transcript(test_file_path)
         html = generate_html(messages, "Test Transcript")
 
-        # User messages should be shown as-is in pre tags, not rendered as HTML
-        assert "<pre># This should NOT be rendered" in html, (
-            "User markdown should remain as text in pre tags"
+        # Markdown view renders the heading and bold.
+        assert "<h1>A rendered heading</h1>" in html, (
+            "User markdown should be rendered as HTML"
         )
-        assert "**This should stay bold**</pre>" in html, (
-            "User markdown asterisks should remain literal"
+        assert "<strong>And some bold text</strong>" in html, (
+            "User markdown bold should render"
         )
-        assert "<h1>This should NOT be rendered</h1>" not in html, (
-            "User markdown should not be rendered as HTML"
+        # Raw view still carries the literal text so the toggle works.
+        assert "<pre class='user-raw'># A rendered heading" in html, (
+            "Raw user text must be preserved alongside the rendered view"
         )
-        assert "<strong>This should stay bold</strong>" not in html, (
-            "User markdown should not be rendered as HTML"
+        assert "**And some bold text**" in html, (
+            "Raw asterisks must remain intact in the raw view"
         )
 
-        print("✓ Test passed: User messages are not markdown rendered")
+        print("✓ Test passed: User messages are markdown rendered with raw preserved")
 
     finally:
         test_file_path.unlink()
 
 
+def test_user_ill_formed_markdown_falls_back_to_raw():
+    """When Markdown rendering produces ill-formed HTML (unclosed tags,
+    malformed nesting), emit only the raw `<pre>` with no toggle."""
+    from claude_code_log.html.user_formatters import format_user_text_content
+
+    # A bare opening tag is preserved verbatim by the escape=True
+    # renderer, so it doesn't produce ill-formed output — we instead
+    # exercise the fallback explicitly via the helper API below.
+    # This test focuses on the contract: well-formed → dual view,
+    # otherwise → bare <pre>.
+
+    # Normal text: should emit the dual view container.
+    good = format_user_text_content("hello **there**")
+    assert "class='user-content'" in good
+    assert "class='user-md'" in good
+    assert "class='user-raw'" in good
+
+    # Force the fallback by monkey-patching render_user_markdown to
+    # return deliberately ill-formed HTML.
+    from claude_code_log.html import user_formatters as uf
+
+    original = uf.render_user_markdown
+    try:
+        uf.render_user_markdown = lambda _text: "<p>unclosed"
+        bad = format_user_text_content("hello")
+        # Ill-formed → bare <pre>, no toggle, no dual-view wrapper.
+        assert bad == "<pre>hello</pre>"
+    finally:
+        uf.render_user_markdown = original
+
+
+def test_is_well_formed_html_unit() -> None:
+    """Unit coverage for the dual-view gate helper."""
+    from claude_code_log.html.utils import is_well_formed_html
+
+    # Well-formed outputs mistune actually produces.
+    assert is_well_formed_html("<p><strong>hi</strong></p>\n")
+    assert is_well_formed_html("<p>hi<br>there</p>")  # void element
+    assert is_well_formed_html("<ul><li>a</li><li>b</li></ul>")
+    assert is_well_formed_html("")  # empty is trivially balanced
+
+    # Unbalanced cases → fall back to raw.
+    assert not is_well_formed_html("<p>hi")
+    assert not is_well_formed_html("<p>hi</em>")  # mismatched close
+    assert not is_well_formed_html("</p>")  # stray close
+
+
+def test_render_user_markdown_escapes_html() -> None:
+    """User-side renderer must escape raw HTML so users can't inject tags."""
+    from claude_code_log.html.utils import render_user_markdown
+
+    assert "&lt;script&gt;" in render_user_markdown("<script>alert(1)</script>")
+    # Markdown features still work.
+    assert "<strong>bold</strong>" in render_user_markdown("**bold**")
+
+
 if __name__ == "__main__":
     test_server_side_markdown_rendering()
-    test_user_message_not_markdown_rendered()
+    test_user_message_markdown_rendered_with_raw_preserved()
+    test_user_ill_formed_markdown_falls_back_to_raw()
+    test_is_well_formed_html_unit()
+    test_render_user_markdown_escapes_html()
     print("\n✅ All markdown rendering tests passed!")

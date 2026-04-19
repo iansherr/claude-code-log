@@ -184,6 +184,7 @@
     <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
     <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
     <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
+    <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
     <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
 
     <script>
@@ -205,6 +206,50 @@
             debugButton.addEventListener('click', function () {
                 document.body.classList.toggle('show-debug-info');
                 debugButton.classList.toggle('active');
+            });
+
+            // User-content view toggle (Markdown / raw).
+            //
+            // Two toggles:
+            //   - Global (this floating button): flips `body.show-raw-user`.
+            //     Persisted in localStorage.
+            //   - Per-message: the `.user-view-toggle` button inside each
+            //     dual-view `.user-content` wrapper flips its own
+            //     `data-user-view` between 'md' and 'raw'. Per-message
+            //     override beats the global preference (via CSS specificity
+            //     on `[data-user-view="md"]`/`[data-user-view="raw"]`).
+            const userViewButton = document.getElementById('toggleUserView');
+            function applyUserViewButtonLabel() {
+                const showingRaw = document.body.classList.contains('show-raw-user');
+                userViewButton.textContent = showingRaw ? 'raw' : 'md';
+                userViewButton.title = showingRaw
+                    ? 'Show user messages as Markdown'
+                    : 'Show user messages as raw text';
+                userViewButton.classList.toggle('active', showingRaw);
+            }
+            // Restore saved preference on load.
+            if (localStorage.getItem('claude-code-log:user-view') === 'raw') {
+                document.body.classList.add('show-raw-user');
+            }
+            applyUserViewButtonLabel();
+            userViewButton.addEventListener('click', function () {
+                const showingRaw = document.body.classList.toggle('show-raw-user');
+                localStorage.setItem(
+                    'claude-code-log:user-view',
+                    showingRaw ? 'raw' : 'md'
+                );
+                applyUserViewButtonLabel();
+            });
+            // Delegated per-message toggle.
+            document.addEventListener('click', function (event) {
+                const btn = event.target.closest('.user-view-toggle');
+                if (!btn) return;
+                const container = btn.closest('.user-content');
+                if (!container) return;
+                const current = container.getAttribute('data-user-view') || 'md';
+                const next = current === 'md' ? 'raw' : 'md';
+                container.setAttribute('data-user-view', next);
+                btn.textContent = next === 'md' ? 'raw' : 'md';
             });
 
             // Parse URL parameters

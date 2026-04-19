@@ -132,11 +132,15 @@ def test_queue_operation_type_support():
         # Generate HTML - queue-operation messages should not appear in rendered output
         html = generate_html(messages, "Test Transcript")
 
-        # Count how many times "This is a queued message" appears
-        # It should appear only once (from user message, not from queue-operation)
+        # Count how many times "This is a queued message" appears.
+        # User text is now emitted as a dual view (rendered Markdown in
+        # .user-md + raw in .user-raw, per per-message toggle), so a
+        # correctly-rendered user message contributes two occurrences.
+        # Queue-operation messages still must NOT contribute any.
         message_count = html.count("This is a queued message")
-        assert message_count == 1, (
-            f"Message should appear once (user message only), but appeared {message_count} times"
+        assert message_count == 2, (
+            f"Message should appear twice (user message rendered in both md + raw views, "
+            f"not from queue-operation), but appeared {message_count} times"
         )
 
         # Verify queue-operation messages don't create visible elements

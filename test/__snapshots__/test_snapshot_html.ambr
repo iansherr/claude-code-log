@@ -261,6 +261,92 @@
       color: #333;
   }
   
+  /* User-content view toggle (Markdown / raw).
+   *
+   * Emitted by `format_user_text_content`: a `.user-content` wrapper
+   * with `data-user-view` starting at "md", containing `.user-md`
+   * (rendered Markdown), `.user-raw` (escaped raw text), and a small
+   * `.user-view-toggle` button.  Precedence:
+   *
+   *   1. Per-message `data-user-view="md"` / `data-user-view="raw"`
+   *      wins (highest specificity).
+   *   2. `body.show-raw-user` flips all messages without an explicit
+   *      per-message override to the raw view.
+   *   3. Default: Markdown.
+   *
+   * Messages with ill-formed Markdown emit only the bare `<pre>` (see
+   * user_formatters.py), no wrapper — those ignore both toggles and
+   * always show raw.
+   */
+  .user-content {
+      position: relative;
+  }
+  
+  .user-content .user-md {
+      display: block;
+  }
+  
+  .user-content .user-raw {
+      display: none;
+  }
+  
+  .user-content .user-view-toggle {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 1px 6px;
+      font-size: 0.7em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #888;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+  }
+  
+  .user-content:hover .user-view-toggle {
+      opacity: 1;
+  }
+  
+  .user-content .user-view-toggle:hover {
+      background-color: #f0f0f0;
+      color: #333;
+  }
+  
+  /* Per-message "raw" — wins over global via explicit attribute. */
+  .user-content[data-user-view="raw"] .user-md {
+      display: none;
+  }
+  .user-content[data-user-view="raw"] .user-raw {
+      display: block;
+  }
+  
+  /* Global raw view: apply to messages that don't have a per-message
+   * override back to "md". */
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-md {
+      display: none;
+  }
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
+      display: block;
+  }
+  
+  .user-view-global.floating-btn {
+      bottom: 300px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .user-view-global.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -2308,6 +2394,92 @@
   }
   
   .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
+  /* User-content view toggle (Markdown / raw).
+   *
+   * Emitted by `format_user_text_content`: a `.user-content` wrapper
+   * with `data-user-view` starting at "md", containing `.user-md`
+   * (rendered Markdown), `.user-raw` (escaped raw text), and a small
+   * `.user-view-toggle` button.  Precedence:
+   *
+   *   1. Per-message `data-user-view="md"` / `data-user-view="raw"`
+   *      wins (highest specificity).
+   *   2. `body.show-raw-user` flips all messages without an explicit
+   *      per-message override to the raw view.
+   *   3. Default: Markdown.
+   *
+   * Messages with ill-formed Markdown emit only the bare `<pre>` (see
+   * user_formatters.py), no wrapper — those ignore both toggles and
+   * always show raw.
+   */
+  .user-content {
+      position: relative;
+  }
+  
+  .user-content .user-md {
+      display: block;
+  }
+  
+  .user-content .user-raw {
+      display: none;
+  }
+  
+  .user-content .user-view-toggle {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 1px 6px;
+      font-size: 0.7em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #888;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+  }
+  
+  .user-content:hover .user-view-toggle {
+      opacity: 1;
+  }
+  
+  .user-content .user-view-toggle:hover {
+      background-color: #f0f0f0;
+      color: #333;
+  }
+  
+  /* Per-message "raw" — wins over global via explicit attribute. */
+  .user-content[data-user-view="raw"] .user-md {
+      display: none;
+  }
+  .user-content[data-user-view="raw"] .user-raw {
+      display: block;
+  }
+  
+  /* Global raw view: apply to messages that don't have a per-message
+   * override back to "md". */
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-md {
+      display: none;
+  }
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
+      display: block;
+  }
+  
+  .user-view-global.floating-btn {
+      bottom: 300px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .user-view-global.floating-btn.active {
       background-color: #d4e8f7;
       color: #333;
   }
@@ -5754,7 +5926,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_001</div>
-          <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Hello Claude! Can you help me understand how Python decorators work?</p>
+  </div><pre class='user-raw'>Hello Claude! Can you help me understand how Python decorators work?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
@@ -5824,7 +5997,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_003</div>
-          <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Great! Can you also show me how to create a decorator that takes parameters?</p>
+  </div><pre class='user-raw'>Great! Can you also show me how to create a decorator that takes parameters?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
@@ -5925,7 +6099,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_007</div>
-          <div class='content'><pre>Can you run that example to show the output?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Can you run that example to show the output?</p>
+  </div><pre class='user-raw'>Can you run that example to show the output?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
@@ -6024,7 +6199,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_011</div>
-          <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
+  </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
       </div>
       
@@ -6035,6 +6211,7 @@
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
+      <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -6170,6 +6347,50 @@
               debugButton.addEventListener('click', function () {
                   document.body.classList.toggle('show-debug-info');
                   debugButton.classList.toggle('active');
+              });
+  
+              // User-content view toggle (Markdown / raw).
+              //
+              // Two toggles:
+              //   - Global (this floating button): flips `body.show-raw-user`.
+              //     Persisted in localStorage.
+              //   - Per-message: the `.user-view-toggle` button inside each
+              //     dual-view `.user-content` wrapper flips its own
+              //     `data-user-view` between 'md' and 'raw'. Per-message
+              //     override beats the global preference (via CSS specificity
+              //     on `[data-user-view="md"]`/`[data-user-view="raw"]`).
+              const userViewButton = document.getElementById('toggleUserView');
+              function applyUserViewButtonLabel() {
+                  const showingRaw = document.body.classList.contains('show-raw-user');
+                  userViewButton.textContent = showingRaw ? 'raw' : 'md';
+                  userViewButton.title = showingRaw
+                      ? 'Show user messages as Markdown'
+                      : 'Show user messages as raw text';
+                  userViewButton.classList.toggle('active', showingRaw);
+              }
+              // Restore saved preference on load.
+              if (localStorage.getItem('claude-code-log:user-view') === 'raw') {
+                  document.body.classList.add('show-raw-user');
+              }
+              applyUserViewButtonLabel();
+              userViewButton.addEventListener('click', function () {
+                  const showingRaw = document.body.classList.toggle('show-raw-user');
+                  localStorage.setItem(
+                      'claude-code-log:user-view',
+                      showingRaw ? 'raw' : 'md'
+                  );
+                  applyUserViewButtonLabel();
+              });
+              // Delegated per-message toggle.
+              document.addEventListener('click', function (event) {
+                  const btn = event.target.closest('.user-view-toggle');
+                  if (!btn) return;
+                  const container = btn.closest('.user-content');
+                  if (!container) return;
+                  const current = container.getAttribute('data-user-view') || 'md';
+                  const next = current === 'md' ? 'raw' : 'md';
+                  container.setAttribute('data-user-view', next);
+                  btn.textContent = next === 'md' ? 'raw' : 'md';
               });
   
               // Parse URL parameters
@@ -13634,6 +13855,92 @@
       color: #333;
   }
   
+  /* User-content view toggle (Markdown / raw).
+   *
+   * Emitted by `format_user_text_content`: a `.user-content` wrapper
+   * with `data-user-view` starting at "md", containing `.user-md`
+   * (rendered Markdown), `.user-raw` (escaped raw text), and a small
+   * `.user-view-toggle` button.  Precedence:
+   *
+   *   1. Per-message `data-user-view="md"` / `data-user-view="raw"`
+   *      wins (highest specificity).
+   *   2. `body.show-raw-user` flips all messages without an explicit
+   *      per-message override to the raw view.
+   *   3. Default: Markdown.
+   *
+   * Messages with ill-formed Markdown emit only the bare `<pre>` (see
+   * user_formatters.py), no wrapper — those ignore both toggles and
+   * always show raw.
+   */
+  .user-content {
+      position: relative;
+  }
+  
+  .user-content .user-md {
+      display: block;
+  }
+  
+  .user-content .user-raw {
+      display: none;
+  }
+  
+  .user-content .user-view-toggle {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 1px 6px;
+      font-size: 0.7em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #888;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+  }
+  
+  .user-content:hover .user-view-toggle {
+      opacity: 1;
+  }
+  
+  .user-content .user-view-toggle:hover {
+      background-color: #f0f0f0;
+      color: #333;
+  }
+  
+  /* Per-message "raw" — wins over global via explicit attribute. */
+  .user-content[data-user-view="raw"] .user-md {
+      display: none;
+  }
+  .user-content[data-user-view="raw"] .user-raw {
+      display: block;
+  }
+  
+  /* Global raw view: apply to messages that don't have a per-message
+   * override back to "md". */
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-md {
+      display: none;
+  }
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
+      display: block;
+  }
+  
+  .user-view-global.floating-btn {
+      bottom: 300px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .user-view-global.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
   @media (max-width: 1280px) {
       .header > span:first-child {
           flex: auto;
@@ -17076,7 +17383,8 @@
               </div>
           </div>
           <div class='debug-info'>edge_001</div>
-          <div class='content'><pre>Here&#x27;s a message with some **markdown** formatting, `inline code`, and even a [link](https://example.com). Let&#x27;s see how it renders!</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Here's a message with some <strong>markdown</strong> formatting, <code>inline code</code>, and even a <a href="https://example.com">link</a>. Let's see how it renders!</p>
+  </div><pre class='user-raw'>Here&#x27;s a message with some **markdown** formatting, `inline code`, and even a [link](https://example.com). Let&#x27;s see how it renders!</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
@@ -17165,7 +17473,8 @@
               </div>
           </div>
           <div class='debug-info'>edge_003</div>
-          <div class='content'><pre>Let&#x27;s test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Let's test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
+  </div><pre class='user-raw'>Let&#x27;s test a very long message to see how it handles text wrapping and layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
@@ -17347,7 +17656,8 @@
               </div>
           </div>
           <div class='debug-info'>edge_011</div>
-          <div class='content'><pre>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</p>
+  </div><pre class='user-raw'>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</pre></div></div>
           
       </div>
       
@@ -17366,7 +17676,8 @@
               </div>
           </div>
           <div class='debug-info'>edge_010</div>
-          <div class='content'><pre>wow error</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>wow error</p>
+  </div><pre class='user-raw'>wow error</pre></div></div>
           
       </div>
       
@@ -17456,6 +17767,7 @@
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
+      <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -17591,6 +17903,50 @@
               debugButton.addEventListener('click', function () {
                   document.body.classList.toggle('show-debug-info');
                   debugButton.classList.toggle('active');
+              });
+  
+              // User-content view toggle (Markdown / raw).
+              //
+              // Two toggles:
+              //   - Global (this floating button): flips `body.show-raw-user`.
+              //     Persisted in localStorage.
+              //   - Per-message: the `.user-view-toggle` button inside each
+              //     dual-view `.user-content` wrapper flips its own
+              //     `data-user-view` between 'md' and 'raw'. Per-message
+              //     override beats the global preference (via CSS specificity
+              //     on `[data-user-view="md"]`/`[data-user-view="raw"]`).
+              const userViewButton = document.getElementById('toggleUserView');
+              function applyUserViewButtonLabel() {
+                  const showingRaw = document.body.classList.contains('show-raw-user');
+                  userViewButton.textContent = showingRaw ? 'raw' : 'md';
+                  userViewButton.title = showingRaw
+                      ? 'Show user messages as Markdown'
+                      : 'Show user messages as raw text';
+                  userViewButton.classList.toggle('active', showingRaw);
+              }
+              // Restore saved preference on load.
+              if (localStorage.getItem('claude-code-log:user-view') === 'raw') {
+                  document.body.classList.add('show-raw-user');
+              }
+              applyUserViewButtonLabel();
+              userViewButton.addEventListener('click', function () {
+                  const showingRaw = document.body.classList.toggle('show-raw-user');
+                  localStorage.setItem(
+                      'claude-code-log:user-view',
+                      showingRaw ? 'raw' : 'md'
+                  );
+                  applyUserViewButtonLabel();
+              });
+              // Delegated per-message toggle.
+              document.addEventListener('click', function (event) {
+                  const btn = event.target.closest('.user-view-toggle');
+                  if (!btn) return;
+                  const container = btn.closest('.user-content');
+                  if (!container) return;
+                  const current = container.getAttribute('data-user-view') || 'md';
+                  const next = current === 'md' ? 'raw' : 'md';
+                  container.setAttribute('data-user-view', next);
+                  btn.textContent = next === 'md' ? 'raw' : 'md';
               });
   
               // Parse URL parameters
@@ -19273,6 +19629,92 @@
   }
   
   .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
+  /* User-content view toggle (Markdown / raw).
+   *
+   * Emitted by `format_user_text_content`: a `.user-content` wrapper
+   * with `data-user-view` starting at "md", containing `.user-md`
+   * (rendered Markdown), `.user-raw` (escaped raw text), and a small
+   * `.user-view-toggle` button.  Precedence:
+   *
+   *   1. Per-message `data-user-view="md"` / `data-user-view="raw"`
+   *      wins (highest specificity).
+   *   2. `body.show-raw-user` flips all messages without an explicit
+   *      per-message override to the raw view.
+   *   3. Default: Markdown.
+   *
+   * Messages with ill-formed Markdown emit only the bare `<pre>` (see
+   * user_formatters.py), no wrapper — those ignore both toggles and
+   * always show raw.
+   */
+  .user-content {
+      position: relative;
+  }
+  
+  .user-content .user-md {
+      display: block;
+  }
+  
+  .user-content .user-raw {
+      display: none;
+  }
+  
+  .user-content .user-view-toggle {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 1px 6px;
+      font-size: 0.7em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #888;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+  }
+  
+  .user-content:hover .user-view-toggle {
+      opacity: 1;
+  }
+  
+  .user-content .user-view-toggle:hover {
+      background-color: #f0f0f0;
+      color: #333;
+  }
+  
+  /* Per-message "raw" — wins over global via explicit attribute. */
+  .user-content[data-user-view="raw"] .user-md {
+      display: none;
+  }
+  .user-content[data-user-view="raw"] .user-raw {
+      display: block;
+  }
+  
+  /* Global raw view: apply to messages that don't have a per-message
+   * override back to "md". */
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-md {
+      display: none;
+  }
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
+      display: block;
+  }
+  
+  .user-view-global.floating-btn {
+      bottom: 300px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .user-view-global.floating-btn.active {
       background-color: #d4e8f7;
       color: #333;
   }
@@ -22782,7 +23224,8 @@
               </div>
           </div>
           <div class='debug-info'>session_b_00</div>
-          <div class='content'><pre>This is from a different session file to test multi-session handling.</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is from a different session file to test multi-session handling.</p>
+  </div><pre class='user-raw'>This is from a different session file to test multi-session handling.</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
@@ -22833,7 +23276,8 @@
               </div>
           </div>
           <div class='debug-info'>session_b_00</div>
-          <div class='content'><pre>Perfect! This should appear without any session divider above it.</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Perfect! This should appear without any session divider above it.</p>
+  </div><pre class='user-raw'>Perfect! This should appear without any session divider above it.</pre></div></div>
           
       </div>
       
@@ -22875,7 +23319,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_001</div>
-          <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Hello Claude! Can you help me understand how Python decorators work?</p>
+  </div><pre class='user-raw'>Hello Claude! Can you help me understand how Python decorators work?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-5' data-border-color='user'>
               
@@ -22945,7 +23390,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_003</div>
-          <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Great! Can you also show me how to create a decorator that takes parameters?</p>
+  </div><pre class='user-raw'>Great! Can you also show me how to create a decorator that takes parameters?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
@@ -23046,7 +23492,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_007</div>
-          <div class='content'><pre>Can you run that example to show the output?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Can you run that example to show the output?</p>
+  </div><pre class='user-raw'>Can you run that example to show the output?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-11' data-border-color='user'>
               
@@ -23145,7 +23592,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_011</div>
-          <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
+  </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
       </div>
       
@@ -23156,6 +23604,7 @@
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
+      <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -23291,6 +23740,50 @@
               debugButton.addEventListener('click', function () {
                   document.body.classList.toggle('show-debug-info');
                   debugButton.classList.toggle('active');
+              });
+  
+              // User-content view toggle (Markdown / raw).
+              //
+              // Two toggles:
+              //   - Global (this floating button): flips `body.show-raw-user`.
+              //     Persisted in localStorage.
+              //   - Per-message: the `.user-view-toggle` button inside each
+              //     dual-view `.user-content` wrapper flips its own
+              //     `data-user-view` between 'md' and 'raw'. Per-message
+              //     override beats the global preference (via CSS specificity
+              //     on `[data-user-view="md"]`/`[data-user-view="raw"]`).
+              const userViewButton = document.getElementById('toggleUserView');
+              function applyUserViewButtonLabel() {
+                  const showingRaw = document.body.classList.contains('show-raw-user');
+                  userViewButton.textContent = showingRaw ? 'raw' : 'md';
+                  userViewButton.title = showingRaw
+                      ? 'Show user messages as Markdown'
+                      : 'Show user messages as raw text';
+                  userViewButton.classList.toggle('active', showingRaw);
+              }
+              // Restore saved preference on load.
+              if (localStorage.getItem('claude-code-log:user-view') === 'raw') {
+                  document.body.classList.add('show-raw-user');
+              }
+              applyUserViewButtonLabel();
+              userViewButton.addEventListener('click', function () {
+                  const showingRaw = document.body.classList.toggle('show-raw-user');
+                  localStorage.setItem(
+                      'claude-code-log:user-view',
+                      showingRaw ? 'raw' : 'md'
+                  );
+                  applyUserViewButtonLabel();
+              });
+              // Delegated per-message toggle.
+              document.addEventListener('click', function (event) {
+                  const btn = event.target.closest('.user-view-toggle');
+                  if (!btn) return;
+                  const container = btn.closest('.user-content');
+                  if (!container) return;
+                  const current = container.getAttribute('data-user-view') || 'md';
+                  const next = current === 'md' ? 'raw' : 'md';
+                  container.setAttribute('data-user-view', next);
+                  btn.textContent = next === 'md' ? 'raw' : 'md';
               });
   
               // Parse URL parameters
@@ -24973,6 +25466,92 @@
   }
   
   .debug-toggle.floating-btn.active {
+      background-color: #d4e8f7;
+      color: #333;
+  }
+  
+  /* User-content view toggle (Markdown / raw).
+   *
+   * Emitted by `format_user_text_content`: a `.user-content` wrapper
+   * with `data-user-view` starting at "md", containing `.user-md`
+   * (rendered Markdown), `.user-raw` (escaped raw text), and a small
+   * `.user-view-toggle` button.  Precedence:
+   *
+   *   1. Per-message `data-user-view="md"` / `data-user-view="raw"`
+   *      wins (highest specificity).
+   *   2. `body.show-raw-user` flips all messages without an explicit
+   *      per-message override to the raw view.
+   *   3. Default: Markdown.
+   *
+   * Messages with ill-formed Markdown emit only the bare `<pre>` (see
+   * user_formatters.py), no wrapper — those ignore both toggles and
+   * always show raw.
+   */
+  .user-content {
+      position: relative;
+  }
+  
+  .user-content .user-md {
+      display: block;
+  }
+  
+  .user-content .user-raw {
+      display: none;
+  }
+  
+  .user-content .user-view-toggle {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      padding: 1px 6px;
+      font-size: 0.7em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      color: #888;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+  }
+  
+  .user-content:hover .user-view-toggle {
+      opacity: 1;
+  }
+  
+  .user-content .user-view-toggle:hover {
+      background-color: #f0f0f0;
+      color: #333;
+  }
+  
+  /* Per-message "raw" — wins over global via explicit attribute. */
+  .user-content[data-user-view="raw"] .user-md {
+      display: none;
+  }
+  .user-content[data-user-view="raw"] .user-raw {
+      display: block;
+  }
+  
+  /* Global raw view: apply to messages that don't have a per-message
+   * override back to "md". */
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-md {
+      display: none;
+  }
+  body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
+      display: block;
+  }
+  
+  .user-view-global.floating-btn {
+      bottom: 300px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.65em;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-weight: 600;
+  }
+  
+  .user-view-global.floating-btn.active {
       background-color: #d4e8f7;
       color: #333;
   }
@@ -28419,7 +28998,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_001</div>
-          <div class='content'><pre>Hello Claude! Can you help me understand how Python decorators work?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Hello Claude! Can you help me understand how Python decorators work?</p>
+  </div><pre class='user-raw'>Hello Claude! Can you help me understand how Python decorators work?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-1' data-border-color='user'>
               
@@ -28489,7 +29069,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_003</div>
-          <div class='content'><pre>Great! Can you also show me how to create a decorator that takes parameters?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Great! Can you also show me how to create a decorator that takes parameters?</p>
+  </div><pre class='user-raw'>Great! Can you also show me how to create a decorator that takes parameters?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-3' data-border-color='user'>
               
@@ -28590,7 +29171,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_007</div>
-          <div class='content'><pre>Can you run that example to show the output?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Can you run that example to show the output?</p>
+  </div><pre class='user-raw'>Can you run that example to show the output?</pre></div></div>
           
           <div class='fold-bar' data-message-id='d-7' data-border-color='user'>
               
@@ -28689,7 +29271,8 @@
               </div>
           </div>
           <div class='debug-info'>msg_011</div>
-          <div class='content'><pre>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div>
+          <div class='content'><div class='user-content' data-user-view='md'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
+  </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
       </div>
       
@@ -28700,6 +29283,7 @@
       <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
+      <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
   
       <script>
@@ -28835,6 +29419,50 @@
               debugButton.addEventListener('click', function () {
                   document.body.classList.toggle('show-debug-info');
                   debugButton.classList.toggle('active');
+              });
+  
+              // User-content view toggle (Markdown / raw).
+              //
+              // Two toggles:
+              //   - Global (this floating button): flips `body.show-raw-user`.
+              //     Persisted in localStorage.
+              //   - Per-message: the `.user-view-toggle` button inside each
+              //     dual-view `.user-content` wrapper flips its own
+              //     `data-user-view` between 'md' and 'raw'. Per-message
+              //     override beats the global preference (via CSS specificity
+              //     on `[data-user-view="md"]`/`[data-user-view="raw"]`).
+              const userViewButton = document.getElementById('toggleUserView');
+              function applyUserViewButtonLabel() {
+                  const showingRaw = document.body.classList.contains('show-raw-user');
+                  userViewButton.textContent = showingRaw ? 'raw' : 'md';
+                  userViewButton.title = showingRaw
+                      ? 'Show user messages as Markdown'
+                      : 'Show user messages as raw text';
+                  userViewButton.classList.toggle('active', showingRaw);
+              }
+              // Restore saved preference on load.
+              if (localStorage.getItem('claude-code-log:user-view') === 'raw') {
+                  document.body.classList.add('show-raw-user');
+              }
+              applyUserViewButtonLabel();
+              userViewButton.addEventListener('click', function () {
+                  const showingRaw = document.body.classList.toggle('show-raw-user');
+                  localStorage.setItem(
+                      'claude-code-log:user-view',
+                      showingRaw ? 'raw' : 'md'
+                  );
+                  applyUserViewButtonLabel();
+              });
+              // Delegated per-message toggle.
+              document.addEventListener('click', function (event) {
+                  const btn = event.target.closest('.user-view-toggle');
+                  if (!btn) return;
+                  const container = btn.closest('.user-content');
+                  if (!container) return;
+                  const current = container.getAttribute('data-user-view') || 'md';
+                  const next = current === 'md' ? 'raw' : 'md';
+                  container.setAttribute('data-user-view', next);
+                  btn.textContent = next === 'md' ? 'raw' : 'md';
               });
   
               // Parse URL parameters
