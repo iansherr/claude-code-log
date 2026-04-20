@@ -49,6 +49,7 @@
 .teammate-message {
     --cc-color: var(--cc-gray);
     --cc-color-bg: var(--cc-gray-bg);
+
     border-left: 4px solid var(--cc-color);
     background: var(--cc-color-bg);
     padding: 0.6em 0.8em;
@@ -212,16 +213,22 @@
 
 .teammate-tool-card dd {
     margin: 0;
-    word-break: break-word;
+    /* `word-break: break-word` is deprecated; the modern equivalent is
+       `overflow-wrap: anywhere` (breaks within words when they'd
+       otherwise overflow, but keeps normal word boundaries elsewhere). */
+    word-break: normal;
+    overflow-wrap: anywhere;
 }
 
 .teammate-tool-card.team-card {
     --cc-color: var(--cc-purple);
+
     border-left: 4px solid var(--cc-color);
 }
 
 .teammate-tool-card.task-update-card {
     --cc-color: var(--cc-blue);
+
     border-left: 4px solid var(--cc-color);
 }
 
@@ -232,6 +239,7 @@
 
 .teammate-tool-card.send-message-card {
     --cc-color: var(--cc-orange);
+
     border-left: 4px solid var(--cc-color);
 }
 
