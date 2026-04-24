@@ -33,6 +33,7 @@ from ..models import (
     SessionHeaderMessage,
     SlashCommandMessage,
     SystemMessage,
+    TeammateMessage,
     ThinkingMessage,
     ToolResultMessage,
     ToolUseMessage,
@@ -65,6 +66,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     UserMemoryMessage: ["user"],
     CompactedSummaryMessage: ["user", "compacted"],
     CommandOutputMessage: ["user", "command-output"],
+    TeammateMessage: ["user", "teammate"],
     # Assistant message types
     AssistantTextMessage: ["assistant"],
     # Tool message types

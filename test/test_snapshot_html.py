@@ -61,6 +61,27 @@ class TestSessionHTMLSnapshots:
         assert html == html_snapshot
 
 
+class TestTeammatesHTMLSnapshots:
+    """Snapshot tests for the experimental teammates feature rendering."""
+
+    def test_teammates_fixture_html(self, html_snapshot, test_data_dir):
+        """Snapshot the teammates fixture rendered as a combined transcript.
+
+        Locks in the rendered shape of:
+        - <teammate-message> block cards with colored borders/badges
+        - the six teammate tool cards (TeamCreate/Delete, TaskCreate/Update/
+          List, SendMessage)
+        - the task-list HTML table with per-row status classes
+        - the teammate-aware extensions on Task spawn inputs/outputs
+        """
+        teammates_dir = test_data_dir / "teammates"
+        # Load main session + both linked subagents via the standard pipeline.
+        main_jsonl = teammates_dir / "ef000000-0000-4000-8000-000000000001.jsonl"
+        messages = load_transcript(main_jsonl)
+        html = generate_html(messages, "Teammates Fixture")
+        assert html == html_snapshot
+
+
 class TestIndexHTMLSnapshots:
     """Snapshot tests for project index HTML output."""
 

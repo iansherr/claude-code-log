@@ -60,6 +60,24 @@ class TestSessionMarkdownSnapshots:
         assert md == markdown_snapshot
 
 
+class TestTeammatesMarkdownSnapshots:
+    """Snapshot tests for the teammates feature Markdown rendering."""
+
+    def test_teammates_fixture_markdown(self, markdown_snapshot, test_data_dir):
+        """Snapshot the teammates fixture rendered as Markdown.
+
+        Covers the colored-circle emoji markers, the pipe-table
+        TaskList, the six teammate tool shapes, and the blockquoted
+        TeammateMessage bodies.
+        """
+        teammates_dir = test_data_dir / "teammates"
+        main_jsonl = teammates_dir / "ef000000-0000-4000-8000-000000000001.jsonl"
+        messages = load_transcript(main_jsonl)
+        renderer = MarkdownRenderer()
+        md = renderer.generate(messages, "Teammates Fixture")
+        assert md == markdown_snapshot
+
+
 class TestIndexMarkdownSnapshots:
     """Snapshot tests for project index Markdown output."""
 
