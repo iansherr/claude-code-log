@@ -11337,8 +11337,9 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Active form</dt><dd>alice adds relay tests</dd><dt>Description</dt><dd><div class="task-create-description markdown"><p>Raise relay.py coverage.</p>
-  </div></dd></dl></div>
+          <div class='content'><div class="task-create-description markdown"><p><em><strong>alice adds relay tests</strong></em></p>
+  <p>Raise relay.py coverage.</p>
+  </div></div>
           
       </div>
       
@@ -11357,8 +11358,9 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Active form</dt><dd>bob adds server tests</dd><dt>Description</dt><dd><div class="task-create-description markdown"><p>Raise server.py coverage.</p>
-  </div></dd></dl></div>
+          <div class='content'><div class="task-create-description markdown"><p><em><strong>bob adds server tests</strong></em></p>
+  <p>Raise server.py coverage.</p>
+  </div></div>
           
       </div>
       

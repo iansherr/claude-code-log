@@ -296,31 +296,26 @@ def _status_pill(status: str) -> str:
 
 
 def format_taskcreate_input(input_: TaskCreateInput) -> str:
-    """Body for TaskCreate: ``Active form`` + ``Description`` only.
+    """Body for TaskCreate: combined activeForm + description as Markdown.
 
     Subject moved to the tool-use title (``Task #N <subject> [created]``)
-    by ``HtmlRenderer.title_TaskCreateInput`` to avoid the redundant
-    Subject row + duplicate tool-result card seen in the original
-    rendering. ``Description`` is rendered as collapsible Markdown so
-    long descriptions (which routinely include lists, code spans, and
-    multi-paragraph plans) read like the source rather than a single
-    flattened blob.
+    by ``HtmlRenderer.title_TaskCreateInput``. The remaining fields read
+    naturally as a single document: ``activeForm`` is a short
+    "in-progress" verb phrase ("Writing relay.py tests"), so it slots in
+    as a bold-italic heading; ``description`` is the body that may run
+    several paragraphs with lists and code spans. Stitching them with a
+    blank-line separator and routing through ``render_markdown_
+    collapsible`` produces a flowing document rather than two labeled
+    rows. Either field on its own degrades naturally.
     """
-    rows: list[tuple[str, str]] = []
+    parts: list[str] = []
     if input_.activeForm:
-        rows.append(("Active form", escape_html(input_.activeForm)))
+        parts.append(f"***{input_.activeForm}***")
     if input_.description:
-        rows.append(
-            (
-                "Description",
-                render_markdown_collapsible(
-                    input_.description, "task-create-description"
-                ),
-            )
-        )
-    if not rows:
+        parts.append(input_.description)
+    if not parts:
         return ""
-    return _render_card("task-create-card", rows)
+    return render_markdown_collapsible("\n\n".join(parts), "task-create-description")
 
 
 def format_taskcreate_output(_output: TaskCreateOutput) -> str:
