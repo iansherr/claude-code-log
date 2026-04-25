@@ -102,10 +102,36 @@ _COLOR_CIRCLE: dict[str, str] = {
 }
 
 
+def _inline_code(value: str) -> str:
+    """Wrap *value* in a CommonMark inline code span that survives backticks.
+
+    CommonMark doesn't honor backslash escapes inside code spans, so a
+    naive `` `foo`bar` `` would close the span at the inner tick. The
+    idiomatic recipe is to widen the fence past the longest run of
+    backticks in the value, and pad with a space when the value
+    starts/ends with a backtick (otherwise the leading/trailing tick
+    fuses with the fence).
+    """
+    if not value:
+        return "``"  # empty code span
+    longest = 0
+    run = 0
+    for ch in value:
+        if ch == "`":
+            run += 1
+            if run > longest:
+                longest = run
+        else:
+            run = 0
+    fence = "`" * (longest + 1)
+    pad = " " if value.startswith("`") or value.endswith("`") else ""
+    return f"{fence}{pad}{value}{pad}{fence}"
+
+
 def _teammate_marker(name: str, color: Optional[str]) -> str:
     """Return a `🟢 name` marker for a teammate in Markdown output."""
     circle = _COLOR_CIRCLE.get((color or "").lower(), _COLOR_CIRCLE["default"])
-    return f"{circle} `{name}`"
+    return f"{circle} {_inline_code(name)}"
 
 
 def _table_cell(value: Any) -> str:
@@ -366,10 +392,13 @@ class MarkdownRenderer(Renderer):
             title = f"📋 Session `{session_short}`"
         if content.team_name:
             # Boundary hygiene: a malformed transcript could in theory
-            # carry a backtick in teamName; escape pre-emptively so the
-            # surrounding code-span stays well-formed.
-            safe_team = content.team_name.replace("`", r"\`")
-            title = f"{title} — Team: `{safe_team}`"
+            # carry a backtick in teamName. CommonMark code spans don't
+            # honor backslash escapes inside them — the idiomatic guard
+            # is to widen the fence beyond the longest run of backticks
+            # in the value (and pad with a space when it starts/ends
+            # with a backtick, otherwise the wider fence matches the
+            # leading/trailing tick).
+            title = f"{title} — Team: {_inline_code(content.team_name)}"
         return title
 
     # -------------------------------------------------------------------------

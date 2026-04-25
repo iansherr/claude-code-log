@@ -6221,8 +6221,11 @@
   
               // Toggle details functionality
               // Selector for all collapsible details elements (multiple classes)
-              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+              // Include `.subagent-session-block` (PR #125) so the global
+              // "Toggle all details" button affects subagent collapsed
+              // sections too.
+              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
   
               function updateToggleButton() {
                   const allDetails = document.querySelectorAll(collapsibleSelector);
@@ -12054,8 +12057,11 @@
   
               // Toggle details functionality
               // Selector for all collapsible details elements (multiple classes)
-              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+              // Include `.subagent-session-block` (PR #125) so the global
+              // "Toggle all details" button affects subagent collapsed
+              // sections too.
+              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
   
               function updateToggleButton() {
                   const allDetails = document.querySelectorAll(collapsibleSelector);
@@ -17699,8 +17705,11 @@
   
               // Toggle details functionality
               // Selector for all collapsible details elements (multiple classes)
-              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+              // Include `.subagent-session-block` (PR #125) so the global
+              // "Toggle all details" button affects subagent collapsed
+              // sections too.
+              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
   
               function updateToggleButton() {
                   const allDetails = document.querySelectorAll(collapsibleSelector);
@@ -23401,8 +23410,11 @@
   
               // Toggle details functionality
               // Selector for all collapsible details elements (multiple classes)
-              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+              // Include `.subagent-session-block` (PR #125) so the global
+              // "Toggle all details" button affects subagent collapsed
+              // sections too.
+              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
   
               function updateToggleButton() {
                   const allDetails = document.querySelectorAll(collapsibleSelector);
@@ -28948,8 +28960,11 @@
   
               // Toggle details functionality
               // Selector for all collapsible details elements (multiple classes)
-              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+              // Include `.subagent-session-block` (PR #125) so the global
+              // "Toggle all details" button affects subagent collapsed
+              // sections too.
+              const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+              const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
   
               function updateToggleButton() {
                   const allDetails = document.querySelectorAll(collapsibleSelector);

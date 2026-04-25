@@ -2598,14 +2598,26 @@ def process_projects_hierarchy(
                         if usage.cache_read_input_tokens:
                             total_cache_read_tokens += usage.cache_read_input_tokens
 
-            # Distinct teamName values across this project's sessions —
-            # walked from raw messages so the no-cache fallback path
-            # gets the same "Team: …" annotation as the cached path.
-            team_names_set: set[str] = set()
+            # Distinct teamName values across this project's sessions.
+            # Mirror the cached path's filtering: skip warmup-only
+            # sessions, coalesce agent synthetic-sessionIds into their
+            # parent, and only consider non-summary entries (matches
+            # _collect_project_sessions / _update_cache_with_session_data
+            # so cached and no-cache paths produce the same annotation).
+            warmup_for_teams = get_warmup_session_ids(messages)
+            team_name_per_session: dict[str, str] = {}
             for _msg in messages:
+                if isinstance(_msg, SummaryTranscriptEntry):
+                    continue
+                if not hasattr(_msg, "sessionId"):
+                    continue
+                _sid = get_parent_session_id(getattr(_msg, "sessionId", ""))
+                if not _sid or _sid in warmup_for_teams:
+                    continue
                 _tn = getattr(_msg, "teamName", None)
-                if _tn:
-                    team_names_set.add(_tn)
+                if _tn and _sid not in team_name_per_session:
+                    team_name_per_session[_sid] = _tn
+            team_names_set: set[str] = set(team_name_per_session.values())
 
             project_summaries.append(
                 {

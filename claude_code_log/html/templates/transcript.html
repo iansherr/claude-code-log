@@ -99,11 +99,14 @@
 
     {# Track open <details> for subagent session blocks: a subagent
        session opens one when its header is encountered, and we close it
-       when the next session header (any kind) appears OR at end of loop. #}
+       at the next *trunk* or branch-of-different-session header — but
+       NOT at a branch header that's a within-session fork inside the
+       subagent session itself, otherwise the fork ends the collapsed
+       block prematurely. #}
     {% set _state = namespace(in_collapsed_session=False) %}
     {% for message, message_title, html_content, formatted_timestamp in messages %}
     {% if is_session_header(message) %}
-    {%- if _state.in_collapsed_session %}</details>{% set _state.in_collapsed_session = False %}{% endif %}
+    {%- if _state.in_collapsed_session and not message.is_branch_header %}</details>{% set _state.in_collapsed_session = False %}{% endif %}
     {%- if not message.is_branch_header %}<div class="session-divider"></div>{% endif %}
     {%- if message.is_collapsed_session %}<details class="subagent-session-block"><summary class="subagent-session-summary">{{ html_content|safe }}</summary>{% set _state.in_collapsed_session = True %}{% endif %}
     <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}{% if message.is_collapsed_session %} subagent-session-header{% endif %}{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
@@ -260,8 +263,11 @@
 
             // Toggle details functionality
             // Selector for all collapsible details elements (multiple classes)
-            const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible';
-            const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible';
+            // Include `.subagent-session-block` (PR #125) so the global
+            // "Toggle all details" button affects subagent collapsed
+            // sections too.
+            const collapsibleSelector = 'details.collapsible-details, details.collapsible-code, details.tool-param-collapsible, details.subagent-session-block';
+            const collapsibleOpenSelector = 'details[open].collapsible-details, details[open].collapsible-code, details[open].tool-param-collapsible, details[open].subagent-session-block';
 
             function updateToggleButton() {
                 const allDetails = document.querySelectorAll(collapsibleSelector);
