@@ -36,7 +36,7 @@ from ..models import (
     TeammateMessage,
     TeammateMessageBlock,
 )
-from .utils import escape_html, render_markdown
+from .utils import escape_html, render_markdown, render_markdown_collapsible
 
 # Palette names the CSS recognises (kept in sync with teammate_styles.css).
 _PALETTE: frozenset[str] = frozenset(
@@ -358,15 +358,23 @@ def format_sendmessage_input(
     input_: SendMessageInput,
     teammate_colors: Optional[dict[str, str]] = None,
 ) -> str:
-    rows: list[tuple[str, str]] = []
-    if input_.recipient:
-        color = _lookup_color(teammate_colors, input_.recipient)
-        rows.append(("To", _teammate_badge(input_.recipient, color)))
-    if input_.type:
-        rows.append(("Type", escape_html(input_.type)))
+    """Body for SendMessage: just the message content as markdown.
+
+    Recipient + ``To`` go in the title via
+    ``HtmlRenderer.title_SendMessageInput``. The ``type`` field is
+    almost always ``"message"`` and reads as noise; surfaced only when
+    it's something else (e.g. a future ``"signal"`` variant).
+    """
+    del teammate_colors  # recipient now goes in the title
+    parts: list[str] = []
+    if input_.type and input_.type != "message":
+        parts.append(
+            f'<div class="send-message-type">'
+            f"Type: <code>{escape_html(input_.type)}</code></div>"
+        )
     if input_.content:
-        rows.append(("Message", _quote_text_block(input_.content)))
-    return _render_card("send-message-card", rows)
+        parts.append(render_markdown_collapsible(input_.content, "send-message-body"))
+    return "".join(parts)
 
 
 def format_sendmessage_output(

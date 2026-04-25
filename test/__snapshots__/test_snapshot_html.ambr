@@ -11643,7 +11643,7 @@
       
       <div class='message tool_use pair_first d-0 d-21' data-message-id='d-24' id='msg-d-24'>
           <div class='header'>
-              <span title="ID: tu_SendMessage_001">🛠️ SendMessage</span>
+              <span title="ID: tu_SendMessage_001">✉️ SendMessage <span class='tool-summary'>to <span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></span></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:18:00.000Z'>2026-04-19 10:18:00</span>
@@ -11652,7 +11652,8 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card send-message-card"><dt>To</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Type</dt><dd>shutdown_request</dd><dt>Message</dt><dd><pre class='teammate-text-block'>Thanks alice — shutting down.</pre></dd></dl></div>
+          <div class='content'><div class="send-message-type">Type: <code>shutdown_request</code></div><div class="send-message-body markdown"><p>Thanks alice — shutting down.</p>
+  </div></div>
           
       </div>
       

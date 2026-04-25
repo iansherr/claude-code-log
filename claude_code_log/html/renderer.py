@@ -657,6 +657,24 @@ class HtmlRenderer(Renderer):
         subject = self._task_subjects_by_session.get(sid, {}).get(input.taskId, "")
         return self._task_title(message, "updated", subject, input.taskId)
 
+    def title_SendMessageInput(
+        self, input: SendMessageInput, message: TemplateMessage
+    ) -> str:
+        """Title → '✉️ SendMessage to <recipient_badge>'.
+
+        The leading ✉️ replaces the default 🛠️ tool emoji (the template
+        suppresses the default when the title already starts with one).
+        Inlining the recipient frees the body to render the message
+        content directly as markdown.
+        """
+        from .teammate_formatter import _teammate_badge
+
+        if input.recipient:
+            color = self._colors_for(message).get(input.recipient)
+            badge = _teammate_badge(input.recipient, color)
+            return f"✉️ SendMessage <span class='tool-summary'>to {badge}</span>"
+        return "✉️ SendMessage"
+
     def _flatten_preorder(
         self, roots: list[TemplateMessage]
     ) -> list[Tuple[TemplateMessage, str, str, str]]:
