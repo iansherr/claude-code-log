@@ -248,13 +248,23 @@ def format_taskcreate_input(input_: TaskCreateInput) -> str:
     Subject moved to the tool-use title (``Task #N <subject> [created]``)
     by ``HtmlRenderer.title_TaskCreateInput`` to avoid the redundant
     Subject row + duplicate tool-result card seen in the original
-    rendering.
+    rendering. ``Description`` is rendered as collapsible Markdown so
+    long descriptions (which routinely include lists, code spans, and
+    multi-paragraph plans) read like the source rather than a single
+    flattened blob.
     """
     rows: list[tuple[str, str]] = []
     if input_.activeForm:
         rows.append(("Active form", escape_html(input_.activeForm)))
     if input_.description:
-        rows.append(("Description", escape_html(input_.description)))
+        rows.append(
+            (
+                "Description",
+                render_markdown_collapsible(
+                    input_.description, "task-create-description"
+                ),
+            )
+        )
     if not rows:
         return ""
     return _render_card("task-create-card", rows)
