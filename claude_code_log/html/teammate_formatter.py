@@ -475,11 +475,6 @@ def _render_card(css_class: str, rows: Iterable[tuple[str, str]]) -> str:
     return f'<dl class="teammate-tool-card {css_class}">{row_html}</dl>'
 
 
-def _quote_text_block(text: str) -> str:
-    """Render multi-line text inside a card cell without losing line breaks."""
-    return f"<pre class='teammate-text-block'>{escape_html(text)}</pre>"
-
-
 def _format_usage(
     total_tokens: Optional[int],
     tool_uses: Optional[int],

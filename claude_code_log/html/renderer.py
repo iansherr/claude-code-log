@@ -667,7 +667,10 @@ class HtmlRenderer(Renderer):
         Inlining the recipient frees the body to render the message
         content directly as markdown.
         """
-        from .teammate_formatter import _teammate_badge
+        # Re-use the formatter module's badge helper. The underscore is
+        # legacy intra-module convention; surfacing the title here is
+        # the only cross-module call.
+        from .teammate_formatter import _teammate_badge  # pyright: ignore[reportPrivateUsage]
 
         if input.recipient:
             color = self._colors_for(message).get(input.recipient)

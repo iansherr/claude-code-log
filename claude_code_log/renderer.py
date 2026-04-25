@@ -1510,9 +1510,15 @@ def _relocate_subagent_blocks(
         if id(msg) in block_ids:
             continue
         result.append(msg)
+        # An anchor is any trunk-session tool_result that carries an
+        # ``agent_id`` (set by the loader from
+        # ``toolUseResult.agentId``). The ``tool_name`` would normally
+        # be ``"Task"`` or ``"Agent"``, but the tool_factory's
+        # context-lookup occasionally fails to populate it (e.g. when
+        # the tool_use sits in a session-fork branch); falling back to
+        # the agent_id alone keeps relocation working in those cases.
         if (
             isinstance(msg.content, ToolResultMessage)
-            and msg.content.tool_name in ("Task", "Agent")
             and msg.meta.agent_id
             and "#agent-" not in (msg.meta.session_id or "")
         ):

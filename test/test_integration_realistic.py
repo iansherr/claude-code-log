@@ -1725,3 +1725,147 @@ class TestMultiFormatOutput:
         if project.exists():
             session_files = list(project.glob(f"session-*.{ext}"))
             assert len(session_files) == 0
+
+
+@pytest.mark.integration
+class TestExperimentsWorktreesTeammates:
+    """End-to-end integration tests against the real teammates fixture.
+
+    The ``-experiments-worktrees`` project (session ``ef958aa1-…``) is a
+    real Claude Code transcript that drove the post-merge refactor: it
+    has two waves of three sequentially-spawned subagents (alice / bob /
+    carol round 1, then round 2), each linking via the structured
+    ``toolUseResult.agentId`` path. It exercises:
+
+    - ``Agent`` tool aliasing (the spawn tool is emitted under
+      ``Agent``, not ``Task`` — see ``tool_factory`` registration).
+    - ``_relocate_subagent_blocks`` — six subagent threads must each
+      land under their respective trunk anchor, not collapse under the
+      last one.
+    - per-anchor ``_cleanup_sidechain_duplicates`` — first-User and
+      last-Sub-assistant dups elided for ALL six agents.
+    - dropped subagent ceremony — no ``<details
+      class="subagent-session-block">`` wrap, no
+      ``session-teammate-badge`` pill, no empty session-header card at
+      the document tail.
+    - compact tool-card titles for TaskCreate / TaskUpdate / SendMessage.
+    """
+
+    PROJECT_NAME = "-experiments-worktrees"
+    SESSION_ID = "ef958aa1-0e93-49f0-bb71-150f63befcd1"
+
+    def _project_dir(self, projects: Path) -> Path:
+        project = projects / self.PROJECT_NAME
+        if not project.exists():
+            pytest.skip(f"{self.PROJECT_NAME} test data not available")
+        return project
+
+    def test_directory_loader_links_all_six_subagents(
+        self, temp_projects_copy: Path
+    ) -> None:
+        """``load_directory_transcripts`` should pick up every
+        ``subagents/agent-*.jsonl`` and integrate them via the primary
+        agentId path."""
+        from claude_code_log.converter import load_directory_transcripts
+
+        project = self._project_dir(temp_projects_copy)
+        subagents_dir = project / self.SESSION_ID / "subagents"
+        agent_files = sorted(p.stem for p in subagents_dir.glob("agent-*.jsonl"))
+        # Wave 1: three agents (alice/bob/carol). Wave 2: three more.
+        assert len(agent_files) == 6, f"expected 6 agent files, got {agent_files}"
+
+        messages, _tree = load_directory_transcripts(project, silent=True)
+
+        # Each subagent's UUIDs should be present in the loaded message
+        # set, with the synthetic `{trunk}#agent-<id>` sessionId stamped
+        # on by `_integrate_agent_entries`.
+        agent_ids = {name.removeprefix("agent-") for name in agent_files}
+        seen_subagent_sids: set[str] = set()
+        for msg in messages:
+            sid = getattr(msg, "sessionId", "") or ""
+            if "#agent-" in sid:
+                seen_subagent_sids.add(sid.rsplit("#agent-", 1)[-1])
+        assert seen_subagent_sids == agent_ids, (
+            f"missing subagent stamps: {agent_ids - seen_subagent_sids}"
+        )
+
+    def test_combined_html_renders_without_errors(
+        self, temp_projects_copy: Path
+    ) -> None:
+        """Smoke test — the combined transcript HTML is produced and
+        non-trivial."""
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+
+        html_path = project / "combined_transcripts.html"
+        assert html_path.exists()
+        # The fixture is ~300 KB of JSONL; the rendered HTML should be
+        # substantial (six subagents inline + trunk content).
+        assert html_path.stat().st_size > 200_000
+
+    def test_subagents_relocated_under_their_anchors(
+        self, temp_projects_copy: Path
+    ) -> None:
+        """Each subagent's sidechain content must nest under its OWN
+        Task/Agent tool_result, not collapse under whichever rendered
+        last. Pre-relocation, all sidechain ``ancestry`` ended in the
+        same tool_result d-id; post-relocation each agent has a distinct
+        anchor.
+        """
+        import re
+
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+        html = (project / "combined_transcripts.html").read_text()
+
+        # Every `assistant sidechain` row carries an ancestry tail like
+        # `d-0 d-1 d-26 d-<anchor>`. Collect the immediate parent (last
+        # d-id before message_index) — there should be at least 6
+        # distinct values, one per subagent. Pre-fix the count was 1.
+        pattern = re.compile(
+            r"message assistant sidechain ((?:d-\d+ ?)+)' data-message-id"
+        )
+        anchors: set[str] = set()
+        for match in pattern.finditer(html):
+            ancestry = match.group(1).strip().split()
+            anchors.add(ancestry[-1])  # immediate parent
+        assert len(anchors) >= 6, (
+            f"expected ≥6 distinct anchors for the 6 subagents, got {anchors}"
+        )
+
+    def test_no_subagent_collapse_markup(self, temp_projects_copy: Path) -> None:
+        """The dropped ``<details class="subagent-session-block">`` wrap
+        and ``session-teammate-badge`` pill must not appear (commit
+        ``27e43fb`` removed them)."""
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+        html = (project / "combined_transcripts.html").read_text()
+
+        assert "subagent-session-block" not in html
+        assert "session-teammate-badge" not in html
+
+    def test_no_orphan_subagent_session_headers(self, temp_projects_copy: Path) -> None:
+        """``_render_messages`` no longer creates standalone session
+        headers for synthetic ``#agent-…`` sessions (commit ``fdd28ec``).
+        The synthetic id should not appear as a ``data-session-id`` on
+        any rendered session-header div."""
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+        html = (project / "combined_transcripts.html").read_text()
+
+        assert "data-session-id='" + self.SESSION_ID + "#agent-" not in html
+        assert 'data-session-id="' + self.SESSION_ID + "#agent-" not in html
+
+    def test_compact_tool_titles(self, temp_projects_copy: Path) -> None:
+        """TaskCreate / TaskUpdate / SendMessage titles are compacted
+        (commits ``7c364bc`` and ``47bc50e``)."""
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+        html = (project / "combined_transcripts.html").read_text()
+
+        # TaskCreate compaction → `Task <code>#N</code> ... [created]`
+        assert "task-action'>[created]" in html
+        # TaskUpdate compaction → same shape with [updated]
+        assert "task-action'>[updated]" in html
+        # SendMessage gets the ✉️ emoji + "to <badge>" inline title
+        assert "✉️ SendMessage" in html
