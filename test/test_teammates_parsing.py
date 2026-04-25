@@ -461,6 +461,24 @@ class TestTeammateMessageParser:
         assert b.summary == "coverage 15% -> 96%"
         assert b.body == "all good"
 
+    def test_summary_with_unescaped_amp_is_preserved(self) -> None:
+        """We're parsing free-form transcript text, not strict XML — a
+        literal ``&`` inside an attribute value (e.g.
+        ``summary="tests & docs done"``) is common in practice and
+        must NOT make the whole block disappear (CodeRabbit on PR
+        #125)."""
+        text = (
+            '<teammate-message teammate_id="alice" color="blue" '
+            'summary="tests & docs done">\n'
+            "ok\n"
+            "</teammate-message>"
+        )
+        blocks = list(iter_teammate_blocks(text))
+        assert len(blocks) == 1, "block must not be skipped because of literal '&'"
+        b = blocks[0]
+        assert b.summary == "tests & docs done"
+        assert b.body == "ok"
+
     def test_json_body_renders_as_key_value_dl(self) -> None:
         """Notification-shaped teammate bodies (``{"type":"...",...}``)
         render as a ``<dl class="teammate-json">`` key/value list, not as

@@ -1939,3 +1939,35 @@ class TestExperimentsWorktreesTeammates:
         # filter actually escalates between levels.
         assert "🔎 WebSearch" not in html
         assert "🌐 WebFetch" not in html
+
+    def test_per_session_export_includes_subagent_content(
+        self, temp_projects_copy: Path
+    ) -> None:
+        """Per-session HTML/Markdown exports must include subagent
+        sidechain content even though ``_integrate_agent_entries``
+        rewrote those entries' ``sessionId`` to
+        ``{trunk}#agent-{agent_id}``.
+
+        Regression for CodeRabbit's "Synthetic sidechain IDs now drop
+        subagents from per-session exports" finding on PR #125. The
+        ``generate_session`` filter in both renderers used to do an
+        exact ``sessionId == session_id`` match, dropping the
+        rewritten subagent entries. The fix accepts the synthetic
+        prefix too.
+        """
+        project = self._project_dir(temp_projects_copy)
+        convert_jsonl_to_html(project)
+
+        combined = (project / "combined_transcripts.html").read_text(encoding="utf-8")
+        per_session = (project / f"session-{self.SESSION_ID}.html").read_text(
+            encoding="utf-8"
+        )
+
+        # Subagent inlined content must reach the per-session export at
+        # parity with the combined transcript.
+        combined_subasst = combined.count("Sub-assistant")
+        session_subasst = per_session.count("Sub-assistant")
+        assert session_subasst >= combined_subasst, (
+            f"per-session export lost subagent content: "
+            f"{session_subasst} vs combined {combined_subasst}"
+        )

@@ -847,8 +847,18 @@ class HtmlRenderer(Renderer):
         session_tree: Optional["SessionTree"] = None,
     ) -> str:
         """Generate HTML for a single session."""
-        # Filter messages for this session (SummaryTranscriptEntry.sessionId is always None)
-        session_messages = [msg for msg in messages if msg.sessionId == session_id]
+        # Filter messages for this session (SummaryTranscriptEntry.sessionId is always None).
+        # Also accept entries whose sessionId was rewritten to
+        # ``{session_id}#agent-{agent_id}`` by ``_integrate_agent_entries``;
+        # otherwise per-session exports drop the inlined subagent
+        # conversation (CodeRabbit on PR #125).
+        agent_prefix = f"{session_id}#agent-"
+        session_messages = [
+            msg
+            for msg in messages
+            if msg.sessionId == session_id
+            or (msg.sessionId or "").startswith(agent_prefix)
+        ]
 
         # Get combined transcript link if cache manager is available.
         # The back-link must point at the combined file of the *same*

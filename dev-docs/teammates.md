@@ -845,24 +845,33 @@ What's *not* done for those issues:
 ### 10.2 Detail-level interaction
 
 The detail-level filter (`--detail high|low|minimal|user-only`) drops
-tool_use/tool_result content at LOW and below, which means the entire
-teammate Task spawn (`Task` tool_use) and its result (carrying the
-agent_metadata) disappear from LOW renderings. Subagent session blocks
-also collapse out.
+tool_use/tool_result content at LOW and below by default, but the
+`_LOW_KEEP_TOOLS` whitelist in `renderer.py` exempts the spawn pair so
+teammate work survives a LOW rendering:
 
-For the user's stated goal — "be sure to have the prompts and results
-of a teammate in the LOW level of detail" — this means the LOW filter
-needs a teammates-aware exception:
+```python
+_LOW_KEEP_TOOLS = {"WebSearch", "WebFetch", "Task", "Agent"}
+```
 
-- Keep `Task` tool_uses where `TaskInput.name` is set (teammate spawn).
-- Keep the matching tool_result so the agent's response (and metadata)
-  survives.
-- Optionally keep the subagent session block, or surface a one-line
-  summary in its place.
+`Agent` is the teammates-feature spawn alias for `Task` (registered in
+the tool factory as `"Agent": TaskInput`); both names need to be
+whitelisted because real Claude Code teammate transcripts emit `Agent`
+rather than `Task`. With this in place:
 
-This is a separate change — the detail-level taxonomy
-([`dev-docs/messages.md`](messages.md)) doesn't yet have a teammate-
-preserving level.
+- The Agent / Task tool_use card stays visible at LOW.
+- The matching tool_result card stays too, so the agent's response and
+  `agent_metadata` (`agent_id`, `worktree_path`, usage, etc.) survive.
+- Subagent sidechain content (the "rest of the conversation" inside
+  the agent thread) is still filtered out at LOW by the broader
+  `is_sidechain` rule — that's the intended trade-off; the
+  spawn-and-result pair is enough to scan.
+- MINIMAL still strips everything except user/assistant text; the
+  `Agent` whitelist applies to LOW only.
+
+Regression coverage for both halves of the contract:
+`TestExperimentsWorktreesTeammates::test_low_detail_preserves_agent_spawns`
+and `…::test_minimal_detail_strips_agent_spawns` in
+[`test/test_integration_realistic.py`](../test/test_integration_realistic.py).
 
 ### 10.3 Snapshot test coverage
 

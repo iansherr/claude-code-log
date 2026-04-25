@@ -350,13 +350,24 @@ def format_taskupdate_input(
 
 
 def format_taskupdate_output(output: TaskUpdateOutput) -> str:
-    """Tool result body: empty unless a status transition was recorded.
+    """Tool result body: empty unless there's something to surface.
 
-    Task id + ``[updated]`` come from the tool-use title; the bare
-    ``Status: updated`` row is redundant. The optional ``from→to``
-    transition is preserved when present, since it adds information the
-    title can't.
+    Task id + ``[updated]`` come from the tool-use title; a bare
+    ``Status: updated`` row is redundant on success. But on failure
+    we MUST surface the negative outcome — otherwise the title alone
+    falsely claims success. ``from→to`` transitions are preserved when
+    present (information the title can't show).
     """
+    if not output.success:
+        # Show whatever raw text the tool returned so the reader has
+        # something to dig into; fall back to a bare "failed" badge
+        # when the parser captured nothing useful.
+        rows: list[tuple[str, str]] = [
+            ("Status", "<code class='task-update-failed'>failed</code>")
+        ]
+        if output.raw_text:
+            rows.append(("Detail", escape_html(output.raw_text)))
+        return _render_card("task-update-card", rows)
     if output.status_change is None:
         return ""
     from_s = output.status_change.from_status

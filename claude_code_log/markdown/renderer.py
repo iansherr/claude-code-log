@@ -1238,7 +1238,17 @@ class MarkdownRenderer(Renderer):
         session_tree: Optional["SessionTree"] = None,
     ) -> str:
         """Generate Markdown for a single session."""
-        session_messages = [msg for msg in messages if msg.sessionId == session_id]
+        # Include subagent entries whose sessionId was rewritten to
+        # ``{session_id}#agent-{agent_id}`` by ``_integrate_agent_entries``;
+        # otherwise per-session exports drop the inlined subagent
+        # conversation entirely (CodeRabbit on PR #125).
+        agent_prefix = f"{session_id}#agent-"
+        session_messages = [
+            msg
+            for msg in messages
+            if msg.sessionId == session_id
+            or (msg.sessionId or "").startswith(agent_prefix)
+        ]
         # Back-link points at the same variant's combined file so users
         # don't bounce between detail levels when navigating.
         if cache_manager is not None:

@@ -257,10 +257,10 @@ ancestry.forEach(ancestorId => {
 Messages from Task tool sub-agents are handled specially:
 
 1. **Identification**: `isSidechain: true` in JSONL → `sidechain` in css_class
-2. **Level assignment**: Sidechain assistant/thinking at level 4, tools at level 5
-3. **Reordering**: Sidechain messages appear under their Task tool result
-4. **Skipping**: Sidechain user messages are skipped (duplicate Task input)
-5. **Deduplication**: Identical sidechain results are replaced with links
+2. **Level assignment**: Sidechain `user`/`teammate`/`assistant`/`thinking` at level 4, sidechain tools at level 5
+3. **Reordering**: Sidechain messages appear under their Task/Agent tool_result via `_relocate_subagent_blocks`
+4. **First-prompt dedup**: After tree build, `_cleanup_sidechain_duplicates` prunes the first sidechain `UserTextMessage` when it duplicates the spawning Task's prompt. `TeammateMessage`-shaped sidechain prompts (the team-lead's wrapped prompt) are intentionally kept visible — they go through the level dispatch normally.
+5. **Last-response dedup**: Identical trailing sidechain assistant results are replaced with links to the Task tool_result that already shows the same text.
 
 ### Paired Message Handling
 

@@ -5094,6 +5094,11 @@
       opacity: 0.6;
   }
   
+  .teammate-tool-card.task-update-card .task-update-failed {
+      color: var(--cc-red);
+      font-weight: 600;
+  }
+  
   .teammate-tool-card.send-message-card {
       --cc-color: var(--cc-orange);
   
@@ -10620,6 +10625,11 @@
   .teammate-tool-card.task-update-card .status-arrow {
       margin: 0 0.3em;
       opacity: 0.6;
+  }
+  
+  .teammate-tool-card.task-update-card .task-update-failed {
+      color: var(--cc-red);
+      font-weight: 600;
   }
   
   .teammate-tool-card.send-message-card {
@@ -16384,6 +16394,11 @@
       opacity: 0.6;
   }
   
+  .teammate-tool-card.task-update-card .task-update-failed {
+      color: var(--cc-red);
+      font-weight: 600;
+  }
+  
   .teammate-tool-card.send-message-card {
       --cc-color: var(--cc-orange);
   
@@ -22009,6 +22024,11 @@
   .teammate-tool-card.task-update-card .status-arrow {
       margin: 0 0.3em;
       opacity: 0.6;
+  }
+  
+  .teammate-tool-card.task-update-card .task-update-failed {
+      color: var(--cc-red);
+      font-weight: 600;
   }
   
   .teammate-tool-card.send-message-card {
@@ -27693,6 +27713,11 @@
   .teammate-tool-card.task-update-card .status-arrow {
       margin: 0 0.3em;
       opacity: 0.6;
+  }
+  
+  .teammate-tool-card.task-update-card .task-update-failed {
+      color: var(--cc-red);
+      font-weight: 600;
   }
   
   .teammate-tool-card.send-message-card {
