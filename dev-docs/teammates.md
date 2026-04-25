@@ -444,7 +444,7 @@ post-merge refactor). Walks Task* tool_uses and tool_results:
 
 The `HtmlRenderer` snapshots both maps and uses them in
 `title_TaskCreateInput` / `title_TaskUpdateInput` to compose the
-compacted title `🛠️ Task #5 <subject> (alice) [created]` (§6.1) — the
+compacted title `🛠️ Task #5 <subject> [created]` (§6.1) — the
 tool_use card's title carries the human-readable id and subject so the
 matching tool_result body becomes redundant and is suppressed entirely
 by the empty-pair-suppression pass.
@@ -462,7 +462,8 @@ _render_messages                    ← creates TemplateMessages, sets team_name
 _reorder_paired_messages
 _relocate_subagent_blocks           ← splices subagent chunks under trunk anchors (§4.3)
 _build_message_hierarchy            ← needs the final order
-_cleanup_sidechain_duplicates
+_build_message_tree                 ← root_messages + populated children
+_cleanup_sidechain_duplicates       ← walks the tree, drops first-User / last-Sub-assistant duplicates
 _populate_teammate_colors           ← scans TeammateMessage blocks
 _populate_task_metadata             ← scans TaskCreate / TaskList results
 ```
@@ -473,8 +474,10 @@ Each pass is order-sensitive:
   (which is what creates the "all subagents at the tail" layout that
   needs fixing) and before `_build_message_hierarchy` (which freezes
   the parent-child relationships from the final order).
-- `_cleanup_sidechain_duplicates` needs the relocation done first so
-  per-anchor children are populated correctly.
+- `_cleanup_sidechain_duplicates` operates on the **tree** built by
+  `_build_message_tree`, so the relocation must already have placed
+  each subagent's first User and last Sub-assistant under the right
+  Task/Agent tool_result for the per-anchor dedup to fire.
 - `_populate_task_metadata` reads `TaskCreate` results, so the message
   tree must be built first.
 
@@ -530,14 +533,15 @@ They look up the assigned task id and subject in the `task_subjects` /
 `task_id_for_tool_use` snapshots (§5.3) and compose:
 
 ```
-🛠️ Task #5 <subject> (alice) [created]
-🛠️ Task #5 <subject> (alice) [updated]   <STATUS_PILL>
+🛠️ Task #5 <subject> [created]
+🛠️ Task #5 <subject> [updated]
 ```
 
 Where `[created]` / `[updated]` is a muted `<span class="task-action">`
-tag and the optional status pill on TaskUpdate is the same
-`.task-status.status-<value>` styling used in TaskList rows (lifted out
-of the `.task-list` selector to render in both places).
+tag. The TaskUpdate body card surfaces the new status as a small-caps
+pill via `_status_pill` — same `.task-status.status-<value>` styling
+used in TaskList rows (lifted out of the `.task-list` selector to
+render in both places).
 
 `format_taskcreate_input` drops the now-redundant Subject row;
 `format_taskupdate_input` drops the Task row and renders status as
@@ -801,7 +805,7 @@ Issue #91's "we have to support" list, mapped to the as-built state:
 | `teamName` per entry | ✓ | propagated via `MessageMeta.team_name`, surfaced as session-header badge |
 | Color associated with teammate name | ✓ | `RenderingContext.teammate_colors` (session-scoped) |
 | Color used in TaskUpdate / SendMessage / TaskList owner / Active-members | ✓ | every dispatcher passes `_colors_for(message)` |
-| **Whole transaction visible** (subagent JSONL "under the hood" activity) | ✓ | subagent files loaded, integrated via primary or prompt-hash linking, shown in collapsed `<details>` block |
+| **Whole transaction visible** (subagent JSONL "under the hood" activity) | ✓ | subagent files loaded, integrated via primary or prompt-hash linking, content threaded inline under the spawning Task/Agent tool_result via `_relocate_subagent_blocks` (commit `fdd28ec`); the earlier `<details>` collapse was dropped in `27e43fb` |
 | Subagent linking via `agentId` (primary) | ✓ | `parse_agent_result_metadata` + `_integrate_agent_entries` |
 | Subagent linking via prompt-hash (fallback) | ✓ | `_link_subagents_by_prompt_hash` (with collision-safe pop) |
 | Left-aligned teammate messages | ✓ | `.teammate-message` CSS — no right-align like human user |
