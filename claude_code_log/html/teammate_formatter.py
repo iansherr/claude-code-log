@@ -230,55 +230,89 @@ def format_teamdelete_output(
     return _render_card(css, rows)
 
 
+def _status_pill(status: str) -> str:
+    """Render a small-caps status pill with palette color (in_progress → blue,
+    completed → green, etc.).
+
+    Mirrors the TaskList row's ``.task-status`` styling so the same
+    ``IN PROGRESS`` rendering appears on TaskCreate / TaskUpdate cards.
+    Unknown statuses get the default gray.
+    """
+    status_class = f"status-{status}" if status in _STATUS_CLASSES else "status-unknown"
+    return f"<span class='task-status {status_class}'>{escape_html(status)}</span>"
+
+
 def format_taskcreate_input(input_: TaskCreateInput) -> str:
-    rows: list[tuple[str, str]] = [("Subject", escape_html(input_.subject))]
+    """Body for TaskCreate: ``Active form`` + ``Description`` only.
+
+    Subject moved to the tool-use title (``Task #N <subject> [created]``)
+    by ``HtmlRenderer.title_TaskCreateInput`` to avoid the redundant
+    Subject row + duplicate tool-result card seen in the original
+    rendering.
+    """
+    rows: list[tuple[str, str]] = []
     if input_.activeForm:
         rows.append(("Active form", escape_html(input_.activeForm)))
     if input_.description:
         rows.append(("Description", escape_html(input_.description)))
+    if not rows:
+        return ""
     return _render_card("task-create-card", rows)
 
 
-def format_taskcreate_output(output: TaskCreateOutput) -> str:
-    rows: list[tuple[str, str]] = [
-        ("Task ID", f"<code>#{escape_html(output.task_id)}</code>"),
-    ]
-    if output.subject:
-        rows.append(("Subject", escape_html(output.subject)))
-    return _render_card("task-create-output", rows)
+def format_taskcreate_output(_output: TaskCreateOutput) -> str:
+    """Tool result body: empty.
+
+    Task id + subject are surfaced via the tool-use title; no separate
+    result card is needed.
+    """
+    return ""
 
 
 def format_taskupdate_input(
     input_: TaskUpdateInput,
     teammate_colors: Optional[dict[str, str]] = None,
 ) -> str:
-    rows: list[tuple[str, str]] = [
-        ("Task", f"<code>#{escape_html(input_.taskId)}</code>"),
-    ]
-    if input_.status:
-        rows.append(("Status", escape_html(input_.status)))
+    """Body for TaskUpdate: ``Owner`` (badge) + ``Status`` (pill).
+
+    Task id moved to the tool-use title (``Task #N <subject> [updated]``)
+    by ``HtmlRenderer.title_TaskUpdateInput``. The status pill reuses
+    the TaskList palette (``in_progress`` → blue, etc.) for visual
+    consistency.
+    """
+    rows: list[tuple[str, str]] = []
     if input_.owner:
         color = _lookup_color(teammate_colors, input_.owner)
         rows.append(("Owner", _teammate_badge(input_.owner, color)))
+    if input_.status:
+        rows.append(("Status", _status_pill(input_.status)))
+    if not rows:
+        return ""
     return _render_card("task-update-card", rows)
 
 
 def format_taskupdate_output(output: TaskUpdateOutput) -> str:
-    rows: list[tuple[str, str]] = [
-        ("Task", f"<code>#{escape_html(output.task_id)}</code>"),
-        ("Status", "updated" if output.success else "not updated"),
-    ]
-    if output.updated_fields:
-        fields = ", ".join(escape_html(name) for name in output.updated_fields)
-        rows.append(("Fields", fields))
-    if output.status_change is not None and (
-        output.status_change.from_status or output.status_change.to_status
-    ):
-        from_s = escape_html(output.status_change.from_status or "?")
-        to_s = escape_html(output.status_change.to_status or "?")
-        rows.append(
-            ("Transition", f"{from_s}<span class='status-arrow'>→</span>{to_s}")
+    """Tool result body: empty unless a status transition was recorded.
+
+    Task id + ``[updated]`` come from the tool-use title; the bare
+    ``Status: updated`` row is redundant. The optional ``from→to``
+    transition is preserved when present, since it adds information the
+    title can't.
+    """
+    if output.status_change is None:
+        return ""
+    from_s = output.status_change.from_status
+    to_s = output.status_change.to_status
+    if not (from_s or to_s):
+        return ""
+    rows = [
+        (
+            "Transition",
+            f"{_status_pill(from_s or '?')}"
+            f"<span class='status-arrow'>→</span>"
+            f"{_status_pill(to_s or '?')}",
         )
+    ]
     return _render_card("task-update-card", rows)
 
 

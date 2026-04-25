@@ -122,6 +122,23 @@ class RenderingContext:
     teammate_colors: dict[str, dict[str, str]] = field(
         default_factory=lambda: {}  # type: dict[str, dict[str, str]]
     )
+    # Per-session map of TaskCreate-assigned task_id → subject. Lets the
+    # TaskUpdate tool_use title surface the human-readable subject of a
+    # task that was created earlier in the same session, since
+    # TaskUpdateInput only carries the bare ``taskId``. Populated by
+    # ``_populate_task_metadata`` from TaskCreate tool_results (and from
+    # TaskList rows as a fallback). Session-scoped for the same reason
+    # as ``teammate_colors``.
+    task_subjects: dict[str, dict[str, str]] = field(
+        default_factory=lambda: {}  # type: dict[str, dict[str, str]]
+    )
+    # Per-session map of tool_use_id → task_id, populated from TaskCreate
+    # tool_results. Used by the TaskCreate tool_use title formatter to
+    # display the assigned ``#N`` next to the subject (TaskCreateInput
+    # itself doesn't know the id; the backend mints it on creation).
+    task_id_for_tool_use: dict[str, dict[str, str]] = field(
+        default_factory=lambda: {}  # type: dict[str, dict[str, str]]
+    )
 
     def register(self, message: "TemplateMessage") -> int:
         """Register a TemplateMessage and assign its message_index.
@@ -775,6 +792,11 @@ def generate_template_messages(
     # annotate.
     with log_timing("Collect teammate colors", t_start):
         _populate_teammate_colors(ctx)
+
+    # Build task_id ↔ subject / tool_use_id maps so TaskCreate / TaskUpdate
+    # tool_use titles can surface the human-readable subject + assigned id.
+    with log_timing("Collect task metadata", t_start):
+        _populate_task_metadata(ctx)
 
     return root_messages, session_nav, ctx
 
@@ -1847,6 +1869,45 @@ def _populate_teammate_colors(ctx: RenderingContext) -> None:
                 and block.teammate_id not in session_colors
             ):
                 session_colors[block.teammate_id] = block.color
+
+
+def _populate_task_metadata(ctx: RenderingContext) -> None:
+    """Build per-session task_id → subject and tool_use_id → task_id maps.
+
+    Sources, in priority order:
+    1. ``TaskCreateOutput`` (definitive — backend-assigned id paired with
+       the input subject).
+    2. ``TaskListOutput`` rows (snapshot fallback — recovers subject for
+       tasks created before the loaded slice or whose Create
+       tool_result is missing).
+
+    Session-scoped (mirrors ``teammate_colors``) to avoid
+    combined-transcript collisions across sessions.
+    """
+    from .models import (
+        TaskCreateOutput,
+        TaskListOutput,
+        ToolResultMessage,
+    )
+
+    for template_msg in ctx.messages:
+        content = template_msg.content
+        if not isinstance(content, ToolResultMessage):
+            continue
+        session_id = template_msg.meta.session_id if template_msg.meta else ""
+        output = content.output
+        if isinstance(output, TaskCreateOutput) and output.task_id:
+            subjects = ctx.task_subjects.setdefault(session_id, {})
+            if output.subject:
+                subjects.setdefault(output.task_id, output.subject)
+            id_map = ctx.task_id_for_tool_use.setdefault(session_id, {})
+            if content.tool_use_id:
+                id_map.setdefault(content.tool_use_id, output.task_id)
+        elif isinstance(output, TaskListOutput):
+            subjects = ctx.task_subjects.setdefault(session_id, {})
+            for task in output.tasks:
+                if task.id and task.subject:
+                    subjects.setdefault(task.id, task.subject)
 
 
 def _cleanup_sidechain_duplicates(root_messages: list[TemplateMessage]) -> None:

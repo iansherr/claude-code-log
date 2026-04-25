@@ -158,37 +158,49 @@
 
 .task-list .task-status {
     width: 7em;
-    white-space: nowrap;
-    font-variant: small-caps;
-    letter-spacing: 0.02em;
 }
 
 .task-list .task-owner .teammate-badge {
     font-size: 0.75em;
 }
 
-/* Status badges on the task-board row reuse the CC palette when we can
-   map a standard status to a color; default is gray. */
-.task-list .task-status.status-completed {
+/* Status badges reuse the CC palette when we can map a standard status
+   to a color; default is gray. Applies to TaskList rows and to the
+   TaskCreate / TaskUpdate cards' inline status pills. */
+.task-status {
+    white-space: nowrap;
+    font-variant: small-caps;
+    letter-spacing: 0.02em;
+}
+
+.task-status.status-completed {
     color: var(--cc-green);
 }
 
-.task-list .task-status.status-in_progress {
+.task-status.status-in_progress {
     color: var(--cc-blue);
 }
 
-.task-list .task-status.status-pending {
+.task-status.status-pending {
     color: var(--cc-gray);
 }
 
-.task-list .task-status.status-blocked {
+.task-status.status-blocked {
     color: var(--cc-red);
 }
 
-.task-list .task-status.status-deleted {
+.task-status.status-deleted {
     color: var(--cc-gray);
     text-decoration: line-through;
     opacity: 0.7;
+}
+
+/* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+   tool-use titles. Muted so the subject reads as the primary content. */
+.task-action {
+    color: var(--cc-gray);
+    font-size: 0.85em;
+    font-weight: 500;
 }
 
 /* ----------------------------------------------------------------------

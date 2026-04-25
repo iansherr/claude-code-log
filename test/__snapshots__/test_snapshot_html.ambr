@@ -4985,37 +4985,49 @@
   
   .task-list .task-status {
       width: 7em;
-      white-space: nowrap;
-      font-variant: small-caps;
-      letter-spacing: 0.02em;
   }
   
   .task-list .task-owner .teammate-badge {
       font-size: 0.75em;
   }
   
-  /* Status badges on the task-board row reuse the CC palette when we can
-     map a standard status to a color; default is gray. */
-  .task-list .task-status.status-completed {
+  /* Status badges reuse the CC palette when we can map a standard status
+     to a color; default is gray. Applies to TaskList rows and to the
+     TaskCreate / TaskUpdate cards' inline status pills. */
+  .task-status {
+      white-space: nowrap;
+      font-variant: small-caps;
+      letter-spacing: 0.02em;
+  }
+  
+  .task-status.status-completed {
       color: var(--cc-green);
   }
   
-  .task-list .task-status.status-in_progress {
+  .task-status.status-in_progress {
       color: var(--cc-blue);
   }
   
-  .task-list .task-status.status-pending {
+  .task-status.status-pending {
       color: var(--cc-gray);
   }
   
-  .task-list .task-status.status-blocked {
+  .task-status.status-blocked {
       color: var(--cc-red);
   }
   
-  .task-list .task-status.status-deleted {
+  .task-status.status-deleted {
       color: var(--cc-gray);
       text-decoration: line-through;
       opacity: 0.7;
+  }
+  
+  /* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+     tool-use titles. Muted so the subject reads as the primary content. */
+  .task-action {
+      color: var(--cc-gray);
+      font-size: 0.85em;
+      font-weight: 500;
   }
   
   /* ----------------------------------------------------------------------
@@ -10483,37 +10495,49 @@
   
   .task-list .task-status {
       width: 7em;
-      white-space: nowrap;
-      font-variant: small-caps;
-      letter-spacing: 0.02em;
   }
   
   .task-list .task-owner .teammate-badge {
       font-size: 0.75em;
   }
   
-  /* Status badges on the task-board row reuse the CC palette when we can
-     map a standard status to a color; default is gray. */
-  .task-list .task-status.status-completed {
+  /* Status badges reuse the CC palette when we can map a standard status
+     to a color; default is gray. Applies to TaskList rows and to the
+     TaskCreate / TaskUpdate cards' inline status pills. */
+  .task-status {
+      white-space: nowrap;
+      font-variant: small-caps;
+      letter-spacing: 0.02em;
+  }
+  
+  .task-status.status-completed {
       color: var(--cc-green);
   }
   
-  .task-list .task-status.status-in_progress {
+  .task-status.status-in_progress {
       color: var(--cc-blue);
   }
   
-  .task-list .task-status.status-pending {
+  .task-status.status-pending {
       color: var(--cc-gray);
   }
   
-  .task-list .task-status.status-blocked {
+  .task-status.status-blocked {
       color: var(--cc-red);
   }
   
-  .task-list .task-status.status-deleted {
+  .task-status.status-deleted {
       color: var(--cc-gray);
       text-decoration: line-through;
       opacity: 0.7;
+  }
+  
+  /* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+     tool-use titles. Muted so the subject reads as the primary content. */
+  .task-action {
+      color: var(--cc-gray);
+      font-size: 0.85em;
+      font-weight: 500;
   }
   
   /* ----------------------------------------------------------------------
@@ -11266,9 +11290,9 @@
       
       
       
-      <div class='message tool_use pair_first d-0 d-1' data-message-id='d-4' id='msg-d-4'>
+      <div class='message tool_use d-0 d-1' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
-              <span title="ID: tu_TaskCreate_alice">🛠️ TaskCreate</span>
+              <span title="ID: tu_TaskCreate_alice">🛠️ Task <code>#1</code> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[created]</span></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:04:00.000Z'>2026-04-19 10:04:00</span>
@@ -11277,7 +11301,7 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Subject</dt><dd>Add relay tests</dd><dt>Active form</dt><dd>alice adds relay tests</dd><dt>Description</dt><dd>Raise relay.py coverage.</dd></dl></div>
+          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Active form</dt><dd>alice adds relay tests</dd><dt>Description</dt><dd>Raise relay.py coverage.</dd></dl></div>
           
       </div>
       
@@ -11285,28 +11309,9 @@
       
       
       
-      <div class='message tool_result pair_last d-0 d-1' data-message-id='d-5' id='msg-d-5'>
+      <div class='message tool_use d-0 d-1' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
-              <span title="ID: tu_TaskCreate_alice"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:05:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:05:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-output"><dt>Task ID</dt><dd><code>#1</code></dd><dt>Subject</dt><dd>Add relay tests</dd></dl></div>
-          
-      </div>
-      
-      
-      
-      
-      
-      <div class='message tool_use pair_first d-0 d-1' data-message-id='d-6' id='msg-d-6'>
-          <div class='header'>
-              <span title="ID: tu_TaskCreate_bob">🛠️ TaskCreate</span>
+              <span title="ID: tu_TaskCreate_bob">🛠️ Task <code>#2</code> <span class='tool-summary'>Add server tests</span> <span class='task-action'>[created]</span></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:06:00.000Z'>2026-04-19 10:06:00</span>
@@ -11315,7 +11320,7 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Subject</dt><dd>Add server tests</dd><dt>Active form</dt><dd>bob adds server tests</dd><dt>Description</dt><dd>Raise server.py coverage.</dd></dl></div>
+          <div class='content'><dl class="teammate-tool-card task-create-card"><dt>Active form</dt><dd>bob adds server tests</dd><dt>Description</dt><dd>Raise server.py coverage.</dd></dl></div>
           
       </div>
       
@@ -11323,28 +11328,9 @@
       
       
       
-      <div class='message tool_result pair_last d-0 d-1' data-message-id='d-7' id='msg-d-7'>
+      <div class='message tool_use d-0 d-1' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
-              <span title="ID: tu_TaskCreate_bob"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:07:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:07:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'><dl class="teammate-tool-card task-create-output"><dt>Task ID</dt><dd><code>#2</code></dd><dt>Subject</dt><dd>Add server tests</dd></dl></div>
-          
-      </div>
-      
-      
-      
-      
-      
-      <div class='message tool_use pair_first d-0 d-1' data-message-id='d-8' id='msg-d-8'>
-          <div class='header'>
-              <span title="ID: tu_TaskUpdate_001">🛠️ TaskUpdate</span>
+              <span title="ID: tu_TaskUpdate_001">🛠️ Task <code>#1</code> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[updated]</span></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:08:00.000Z'>2026-04-19 10:08:00</span>
@@ -11353,26 +11339,7 @@
               </div>
           </div>
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-update-card"><dt>Task</dt><dd><code>#1</code></dd><dt>Status</dt><dd>in_progress</dd><dt>Owner</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd></dl></div>
-          
-      </div>
-      
-      
-      
-      
-      
-      <div class='message tool_result pair_last d-0 d-1' data-message-id='d-9' id='msg-d-9'>
-          <div class='header'>
-              <span title="ID: tu_TaskUpdate_001"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:09:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:09:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'><dl class="teammate-tool-card task-update-card"><dt>Task</dt><dd><code>#1</code></dd><dt>Status</dt><dd>updated</dd><dt>Fields</dt><dd>owner, status</dd></dl></div>
+          <div class='content'><dl class="teammate-tool-card task-update-card"><dt>Owner</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Status</dt><dd><span class='task-status status-in_progress'>in_progress</span></dd></dl></div>
           
       </div>
       
@@ -16267,37 +16234,49 @@
   
   .task-list .task-status {
       width: 7em;
-      white-space: nowrap;
-      font-variant: small-caps;
-      letter-spacing: 0.02em;
   }
   
   .task-list .task-owner .teammate-badge {
       font-size: 0.75em;
   }
   
-  /* Status badges on the task-board row reuse the CC palette when we can
-     map a standard status to a color; default is gray. */
-  .task-list .task-status.status-completed {
+  /* Status badges reuse the CC palette when we can map a standard status
+     to a color; default is gray. Applies to TaskList rows and to the
+     TaskCreate / TaskUpdate cards' inline status pills. */
+  .task-status {
+      white-space: nowrap;
+      font-variant: small-caps;
+      letter-spacing: 0.02em;
+  }
+  
+  .task-status.status-completed {
       color: var(--cc-green);
   }
   
-  .task-list .task-status.status-in_progress {
+  .task-status.status-in_progress {
       color: var(--cc-blue);
   }
   
-  .task-list .task-status.status-pending {
+  .task-status.status-pending {
       color: var(--cc-gray);
   }
   
-  .task-list .task-status.status-blocked {
+  .task-status.status-blocked {
       color: var(--cc-red);
   }
   
-  .task-list .task-status.status-deleted {
+  .task-status.status-deleted {
       color: var(--cc-gray);
       text-decoration: line-through;
       opacity: 0.7;
+  }
+  
+  /* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+     tool-use titles. Muted so the subject reads as the primary content. */
+  .task-action {
+      color: var(--cc-gray);
+      font-size: 0.85em;
+      font-weight: 500;
   }
   
   /* ----------------------------------------------------------------------
@@ -21864,37 +21843,49 @@
   
   .task-list .task-status {
       width: 7em;
-      white-space: nowrap;
-      font-variant: small-caps;
-      letter-spacing: 0.02em;
   }
   
   .task-list .task-owner .teammate-badge {
       font-size: 0.75em;
   }
   
-  /* Status badges on the task-board row reuse the CC palette when we can
-     map a standard status to a color; default is gray. */
-  .task-list .task-status.status-completed {
+  /* Status badges reuse the CC palette when we can map a standard status
+     to a color; default is gray. Applies to TaskList rows and to the
+     TaskCreate / TaskUpdate cards' inline status pills. */
+  .task-status {
+      white-space: nowrap;
+      font-variant: small-caps;
+      letter-spacing: 0.02em;
+  }
+  
+  .task-status.status-completed {
       color: var(--cc-green);
   }
   
-  .task-list .task-status.status-in_progress {
+  .task-status.status-in_progress {
       color: var(--cc-blue);
   }
   
-  .task-list .task-status.status-pending {
+  .task-status.status-pending {
       color: var(--cc-gray);
   }
   
-  .task-list .task-status.status-blocked {
+  .task-status.status-blocked {
       color: var(--cc-red);
   }
   
-  .task-list .task-status.status-deleted {
+  .task-status.status-deleted {
       color: var(--cc-gray);
       text-decoration: line-through;
       opacity: 0.7;
+  }
+  
+  /* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+     tool-use titles. Muted so the subject reads as the primary content. */
+  .task-action {
+      color: var(--cc-gray);
+      font-size: 0.85em;
+      font-weight: 500;
   }
   
   /* ----------------------------------------------------------------------
@@ -27518,37 +27509,49 @@
   
   .task-list .task-status {
       width: 7em;
-      white-space: nowrap;
-      font-variant: small-caps;
-      letter-spacing: 0.02em;
   }
   
   .task-list .task-owner .teammate-badge {
       font-size: 0.75em;
   }
   
-  /* Status badges on the task-board row reuse the CC palette when we can
-     map a standard status to a color; default is gray. */
-  .task-list .task-status.status-completed {
+  /* Status badges reuse the CC palette when we can map a standard status
+     to a color; default is gray. Applies to TaskList rows and to the
+     TaskCreate / TaskUpdate cards' inline status pills. */
+  .task-status {
+      white-space: nowrap;
+      font-variant: small-caps;
+      letter-spacing: 0.02em;
+  }
+  
+  .task-status.status-completed {
       color: var(--cc-green);
   }
   
-  .task-list .task-status.status-in_progress {
+  .task-status.status-in_progress {
       color: var(--cc-blue);
   }
   
-  .task-list .task-status.status-pending {
+  .task-status.status-pending {
       color: var(--cc-gray);
   }
   
-  .task-list .task-status.status-blocked {
+  .task-status.status-blocked {
       color: var(--cc-red);
   }
   
-  .task-list .task-status.status-deleted {
+  .task-status.status-deleted {
       color: var(--cc-gray);
       text-decoration: line-through;
       opacity: 0.7;
+  }
+  
+  /* `[created]` / `[updated]` action tag in the TaskCreate / TaskUpdate
+     tool-use titles. Muted so the subject reads as the primary content. */
+  .task-action {
+      color: var(--cc-gray);
+      font-size: 0.85em;
+      font-weight: 500;
   }
   
   /* ----------------------------------------------------------------------
