@@ -128,35 +128,51 @@ class TestExistingPairingRulesPreserved:
         assert user_slash.pair_last == output.message_index
 
 
-# ----------------------------- full pass: option A orphan --------------------
+# ----------------------------- full pass: triples ----------------------------
 
 
 class TestThreeMessageSequence:
-    """Per option A in the implementation plan: when a 3-msg sequence appears
-    (UserSlash caveat → Slash → CommandOutput), the slash-pair wins and the
-    trailing CommandOutput renders standalone. Documented trade-off — revisit
-    if the orphan output ever looks visually broken."""
+    """The dominant `/cmd` shape in real transcripts is three sibling user
+    messages: a UserSlash caveat preamble, the typed SlashCommand, and the
+    CommandOutput, all sharing one timestamp. They group as a triple
+    (pair_first → pair_middle → pair_last) so the slash-command name stays
+    in the rendered title and no message is orphaned."""
 
-    def test_caveat_slash_output_orphans_the_output(
-        self, ctx: RenderingContext
-    ) -> None:
+    def test_caveat_slash_output_binds_as_triple(self, ctx: RenderingContext) -> None:
         caveat = _user_slash(ctx, "e1", text="Caveat: ...")
         slash = _slash(ctx, "e2", name="exit")
         output = _cmd_output(ctx, "e3", stdout="See ya!")
 
         _identify_message_pairs([caveat, slash, output])
 
-        # Slash-pair wins.
-        assert caveat.pair_last == slash.message_index
+        # Triple wiring: pair_first owns pair_middle and pair_last;
+        # the middle and last members back-reference pair_first.
+        assert caveat.pair_middle == slash.message_index
+        assert caveat.pair_last == output.message_index
         assert slash.pair_first == caveat.message_index
-        # Output is unpaired (orphan, by design — option A).
-        assert output.pair_first is None
-        assert output.pair_last is None
+        assert slash.pair_last == output.message_index
+        assert output.pair_first == caveat.message_index
+
+        # Role properties classify each member exclusively.
+        assert caveat.is_first_in_pair
+        assert not caveat.is_middle_in_pair
+        assert not caveat.is_last_in_pair
+        assert slash.is_middle_in_pair
+        assert not slash.is_first_in_pair
+        assert not slash.is_last_in_pair
+        assert output.is_last_in_pair
+        assert not output.is_first_in_pair
+        assert not output.is_middle_in_pair
+
+        # CSS roles emit the right class names for the HTML template.
+        assert caveat.pair_role == "pair_first"
+        assert slash.pair_role == "pair_middle"
+        assert output.pair_role == "pair_last"
 
     def test_slash_userslash_no_output_pairs_cleanly(
         self, ctx: RenderingContext
     ) -> None:
-        """`/init` — no command output — pairs without ambiguity."""
+        """`/init` — no command output — pairs as a 2-msg pair (not triple)."""
         slash = _slash(ctx, "f1", name="init")
         user_slash = _user_slash(ctx, "f2", text="Please analyze...")
 
@@ -164,3 +180,121 @@ class TestThreeMessageSequence:
 
         assert slash.pair_last == user_slash.message_index
         assert user_slash.pair_first == slash.message_index
+        # No middle in a 2-msg pair.
+        assert slash.pair_middle is None
+        assert user_slash.pair_middle is None
+        assert slash.is_first_in_pair
+        assert user_slash.is_last_in_pair
+
+
+# ----------------------------- end-to-end Markdown render --------------------
+
+
+class TestMarkdownRender:
+    """End-to-end Markdown coverage for the dominant `/cmd` triple shape.
+
+    Without the title-borrowing override and `pair_middle` body delegation,
+    Markdown would render as `## User (slash command)` with no `/exit`
+    visible and the trailing CommandOutput body dropped — both regressions
+    surfaced in monk's review of PR #127.
+    """
+
+    def _load_triple(
+        self, tmp_path, *, ts: str = "2026-04-17T01:13:55Z", cmd: str = "exit"
+    ):
+        """Write a 3-msg JSONL fixture and load it into TemplateMessages."""
+        import json
+        from claude_code_log.converter import load_transcript
+
+        lines = [
+            {
+                "type": "user",
+                "uuid": "u1",
+                "timestamp": ts,
+                "sessionId": "s1",
+                "version": "1",
+                "parentUuid": None,
+                "isSidechain": False,
+                "userType": "user",
+                "cwd": "/x",
+                "isMeta": True,
+                "message": {"role": "user", "content": "Caveat: caveat text."},
+            },
+            {
+                "type": "user",
+                "uuid": "u2",
+                "timestamp": ts,
+                "sessionId": "s1",
+                "version": "1",
+                "parentUuid": "u1",
+                "isSidechain": False,
+                "userType": "user",
+                "cwd": "/x",
+                "message": {
+                    "role": "user",
+                    "content": (
+                        f"<command-name>{cmd}</command-name>"
+                        f"<command-message>{cmd}</command-message>"
+                        f"<command-args></command-args>"
+                    ),
+                },
+            },
+            {
+                "type": "user",
+                "uuid": "u3",
+                "timestamp": ts,
+                "sessionId": "s1",
+                "version": "1",
+                "parentUuid": "u2",
+                "isSidechain": False,
+                "userType": "user",
+                "cwd": "/x",
+                "message": {
+                    "role": "user",
+                    "content": "<local-command-stdout>See ya!</local-command-stdout>",
+                },
+            },
+        ]
+        fn = tmp_path / "t.jsonl"
+        fn.write_text("\n".join(json.dumps(line) for line in lines))
+        return load_transcript(fn)
+
+    def test_triple_renders_command_name_and_output(self, tmp_path) -> None:
+        from claude_code_log.markdown.renderer import MarkdownRenderer
+
+        msgs = self._load_triple(tmp_path, cmd="exit")
+        md = MarkdownRenderer().generate(msgs, "Test")
+
+        # Slash command title borrowed (would otherwise be "User (slash command)").
+        assert "🤷 Command `exit`" in md
+        assert "User (slash command)" not in md
+        # Caveat body kept (delegated from pair_first to itself).
+        assert "Caveat: caveat text." in md
+        # Output body kept (delegated from pair_first to pair_last — would
+        # otherwise be dropped by the orphan empty-title content-skip path).
+        assert "See ya!" in md
+
+    def test_triple_renders_with_pair_css_classes_in_html(self, tmp_path) -> None:
+        """HTML triple emits pair_first / pair_middle / pair_last in document order."""
+        import re
+        from claude_code_log.html.renderer import HtmlRenderer
+
+        msgs = self._load_triple(tmp_path, cmd="exit")
+        html = HtmlRenderer().generate(msgs, "Test")
+
+        # Extract the message-div opening classes in document order, scoped to
+        # the slash-command/command-output blocks.
+        classes = [
+            m.group(1)
+            for m in re.finditer(r"<div class='(message [^']+)'", html)
+            if "slash-command" in m.group(1) or "command-output" in m.group(1)
+        ]
+        assert len(classes) == 3, classes
+        assert "pair_first" in classes[0]
+        assert "pair_middle" in classes[1]
+        assert "pair_last" in classes[2]
+        # Triple still surfaces the three distinct messages — slash-command card
+        # carries the bare command name in its body code tag, command-output
+        # card carries its stdout. Both must remain visible after pairing.
+        assert "<code>exit</code>" in html
+        assert "See ya!" in html
