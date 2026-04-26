@@ -2177,6 +2177,24 @@ def _reorder_session_template_messages(
     return result
 
 
+def _queue_op_content_as_list(
+    content: Optional[list[ContentItem] | str],
+) -> list[ContentItem]:
+    """Normalise `QueueOperationTranscriptEntry.content` to a ContentItem list.
+
+    The Pydantic model allows `content` to be a plain string (raw
+    steering text) or a list of content items. Several filter passes
+    reason about the content as a uniform list, so wrap a non-empty
+    string in a single `TextContent` and fall through to `[]` for
+    None / empty / other shapes.
+    """
+    if isinstance(content, list):
+        return content
+    if isinstance(content, str) and content.strip():
+        return [TextContent(type="text", text=content)]
+    return []
+
+
 def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
     """Filter messages to those that should be rendered.
 
@@ -2221,8 +2239,7 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
         # Get message content for filtering checks
         message_content: list[ContentItem]
         if isinstance(message, QueueOperationTranscriptEntry):
-            content = message.content
-            message_content = content if isinstance(content, list) else []
+            message_content = _queue_op_content_as_list(message.content)
         else:
             message_content = message.message.content
 
@@ -2289,6 +2306,11 @@ _MINIMAL_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
     ToolResultMessage,
 )
 
+_USER_ONLY_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
+    *_MINIMAL_EXCLUDE_CLASSES,
+    AssistantTextMessage,
+)
+
 
 def _filter_by_detail(
     messages: list[TranscriptEntry],
@@ -2296,14 +2318,16 @@ def _filter_by_detail(
 ) -> list[TranscriptEntry]:
     """Pre-render filter: strip content items per detail level.
 
-    - MINIMAL: keep only user/assistant text (no tools, thinking, system).
+    - MINIMAL / USER_ONLY: keep only user/assistant text (no tools,
+      thinking, system). USER_ONLY drops assistant text in the post-
+      render pass so it behaves identically here.
     - LOW: keep user/assistant text + WebSearch / WebFetch / Task / Agent
       tools (Agent is the teammates spawn alias for Task).
     - HIGH: keep user/assistant + all tools/thinking, drop system entries.
     """
     from copy import copy
 
-    if detail == DetailLevel.MINIMAL:
+    if detail in (DetailLevel.MINIMAL, DetailLevel.USER_ONLY):
         strip_types: tuple[type, ...] = (
             ThinkingContent,
             ToolUseContent,
@@ -2317,13 +2341,33 @@ def _filter_by_detail(
         # HIGH: no content-item stripping needed
         strip_types = ()
 
+    # Queue-operation entries (carrying UserSteeringMessage) pass through
+    # at every non-FULL detail level. Steering is user-authored content
+    # and belongs in any view of the user's side of the conversation —
+    # the post-render exclude chains (_HIGH/_LOW/_MINIMAL/_USER_ONLY)
+    # don't list UserSteeringMessage, so this allowlist is sufficient
+    # to keep it visible everywhere we already keep assistant/user text.
+    allowed_types: tuple[type, ...] = (
+        UserTranscriptEntry,
+        AssistantTranscriptEntry,
+        QueueOperationTranscriptEntry,
+    )
+
     filtered: list[TranscriptEntry] = []
     for message in messages:
-        # HIGH/LOW/MINIMAL: drop system entries (factory creates SystemMessage)
-        if not isinstance(message, (UserTranscriptEntry, AssistantTranscriptEntry)):
+        # HIGH/LOW/MINIMAL/USER_ONLY: drop system entries (factory creates SystemMessage)
+        if not isinstance(message, allowed_types):
             continue
-        # LOW/MINIMAL: drop sidechain (subagent) messages entirely
-        if detail in (DetailLevel.MINIMAL, DetailLevel.LOW) and message.isSidechain:
+        # queue-operation entries don't have `.message` or `.isSidechain` —
+        # they are appended verbatim for downstream conversion.
+        if isinstance(message, QueueOperationTranscriptEntry):
+            filtered.append(message)
+            continue
+        # LOW/MINIMAL/USER_ONLY: drop sidechain (subagent) messages entirely
+        if (
+            detail in (DetailLevel.MINIMAL, DetailLevel.LOW, DetailLevel.USER_ONLY)
+            and message.isSidechain
+        ):
             continue
         if not strip_types:
             filtered.append(message)
@@ -2498,7 +2542,9 @@ def _filter_template_by_detail(
     detail: DetailLevel,
 ) -> list[TemplateMessage]:
     """Post-render filter: remove TemplateMessage types per detail level."""
-    if detail == DetailLevel.MINIMAL:
+    if detail == DetailLevel.USER_ONLY:
+        exclude = _USER_ONLY_EXCLUDE_CLASSES
+    elif detail == DetailLevel.MINIMAL:
         exclude = _MINIMAL_EXCLUDE_CLASSES
     elif detail == DetailLevel.LOW:
         exclude = _LOW_EXCLUDE_CLASSES
@@ -2509,7 +2555,10 @@ def _filter_template_by_detail(
     for msg in messages:
         if isinstance(msg.content, exclude):
             continue
-        if detail in (DetailLevel.MINIMAL, DetailLevel.LOW) and msg.is_sidechain:
+        if (
+            detail in (DetailLevel.MINIMAL, DetailLevel.LOW, DetailLevel.USER_ONLY)
+            and msg.is_sidechain
+        ):
             continue
         # LOW: drop tool_use/tool_result unless it's a kept tool
         if detail == DetailLevel.LOW and isinstance(
@@ -2564,12 +2613,20 @@ def _collect_session_info(
             continue
 
         # Get message content
+        message_content: list[ContentItem]
         if isinstance(message, QueueOperationTranscriptEntry):
-            message_content = message.content if message.content else []
+            message_content = _queue_op_content_as_list(message.content)
         else:
-            message_content = message.message.content  # type: ignore
+            # After filtering out System/Summary/Passthrough upstream in
+            # _filter_messages, `message` is User/Assistant here — both
+            # expose `.message.content: list[ContentItem]`. The inner
+            # cast narrows the union explicitly so pyright's strict mode
+            # and ty both see a clean `list[ContentItem]` on the RHS.
+            message_content = cast(
+                "UserTranscriptEntry | AssistantTranscriptEntry", message
+            ).message.content
 
-        text_content = extract_text_content(message_content)  # type: ignore[arg-type]
+        text_content = extract_text_content(message_content)
 
         # Get session info
         session_id = getattr(message, "sessionId", "unknown")

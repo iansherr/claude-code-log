@@ -42,7 +42,7 @@ uvx claude-code-log@latest --open-browser
 - **Rich Message Types**: Support for user/assistant messages, tool use/results, thinking content, images
 - **System Command Visibility**: Show system commands (like `init`) in expandable details with structured parsing
 - **Markdown Rendering**: Server-side markdown rendering with syntax highlighting using mistune
-- **Detail Levels & Compact Mode**: `--detail full|high|low|minimal` filters by verbosity and `--compact` merges repeated section headings — pairs well with `--format md` to feed past conversations back to an LLM for analysis or experience building
+- **Detail Levels & Compact Mode**: `--detail full|high|low|minimal|user-only` filters by verbosity and `--compact` merges repeated section headings — pairs well with `--format md` to feed past conversations back to an LLM for analysis or experience building
 - **Floating Navigation**: Always-available back-to-top button and filter controls
 - **CLI Interface**: Simple command-line tool using Click
 
@@ -156,6 +156,7 @@ claude-code-log /path/to/project --detail low --format md --compact
 
 `--detail` levels (smallest → largest output):
 
+- `user-only` — just user prompts and steering (useful as input to a downstream agent, e.g. building a requirements doc)
 - `minimal` — user + assistant text only
 - `low` — interaction-focused; keeps WebSearch, WebFetch, and Task (agent delegations) as key signals
 - `high` — detailed but cleaned; drops system/hook noise

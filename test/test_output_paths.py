@@ -51,6 +51,8 @@ class TestVariantSuffix:
         assert variant_suffix(DetailLevel.HIGH, False, "html") == ".high"
         assert variant_suffix(DetailLevel.LOW, False, "html") == ".low"
         assert variant_suffix(DetailLevel.MINIMAL, False, "md") == ".minimal"
+        assert variant_suffix(DetailLevel.USER_ONLY, False, "html") == ".user-only"
+        assert variant_suffix(DetailLevel.USER_ONLY, False, "md") == ".user-only"
 
     def test_compact_markdown_only(self) -> None:
         # Compact contributes for Markdown output.
@@ -81,6 +83,8 @@ class TestVariantEntryRegex:
             ("combined_transcripts.high.html", ".high"),
             ("combined_transcripts.low.compact.html", ".low.compact"),
             ("combined_transcripts.minimal.html", ".minimal"),
+            ("combined_transcripts.user-only.html", ".user-only"),
+            ("combined_transcripts.user-only.compact.html", ".user-only.compact"),
         ],
     )
     def test_accepts_entry_points(self, name: str, expected_suffix: str) -> None:
@@ -367,13 +371,16 @@ class TestSessionBackLink:
 
 class TestEnumerateProjectVariants:
     def test_lists_all_variants_default_first(self, tmp_path: Path) -> None:
-        # Create dummy variant files.
+        # Create dummy variant files — include `user-only` with its hyphen
+        # to guard against a regex regression that drops hyphenated variants.
         (tmp_path / "combined_transcripts.html").write_text("x")
         (tmp_path / "combined_transcripts.low.html").write_text("x")
         (tmp_path / "combined_transcripts.high.html").write_text("x")
+        (tmp_path / "combined_transcripts.user-only.html").write_text("x")
         # Paginated trailers should be ignored.
         (tmp_path / "combined_transcripts_2.html").write_text("x")
         (tmp_path / "combined_transcripts.low_2.html").write_text("x")
+        (tmp_path / "combined_transcripts.user-only_2.html").write_text("x")
 
         variants = _enumerate_project_variants(tmp_path, "project")
         suffixes = [v["suffix"] for v in variants]
@@ -381,8 +388,13 @@ class TestEnumerateProjectVariants:
         # Default first.
         assert suffixes[0] == ""
         assert labels[0] == "Full"
-        # All three entries present, no paginated trailers.
-        assert sorted(suffixes) == ["", ".high", ".low"]
+        # All four entries present, no paginated trailers.
+        assert sorted(suffixes) == ["", ".high", ".low", ".user-only"]
+        # Hyphenated label renders with a space (UI polish).
+        user_only_label = next(
+            v["label"] for v in variants if v["suffix"] == ".user-only"
+        )
+        assert user_only_label == "User only"
 
     def test_empty_dir_returns_empty_list(self, tmp_path: Path) -> None:
         assert _enumerate_project_variants(tmp_path, "empty") == []

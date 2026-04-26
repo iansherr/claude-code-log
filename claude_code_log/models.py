@@ -48,13 +48,14 @@ class MessageType(str, Enum):
 class DetailLevel(str, Enum):
     """Output detail level controlling which message types are included.
 
-    Levels form a hierarchy: full > high > low > minimal.
+    Levels form a hierarchy: full > high > low > minimal > user-only.
     """
 
     FULL = "full"  # Everything
     HIGH = "high"  # Detailed but cleaned (no system/hook noise)
     LOW = "low"  # Interaction-focused + key signals
     MINIMAL = "minimal"  # User + assistant messages only
+    USER_ONLY = "user-only"  # User prompts + steering only (for downstream agents)
 
 
 # =============================================================================

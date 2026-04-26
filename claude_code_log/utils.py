@@ -41,7 +41,7 @@ from .factories import (
 # no-op on the filename (matching the CLI description that compact is
 # Markdown-only).
 
-VARIANT_ENTRY_RE = re.compile(r"^combined_transcripts((?:\.[a-z]+)*)\.html$")
+VARIANT_ENTRY_RE = re.compile(r"^combined_transcripts((?:\.[a-z-]+)*)\.html$")
 
 
 def variant_suffix(

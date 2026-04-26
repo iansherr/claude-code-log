@@ -515,14 +515,18 @@ def _clear_output_files(input_path: Path, all_projects: bool, file_ext: str) -> 
 )
 @click.option(
     "--detail",
-    type=click.Choice(["full", "high", "low", "minimal"], case_sensitive=False),
+    type=click.Choice(
+        ["full", "high", "low", "minimal", "user-only"], case_sensitive=False
+    ),
     default="full",
     help=(
         "Detail level for output. "
         "full: everything; "
         "high: detailed but cleaned (no system/hook noise); "
         "low: interaction-focused + key signals; "
-        "minimal: user + assistant messages only."
+        "minimal: user + assistant messages only; "
+        "user-only: only user prompts and steering (for feeding to "
+        "downstream agents, e.g. building a requirements doc)."
     ),
 )
 @click.option(

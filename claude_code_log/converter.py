@@ -901,7 +901,9 @@ def _variant_label_from_suffix(suffix: str) -> str:
         return "Full"
     parts = [p for p in suffix.split(".") if p]
     # Capitalise each segment; "compact" stays lowercased as the adverb.
-    nice = [p.capitalize() if p != "compact" else p for p in parts]
+    # Replace hyphens with spaces so "user-only" renders as "User only"
+    # rather than "User-only" in the UI.
+    nice = [p.capitalize().replace("-", " ") if p != "compact" else p for p in parts]
     return " · ".join(nice)
 
 

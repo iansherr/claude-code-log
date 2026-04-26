@@ -495,6 +495,55 @@ class TestMinimalTemplateMessages:
         assert root_messages[0].is_session_header
         assert len(session_nav) >= 1
 
+    def test_minimal_keeps_user_steering(self, tmp_path):
+        """queue-operation 'remove' → UserSteeringMessage, kept at MINIMAL.
+
+        Steering prompts carry real user precisions (e.g. 'actually, use
+        Postgres not MySQL') and must survive any view that claims to
+        preserve the user's side of the conversation.
+        """
+        import json as _json
+
+        entries = [
+            _user_entry("Start building", timestamp="2025-01-01T10:00:00Z"),
+            _assistant_entry("Starting...", timestamp="2025-01-01T10:00:01Z"),
+        ]
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            "\n".join(_json.dumps(e) for e in entries)
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Use Postgres not MySQL",
+                        }
+                    ],
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.MINIMAL)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering = [
+            msg.content
+            for msg in ctx.messages
+            if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering) == 1, (
+            f"MINIMAL should keep steering; got content types: "
+            f"{[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
     def test_minimal_removes_bash_messages(self, tmp_path):
         """Minimal mode removes bash-input and bash-output messages."""
         entries = [
@@ -1131,6 +1180,295 @@ class TestCompactMarkdown:
         # HTML doesn't implement compact — both messages render normally
         assert "First" in html
         assert "Second" in html
+
+
+# -- USER_ONLY level ---------------------------------------------------------
+
+
+class TestUserOnlyTemplateMessages:
+    """USER_ONLY keeps user prompts and steering only — the intended input
+    shape for downstream agents (e.g. extracting a requirements.md)."""
+
+    def test_drops_assistant_text(self, tmp_path):
+        entries = [
+            _user_entry("Design me a login page"),
+            _assistant_entry(
+                "Sure, here's a plan...", timestamp="2025-01-01T10:00:01Z"
+            ),
+            _user_entry("Make it use OAuth", timestamp="2025-01-01T10:00:02Z"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.USER_ONLY
+        )
+        all_types: set[str] = set()
+        _collect_types(root_messages, all_types)
+        assert "assistant" not in all_types
+        assert "user" in all_types
+        user_texts = [
+            getattr(msg.content, "items", None)
+            for msg in ctx.messages
+            if msg.type == "user"
+        ]
+        # Both user prompts survived
+        assert len(user_texts) == 2
+
+    def test_keeps_user_steering(self, tmp_path):
+        """queue-operation 'remove' → UserSteeringMessage, kept at USER_ONLY."""
+        import json as _json
+
+        entries = [
+            _user_entry("Start building", timestamp="2025-01-01T10:00:00Z"),
+            _assistant_entry("Starting...", timestamp="2025-01-01T10:00:01Z"),
+        ]
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            "\n".join(_json.dumps(e) for e in entries)
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Actually, wait — use Postgres not MySQL",
+                        }
+                    ],
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.USER_ONLY)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering_content = [
+            msg.content
+            for msg in ctx.messages
+            if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering_content) == 1, (
+            f"Expected exactly one UserSteeringMessage, got content types: "
+            f"{[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
+    def test_drops_tools_thinking_bash_slash(self, tmp_path):
+        """USER_ONLY inherits everything MINIMAL drops."""
+        entries = [
+            _user_entry("List files"),
+            _assistant_entry(
+                "Running ls",
+                extra_content=[_tool_use_item(), _thinking_item()],
+                timestamp="2025-01-01T10:00:01Z",
+            ),
+            _user_entry(
+                "",
+                extra_content=[_tool_result_item()],
+                timestamp="2025-01-01T10:00:02Z",
+            ),
+            _user_entry(
+                "<bash-input>ls</bash-input>", timestamp="2025-01-01T10:00:03Z"
+            ),
+            _user_entry(
+                "<bash-stdout>a b c</bash-stdout>", timestamp="2025-01-01T10:00:04Z"
+            ),
+            _user_entry("/exit", timestamp="2025-01-01T10:00:05Z"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+
+        root_messages, _, ctx = generate_template_messages(
+            messages, detail=DetailLevel.USER_ONLY
+        )
+        all_types: set[str] = set()
+        _collect_types(root_messages, all_types)
+        for unwanted in (
+            "assistant",
+            "thinking",
+            "tool_use",
+            "tool_result",
+            "bash-input",
+            "bash-output",
+        ):
+            assert unwanted not in all_types, (
+                f"{unwanted!r} should not survive USER_ONLY, got: {all_types}"
+            )
+        # /exit slash command must not appear in any survivor
+        for msg in ctx.messages:
+            assert "/exit" not in getattr(msg.content, "text", ""), (
+                f"Slash command leaked into USER_ONLY as {msg.type}"
+            )
+
+    def test_drops_sidechain(self, tmp_path):
+        sidechain_user = _user_entry("Sub task", timestamp="2025-01-01T10:00:01Z")
+        sidechain_user["isSidechain"] = True
+        entries = [_user_entry("Main prompt"), sidechain_user]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.USER_ONLY)
+        for msg in ctx.messages:
+            assert not msg.is_sidechain
+
+    def test_preserves_session_headers(self, tmp_path):
+        """Session headers remain so downstream agents can orient per-session."""
+        entries = [
+            _user_entry("Hello", session_id="sess-A"),
+            _assistant_entry("Hi", session_id="sess-A"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+
+        root_messages, session_nav, _ = generate_template_messages(
+            messages, detail=DetailLevel.USER_ONLY
+        )
+        assert len(root_messages) >= 1
+        assert root_messages[0].is_session_header
+        assert len(session_nav) >= 1
+
+    def test_fewer_messages_than_minimal(self, tmp_path):
+        """USER_ONLY ⊂ MINIMAL (always ≤ messages)."""
+        entries = [
+            _user_entry("Prompt one"),
+            _assistant_entry("Reply one", timestamp="2025-01-01T10:00:01Z"),
+            _user_entry("Prompt two", timestamp="2025-01-01T10:00:02Z"),
+            _assistant_entry("Reply two", timestamp="2025-01-01T10:00:03Z"),
+        ]
+        messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
+
+        _, _, ctx_min = generate_template_messages(messages, detail=DetailLevel.MINIMAL)
+        # Re-load to avoid mutation shared state between runs
+        messages2 = load_transcript(tmp_path / "t.jsonl")
+        _, _, ctx_user = generate_template_messages(
+            messages2, detail=DetailLevel.USER_ONLY
+        )
+        assert len(ctx_user.messages) < len(ctx_min.messages)
+
+
+class TestSteeringHierarchy:
+    """UserSteeringMessage must survive at every non-FULL detail level.
+
+    The documented hierarchy is `full > high > low > minimal > user-only`
+    — whatever a lower level keeps, higher levels keep. Steering is
+    user-authored content, so it belongs in every view that preserves
+    the user's side of the conversation.
+    """
+
+    @staticmethod
+    def _write_with_steering(tmp_path: Path) -> Path:
+        import json as _json
+
+        entries = [
+            _user_entry("Do it", timestamp="2025-01-01T10:00:00Z"),
+            _assistant_entry("OK", timestamp="2025-01-01T10:00:01Z"),
+        ]
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            "\n".join(_json.dumps(e) for e in entries)
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    "content": [
+                        {"type": "text", "text": "Also add auth"},
+                    ],
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    @pytest.mark.parametrize(
+        "level",
+        [
+            DetailLevel.HIGH,
+            DetailLevel.LOW,
+            DetailLevel.MINIMAL,
+            DetailLevel.USER_ONLY,
+        ],
+    )
+    def test_steering_survives_at_every_non_full_level(self, tmp_path, level):
+        path = self._write_with_steering(tmp_path)
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=level)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering = [
+            msg.content
+            for msg in ctx.messages
+            if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering) == 1, (
+            f"Level {level.value} should keep UserSteeringMessage; got "
+            f"content types: {[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
+
+class TestSteeringStringContent:
+    """`QueueOperationTranscriptEntry.content` can be a plain string
+    (not just a list of ContentItem). The filter pipeline used to coerce
+    non-list content to `[]`, silently dropping steering; verify it now
+    survives as a UserSteeringMessage."""
+
+    def test_string_content_becomes_steering_message(self, tmp_path):
+        import json as _json
+
+        path = tmp_path / "t.jsonl"
+        path.write_text(
+            _json.dumps(_user_entry("Start"))
+            + "\n"
+            + _json.dumps(
+                {
+                    "type": "queue-operation",
+                    "operation": "remove",
+                    "timestamp": "2025-01-01T10:00:02Z",
+                    # String content, not a list — the interesting case.
+                    "content": "Actually, use Postgres not MySQL",
+                    "sessionId": "sess-001",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        messages = load_transcript(path)
+
+        _, _, ctx = generate_template_messages(messages, detail=DetailLevel.MINIMAL)
+        from claude_code_log.models import UserSteeringMessage
+
+        steering = [
+            msg for msg in ctx.messages if isinstance(msg.content, UserSteeringMessage)
+        ]
+        assert len(steering) == 1, (
+            f"String-content queue-op should become a UserSteeringMessage; "
+            f"got: {[type(m.content).__name__ for m in ctx.messages]}"
+        )
+
+
+class TestUserOnlyCli:
+    def test_cli_accepts_user_only(self, tmp_path):
+        jsonl = tmp_path / "session.jsonl"
+        _write_jsonl(
+            [
+                _user_entry("Hello"),
+                _assistant_entry("Hi", timestamp="2025-01-01T10:00:01Z"),
+            ],
+            jsonl,
+        )
+        result = CliRunner().invoke(main, [str(jsonl), "--detail", "user-only"])
+        assert result.exit_code == 0, result.output
+        # Output filename carries the variant suffix
+        generated = list(tmp_path.glob("*.user-only.html"))
+        assert len(generated) == 1, (
+            f"Expected one *.user-only.html, got: {list(tmp_path.iterdir())}"
+        )
 
 
 # -- Helpers ------------------------------------------------------------------
