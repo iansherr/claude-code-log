@@ -26,6 +26,7 @@ from ..models import (
     SessionHeaderMessage,
     SlashCommandMessage,
     SystemMessage,
+    TaskNotificationMessage,
     TeammateMessage,
     TextContent,
     ThinkingMessage,
@@ -49,6 +50,7 @@ from ..models import (
     TaskCreateInput,
     TaskInput,
     TaskListInput,
+    TaskOutputInput,
     TaskUpdateInput,
     TeamCreateInput,
     TeamDeleteInput,
@@ -69,6 +71,7 @@ from ..models import (
     TaskCreateOutput,
     TaskListOutput,
     TaskOutput,
+    TaskOutputResult,
     TaskUpdateOutput,
     TeamCreateOutput,
     TeamDeleteOutput,
@@ -867,6 +870,69 @@ class MarkdownRenderer(Renderer):
             result = f"{result}\n\n{body}" if result else body
         return result
 
+    def format_TaskOutputInput(self, input: TaskOutputInput, _: TemplateMessage) -> str:
+        """Format → task_id + optional block/timeout (async-agents poll)."""
+        parts: list[str] = []
+        if input.task_id:
+            parts.append(f"`#{input.task_id}`")
+        if input.block:
+            parts.append("**block:** `true`")
+        if input.timeout:
+            parts.append(f"**timeout:** `{input.timeout} ms`")
+        return " · ".join(parts)
+
+    def format_TaskOutputResult(
+        self, output: TaskOutputResult, _: TemplateMessage
+    ) -> str:
+        """Format → status / type / retrieval + transcript path.
+
+        Skip the truncated ``<output>`` snapshot — the agent's full
+        transcript already inlines as a sidechain.
+        """
+        parts: list[str] = []
+        if output.task_id:
+            parts.append(f"`#{output.task_id}`")
+        if output.task_type:
+            parts.append(f"**type:** `{output.task_type}`")
+        if output.status:
+            parts.append(f"**status:** `{output.status}`")
+        if output.retrieval_status:
+            parts.append(f"**retrieval:** `{output.retrieval_status}`")
+        head = " · ".join(parts) if parts else ""
+        if output.output_truncated and output.output_file:
+            head = (
+                f"{head}\n\n**Transcript:** `{output.output_file}`"
+                if head
+                else (f"**Transcript:** `{output.output_file}`")
+            )
+        return head
+
+    def format_TaskNotificationMessage(
+        self, content: TaskNotificationMessage, _: TemplateMessage
+    ) -> str:
+        """Format → metadata bullets + collapsible Markdown body for an
+        async-agent ``<task-notification>`` user entry (issue #90)."""
+        lines: list[str] = []
+        if content.task_id:
+            lines.append(f"- **Task ID:** `{content.task_id}`")
+        if content.status:
+            lines.append(f"- **Status:** `{content.status}`")
+        usage = content.usage
+        if usage is not None:
+            if usage.total_tokens is not None:
+                lines.append(f"- **Tokens:** `{usage.total_tokens:,}`")
+            if usage.tool_uses is not None:
+                lines.append(f"- **Tool uses:** `{usage.tool_uses}`")
+            if usage.duration_ms is not None:
+                lines.append(f"- **Duration:** `{usage.duration_ms / 1000:.1f}s`")
+        if content.transcript_path:
+            lines.append(f"- **Transcript:** `{content.transcript_path}`")
+        head = "\n".join(lines)
+        if content.result_text:
+            body = self._collapsible("Result", content.result_text)
+            return f"{head}\n\n{body}" if head else body
+        return head
+
     def format_ToolUseContent(self, content: ToolUseContent, _: TemplateMessage) -> str:
         """Fallback for unknown tool inputs - render as key/value list."""
         return self._render_params(content.input)
@@ -1205,11 +1271,35 @@ class MarkdownRenderer(Renderer):
         return f"{base} in `{input.path}`" if input.path else base
 
     def title_TaskInput(self, input: TaskInput, _: TemplateMessage) -> str:
-        """Title → '🤖 Task (subagent): *description*'."""
+        """Title → '🤖 Task (subagent): *description* [async]'.
+
+        ``[async]`` muted hint when ``run_in_background=True`` so the
+        Markdown reader can tell which spawns will be followed up
+        later by a ``<task-notification>`` user entry (issue #90).
+        """
         subagent = f" ({input.subagent_type})" if input.subagent_type else ""
+        async_hint = " *[async]*" if input.run_in_background else ""
         if desc := input.description:
-            return f"🤖 Task{subagent}: *{self._escape_stars(desc)}*"
-        return f"🤖 Task{subagent}"
+            return f"🤖 Task{subagent}: *{self._escape_stars(desc)}*{async_hint}"
+        return f"🤖 Task{subagent}{async_hint}"
+
+    def title_TaskOutputInput(self, input: TaskOutputInput, _: TemplateMessage) -> str:
+        """Title → '🔍 TaskOutput `#<task_id>`' for the async-agent
+        polling tool (issue #90)."""
+        if input.task_id:
+            return f"🔍 TaskOutput `#{input.task_id}`"
+        return "🔍 TaskOutput"
+
+    def title_TaskNotificationMessage(
+        self, content: TaskNotificationMessage, _: TemplateMessage
+    ) -> str:
+        """Title → '🔄 Async result · *<summary>*' for an async-agent
+        completion notification (issue #90)."""
+        if content.summary:
+            return f"🔄 Async result · *{self._escape_stars(content.summary)}*"
+        if content.task_id:
+            return f"🔄 Async result `#{content.task_id}`"
+        return "🔄 Async result"
 
     def title_TodoWriteInput(self, _input: TodoWriteInput, _: TemplateMessage) -> str:
         """Title → '✅ Todo List'."""

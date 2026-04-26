@@ -221,6 +221,37 @@
     font-weight: 500;
 }
 
+/* `[async]` hint on Task tool_use titles when run_in_background=True
+   (issue #90). Same muted treatment as the action tag — the reader
+   needs to scan past it most of the time. */
+.task-async-hint {
+    color: var(--cc-blue);
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+/* ----------------------------------------------------------------------
+   Async-agent cards (issue #90).
+
+   - .task-output-card: TaskOutput (polling tool) input + result.
+   - .task-notification-card: <task-notification> User entry metadata.
+
+   Both reuse the .teammate-tool-card grid; adding a coloured left
+   border lets the visual scan separate spawn (Task) → poll
+   (TaskOutput) → result (Notification).
+   ---------------------------------------------------------------------- */
+.teammate-tool-card.task-output-card {
+    --cc-color: var(--cc-cyan);
+
+    border-left: 4px solid var(--cc-color);
+}
+
+.teammate-tool-card.task-notification-card {
+    --cc-color: var(--cc-blue);
+
+    border-left: 4px solid var(--cc-color);
+}
+
 /* ----------------------------------------------------------------------
    Teammate-aware tool cards.
    Used by TeamCreate / TeamDelete / TaskCreate / TaskUpdate / SendMessage
