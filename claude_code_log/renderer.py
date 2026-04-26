@@ -1920,6 +1920,18 @@ def _get_message_hierarchy_level(msg: TemplateMessage) -> int:
     if msg_type in ("user", "teammate"):
         return 4 if is_sidechain else 1
 
+    # Async-agent task notifications (issue #90) arrive as User
+    # entries but they're status updates, not new conversation turns.
+    # Treating them as level 1 makes the next assistant nest under
+    # the notification (since assistant level 2 > notification level
+    # 1) — wrong: the next assistant is starting a NEW turn, not
+    # responding to the notification. Place them at level 3 instead
+    # so they sit under the preceding assistant (which originally
+    # spawned the async work) without claiming subsequent turns as
+    # descendants.
+    if msg_type == "task_notification":
+        return 3
+
     # System info/warning at level 3 (tool-related, e.g., hook notifications)
     # Get level from SystemMessage if available
     system_level = msg.content.level if isinstance(msg.content, SystemMessage) else None
