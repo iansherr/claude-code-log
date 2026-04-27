@@ -3291,7 +3291,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -3330,6 +3331,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -3540,7 +3548,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -3993,7 +4001,7 @@
       
       
       
-      <div class='message user task_notification d-0 d-1' data-message-id='d-9' id='msg-d-9'>
+      <div class='message user task-notification d-0 d-1' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🔄 Async result <span class='tool-summary'>Agent &quot;Coverage analysis&quot; completed</span></span>
               <div class='header-info'>
@@ -8966,7 +8974,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -9005,6 +9014,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -9215,7 +9231,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -16688,7 +16704,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -16727,6 +16744,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -16937,7 +16961,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -22468,7 +22492,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -22507,6 +22532,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -22717,7 +22749,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -28479,7 +28511,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -28518,6 +28551,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -28728,7 +28768,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -34358,7 +34398,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -34397,6 +34438,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -34607,7 +34655,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };
@@ -40296,7 +40344,8 @@
               'command-output': { id: 'command-output', content: '📋 Command Output', style: 'background-color: #efebe9;' },
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
-              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' }
+              'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
           };
   
           // Build timeline data from messages
@@ -40335,6 +40384,13 @@
                       // message also carries the `user` class (for styling),
                       // and .find would return `user` first in DOM order.
                       messageType = 'teammate';
+                  } else if (classList.includes('task-notification')) {
+                      // Same pattern as `teammate`: async-agent
+                      // <task-notification> entries carry both `user` and
+                      // `task-notification` classes — without this branch
+                      // they'd land in the `user` group rather than getting
+                      // their own 🔄 Async result row in the timeline.
+                      messageType = 'task-notification';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -40545,7 +40601,7 @@
                       axis: 2
                   },
                   groupOrder: (a, b) => {
-                      const order = ['user', 'teammate', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
+                      const order = ['user', 'teammate', 'task-notification', 'system', 'slash-command', 'command-output', 'bash-input', 'bash-output', 'thinking', 'assistant', 'sidechain', 'tool_use', 'tool_result', 'image'];
                       return order.indexOf(a.id) - order.indexOf(b.id);
                   }
               };

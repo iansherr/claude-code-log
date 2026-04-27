@@ -70,10 +70,15 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     TeammateMessage: ["user", "teammate"],
     # Async-agent <task-notification> entry (issue #90). Carries the
     # `user` class so the runtime "User" filter toggle keeps it visible
-    # — without it, the rendered <div> only had `task_notification`,
-    # which matches no filter toolbar type and is permanently flagged
-    # `filtered-hidden`.
-    TaskNotificationMessage: ["user", "task_notification"],
+    # — without it, the rendered <div> would only carry the
+    # `task-notification` modifier, which matches no filter toolbar
+    # type and would be permanently flagged `filtered-hidden`. The
+    # modifier itself uses hyphens to match the rest of this registry
+    # (`system-hook`, `slash-command`, `command-output`, `bash-input`,
+    # `bash-output`, `task-notification-card`/`-backlink` in CSS) — the
+    # underlying message-type identifier `"task_notification"` (set on
+    # `TaskNotificationMessage.message_type`) keeps its underscore.
+    TaskNotificationMessage: ["user", "task-notification"],
     # Assistant message types
     AssistantTextMessage: ["assistant"],
     # Tool message types
