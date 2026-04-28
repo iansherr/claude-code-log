@@ -75,6 +75,57 @@ def is_bash_output(text_content: str) -> bool:
 
 
 # =============================================================================
+# Command-tag Cleanup
+# =============================================================================
+
+
+_COMMAND_NAME_RE = re.compile(r"<command-name>([^<]+)</command-name>")
+_COMMAND_ARGS_RE = re.compile(r"<command-args>([^<]*)</command-args>")
+_LOCAL_STDOUT_RE = re.compile(
+    r"<local-command-stdout>(.*?)</local-command-stdout>", re.DOTALL
+)
+_LOCAL_STDERR_RE = re.compile(
+    r"<local-command-stderr>(.*?)</local-command-stderr>", re.DOTALL
+)
+
+
+def simplify_command_tags(text: str) -> str:
+    """Strip Claude Code's command-tag XML soup down to its semantic core.
+
+    Three shapes covered:
+
+    - ``<command-name>/X</command-name><command-message>X</command-message><command-args>Y</command-args>``
+      → ``"/X"`` (or ``"/X Y"`` when args are non-empty). The
+      ``<command-message>`` field is always a redundant restatement of
+      the name without the leading ``/``, never carrying information.
+    - ``<local-command-stdout>X</local-command-stdout>`` → ``"X"`` —
+      the harness's user-facing hint for dialog-style commands
+      (``"Status dialog dismissed"``, ``"Skills dialog dismissed"``,
+      …).
+    - ``<local-command-stderr>X</local-command-stderr>`` → ``"X"``
+      (paired stderr equivalent).
+
+    Returns the text unchanged when none of the patterns match — keeps
+    the helper safe to apply opportunistically as part of a preview
+    pipeline (slash-command branch headers, system-info messages, …)
+    that also receives non-command text.
+    """
+    name_match = _COMMAND_NAME_RE.search(text)
+    if name_match:
+        cmd = name_match.group(1).strip()
+        args_match = _COMMAND_ARGS_RE.search(text)
+        args = args_match.group(1).strip() if args_match else ""
+        return f"{cmd} {args}".strip() if args else cmd
+
+    for regex in (_LOCAL_STDOUT_RE, _LOCAL_STDERR_RE):
+        match = regex.search(text)
+        if match:
+            return match.group(1).strip()
+
+    return text
+
+
+# =============================================================================
 # Slash Command Creation
 # =============================================================================
 

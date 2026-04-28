@@ -602,6 +602,195 @@ class TestCreateSessionPreview:
         assert "✂️" in preview
         assert "Please review this code for bugs" in preview
 
+    def test_create_session_preview_strips_slash_command_xml(self):
+        """A user-typed slash command at branch-root or session-start should
+        surface as ``/cmd`` rather than the raw ``<command-name>...`` soup.
+
+        Closes #129 — and feeds branch headers (which display
+        ``Branch • <uuid8> • <preview>``) the cleaned form so
+        ``Branch • 8d0ae973 • <command-name>/exit</command-name>...``
+        becomes ``Branch • 8d0ae973 • /exit``.
+        """
+        text = (
+            "<command-name>/exit</command-name>\n"
+            "            <command-message>exit</command-message>\n"
+            "            <command-args></command-args>"
+        )
+        preview = create_session_preview(text)
+        assert preview == "/exit"
+
+    def test_create_session_preview_strips_slash_command_with_args(self):
+        text = (
+            "<command-name>/clmail:list</command-name>"
+            "<command-message>clmail:list</command-message>"
+            "<command-args>/quit</command-args>"
+        )
+        preview = create_session_preview(text)
+        assert preview == "/clmail:list /quit"
+
+    def test_create_session_preview_strips_local_command_stdout(self):
+        """Dialog-dismissal hints render their inner text, not the wrapping tag."""
+        text = "<local-command-stdout>Status dialog dismissed</local-command-stdout>"
+        preview = create_session_preview(text)
+        assert preview == "Status dialog dismissed"
+
+    def test_create_session_preview_init_command_yields_slash_init(self):
+        """Replaces the previous hardcoded English description for ``/init``.
+
+        The old ``extract_init_command_description`` had a special-case
+        string ``"Claude Initializes Codebase Documentation Guide
+        (/init command)"`` that nothing tested or asserted on. The
+        general ``simplify_command_tags`` cleanup now collapses it to
+        the same ``/init`` shape every other slash command gets —
+        consistent and shorter.
+        """
+        text = (
+            "<command-name>init</command-name>"
+            "<command-message>init</command-message>"
+            "<command-args></command-args>"
+            '<command-contents>{"text": "some init prompt"}</command-contents>'
+        )
+        preview = create_session_preview(text)
+        assert preview == "init"
+
+
+class TestSimplifyCommandTags:
+    """Direct unit tests for ``simplify_command_tags``.
+
+    The helper is shared between the SystemMessage factory (turning
+    ``local_command`` system entries into ``ℹ️ /status`` rather than
+    raw XML soup — closes #129) and the branch-preview path through
+    ``create_session_preview`` (so a slash-command branch root surfaces
+    as ``Branch • <uuid8> • /exit`` instead of the
+    ``<command-name>...`` blob).
+    """
+
+    def test_slash_command_no_args(self):
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/status</command-name>"
+            "<command-message>status</command-message>"
+            "<command-args></command-args>"
+        )
+        assert simplify_command_tags(text) == "/status"
+
+    def test_slash_command_with_args(self):
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/clmail:list</command-name>"
+            "<command-message>clmail:list</command-message>"
+            "<command-args>/quit</command-args>"
+        )
+        assert simplify_command_tags(text) == "/clmail:list /quit"
+
+    def test_local_command_stdout(self):
+        from claude_code_log.factories import simplify_command_tags
+
+        text = "<local-command-stdout>Status dialog dismissed</local-command-stdout>"
+        assert simplify_command_tags(text) == "Status dialog dismissed"
+
+    def test_local_command_stderr(self):
+        from claude_code_log.factories import simplify_command_tags
+
+        text = "<local-command-stderr>Error: bad arg</local-command-stderr>"
+        assert simplify_command_tags(text) == "Error: bad arg"
+
+    def test_passthrough_when_no_tags(self):
+        """No-match path — caller must be safe to invoke opportunistically."""
+        from claude_code_log.factories import simplify_command_tags
+
+        assert simplify_command_tags("plain text") == "plain text"
+        assert simplify_command_tags("") == ""
+
+    def test_command_name_wins_over_stdout(self):
+        """When both shapes appear (theoretical), the typed-command form
+        is the more specific signal — surface that and let the
+        ``<local-command-stdout>`` payload be the renderer's concern.
+        """
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/status</command-name>"
+            "<command-message>status</command-message>"
+            "<command-args></command-args>"
+            "<local-command-stdout>Status dialog dismissed</local-command-stdout>"
+        )
+        assert simplify_command_tags(text) == "/status"
+
+
+class TestSystemMessageLocalCommandCleanup:
+    """SystemMessage ``text`` for ``subtype="local_command"`` must come
+    out as the cleaned ``/cmd`` / inner-text shape, not the raw XML
+    blob the harness writes to the JSONL — closes #129. Other system
+    subtypes (``compact_boundary`` etc.) pass through unchanged.
+    """
+
+    def _make_system(
+        self,
+        content: str,
+        *,
+        subtype: str = "local_command",
+        level: str = "info",
+    ):
+        from claude_code_log.factories import create_transcript_entry
+
+        return create_transcript_entry(
+            {
+                "type": "system",
+                "subtype": subtype,
+                "level": level,
+                "content": content,
+                "timestamp": "2026-04-28T10:00:00Z",
+                "parentUuid": None,
+                "isSidechain": False,
+                "userType": "external",
+                "cwd": "/tmp",
+                "sessionId": "s1",
+                "version": "1.0.0",
+                "uuid": "u1",
+            }
+        )
+
+    def test_local_command_slash(self):
+        from claude_code_log.factories import create_system_message
+        from claude_code_log.models import SystemMessage
+
+        entry = self._make_system(
+            "<command-name>/status</command-name>"
+            "<command-message>status</command-message>"
+            "<command-args></command-args>"
+        )
+        msg = create_system_message(entry)
+        assert isinstance(msg, SystemMessage)
+        assert msg.text == "/status"
+
+    def test_local_command_stdout_dialog_dismissed(self):
+        from claude_code_log.factories import create_system_message
+        from claude_code_log.models import SystemMessage
+
+        entry = self._make_system(
+            "<local-command-stdout>Status dialog dismissed</local-command-stdout>"
+        )
+        msg = create_system_message(entry)
+        assert isinstance(msg, SystemMessage)
+        assert msg.text == "Status dialog dismissed"
+
+    def test_other_subtype_passes_through_unchanged(self):
+        """Cleanup is gated on ``subtype == "local_command"`` — the
+        ``compact_boundary`` summary text must not be touched."""
+        from claude_code_log.factories import create_system_message
+        from claude_code_log.models import SystemMessage
+
+        entry = self._make_system(
+            "Conversation compacted (115k tokens)",
+            subtype="compact_boundary",
+        )
+        msg = create_system_message(entry)
+        assert isinstance(msg, SystemMessage)
+        assert msg.text == "Conversation compacted (115k tokens)"
+
 
 class TestGetWarmupSessionIds:
     """Test bulk warmup session ID detection."""
