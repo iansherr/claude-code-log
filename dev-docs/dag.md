@@ -98,6 +98,14 @@ Where `s1`, `s2`, `s3` are synthesized session header messages.
 - **Backlinks** on session headers: "Continues from message X in Session Y"
   (shown on `s2` and `s3`)
 
+> Where branch / session header *titles* (the `Branch • <uuid8> •
+> <preview>` text) are assembled is a renderer concern, not a DAG
+> concern. See the `SessionHeaderMessage` glossary entry in
+> [application_model.md](application_model.md#4-cross-cutting-glossary)
+> for the four functions involved (`_branch_label`,
+> `_enrich_branch_titles`, `create_session_preview`,
+> `simplify_command_tags`).
+
 #### Current: `d-{index}` anchors (combined transcript only)
 
 Backlinks use `#msg-d-{N}` anchors which are sequential indices assigned

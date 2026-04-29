@@ -34,6 +34,15 @@ for user-facing operations docs see [`docs/`](../docs/).
 | Performance profiling | [`renderer_timings.py`](../claude_code_log/renderer_timings.py) | inlined below (§ 2.7) |
 | Adding a new tool renderer | [`factories/tool_factory.py`](../claude_code_log/factories/tool_factory.py), `html/tool_formatters.py` | [implementing-a-tool-renderer.md](implementing-a-tool-renderer.md) (how-to) |
 
+A note on cross-cutting concerns: some behaviour spans several rows
+of the table above and isn't owned by any single subsystem. **Label
+and preview composition** (session header titles, branch labels,
+fork-point box captions) is the most common one — it touches the
+DAG layer (which decides what's a branch), the renderer's session
+machinery (which assembles the label text), and the parsing layer
+(which feeds the preview source). See the `SessionHeaderMessage`
+entry in § 4 for the function-level surface.
+
 ---
 
 ## 2. Subsystems without their own deep-dive
@@ -295,6 +304,19 @@ Terms that appear across multiple subsystems — defined once here.
   initiates a branch. Real forks come from `/exit` rewinds; spurious
   forks (parallel tool_uses, structural-only siblings) are collapsed
   by `_walk_session_with_forks`. See [dag.md](dag.md).
+
+- **SessionHeaderMessage**: the synthetic content type produced for
+  every session boundary in the rendered output — the header that
+  appears above each session's first real message. Two flavours:
+  *trunk* headers for top-level sessions, and *branch* headers for
+  fork branches (the "branch heading" you'll see referenced in bug
+  reports). The branch header's title is composed by `_branch_label`
+  and back-filled by `_enrich_branch_titles` (both in `renderer.py`)
+  in the shape `Branch • <uuid8> • <preview>`; the preview text
+  itself is built by `create_session_preview` in `utils.py` (which
+  calls `simplify_command_tags` to strip raw `<command-name>` XML
+  soup down to `/cmd`). When troubleshooting branch-heading
+  rendering, those four functions are the surface area.
 
 - **pair_first / pair_middle / pair_last**: a pair of messages
   rendered as one logical unit (tool_use + tool_result, Slash + UserSlash,
