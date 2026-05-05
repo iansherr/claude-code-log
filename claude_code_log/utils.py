@@ -214,8 +214,9 @@ def create_session_preview(text_content: str) -> str:
     as the raw ``<command-name>/exit</command-name>...`` soup) and the
     occasional session preview that does start with a slash command
     (``init`` historically had a hardcoded English description here;
-    ``simplify_command_tags`` collapses it to ``/init`` instead, more
-    accurate and consistent with every other slash command). #129.
+    ``simplify_command_tags`` collapses it to ``/init`` instead — bare
+    legacy emissions are normalised to the ``/cmd`` shape so previews
+    stay consistent in mixed transcripts). #129.
     """
     # Strip command-tag XML soup down to ``/cmd`` or inner-text shape.
     preview_content = simplify_command_tags(text_content)

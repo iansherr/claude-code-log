@@ -262,11 +262,13 @@ class TestMarkdownRender:
     def test_triple_renders_command_name_and_output(self, tmp_path) -> None:
         from claude_code_log.markdown.renderer import MarkdownRenderer
 
+        # Bare ``exit`` exercises the legacy-emission normalisation path —
+        # the rendered command name carries the unified ``/exit`` shape.
         msgs = self._load_triple(tmp_path, cmd="exit")
         md = MarkdownRenderer().generate(msgs, "Test")
 
         # Slash command title borrowed (would otherwise be "User (slash command)").
-        assert "🤷 Command `exit`" in md
+        assert "🤷 Command `/exit`" in md
         assert "User (slash command)" not in md
         # Caveat body kept (delegated from pair_first to itself).
         assert "Caveat: caveat text." in md
@@ -294,7 +296,8 @@ class TestMarkdownRender:
         assert "pair_middle" in classes[1]
         assert "pair_last" in classes[2]
         # Triple still surfaces the three distinct messages — slash-command card
-        # carries the bare command name in its body code tag, command-output
-        # card carries its stdout. Both must remain visible after pairing.
-        assert "<code>exit</code>" in html
+        # carries the normalised command name in its body code tag (bare
+        # ``exit`` → ``/exit``), command-output card carries its stdout.
+        # Both must remain visible after pairing.
+        assert "<code>/exit</code>" in html
         assert "See ya!" in html

@@ -642,16 +642,18 @@ class TestCreateSessionPreview:
         (/init command)"`` that nothing tested or asserted on. The
         general ``simplify_command_tags`` cleanup now collapses it to
         the same ``/init`` shape every other slash command gets —
-        consistent and shorter.
+        consistent and shorter. Modern harness emission carries the
+        leading ``/`` directly; bare legacy emissions are covered by
+        ``test_simplify_command_tags_normalises_bare_name``.
         """
         text = (
-            "<command-name>init</command-name>"
+            "<command-name>/init</command-name>"
             "<command-message>init</command-message>"
             "<command-args></command-args>"
             '<command-contents>{"text": "some init prompt"}</command-contents>'
         )
         preview = create_session_preview(text)
-        assert preview == "init"
+        assert preview == "/init"
 
 
 class TestSimplifyCommandTags:
@@ -719,6 +721,152 @@ class TestSimplifyCommandTags:
         )
         assert simplify_command_tags(text) == "/status"
 
+    def test_simplify_command_tags_normalises_bare_name(self):
+        """Bare ``<command-name>X</command-name>`` (legacy emission) →
+        ``/X`` to match modern ``/X``-prefixed emissions; mixed
+        transcripts must not render ``/exit`` next to ``test-command``.
+        """
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>init</command-name>"
+            "<command-message>init</command-message>"
+            "<command-args></command-args>"
+        )
+        assert simplify_command_tags(text) == "/init"
+
+    def test_simplify_command_tags_already_slash_unchanged(self):
+        """Modern emissions carrying ``/`` must not gain a second one."""
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/init</command-name>"
+            "<command-message>init</command-message>"
+            "<command-args></command-args>"
+        )
+        assert simplify_command_tags(text) == "/init"
+
+    def test_simplify_command_tags_real_world_init_with_args(self):
+        """Real-world example: free-form English args after ``/init``.
+
+        The harness writes the user's typed-after-command text into
+        ``<command-args>`` verbatim. A representative real-world input
+        round-trips intact through the helper.
+        """
+        from claude_code_log.factories import simplify_command_tags
+
+        args_payload = "and pay particular attention to dev-docs/, but ignore examples/"
+        text = (
+            "<command-name>/init</command-name>"
+            "<command-message>init</command-message>"
+            f"<command-args>{args_payload}</command-args>"
+        )
+        assert simplify_command_tags(text) == f"/init {args_payload}"
+
+    def test_simplify_command_tags_args_with_less_than_preserved(self):
+        """Args containing ``<`` must not be silently dropped.
+
+        The earlier ``[^<]*`` regex matched up to but not including the
+        first ``<``, then failed to find the closing tag — so any args
+        with ``<`` ended up empty. Tightened to ``(.*?)`` with DOTALL.
+        """
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/explain</command-name>"
+            "<command-message>explain</command-message>"
+            "<command-args>render <Component> here</command-args>"
+        )
+        assert simplify_command_tags(text) == "/explain render <Component> here"
+
+    def test_simplify_command_tags_args_multiline_preserved(self):
+        """Newline-bearing args must survive — confirmed by DOTALL."""
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/note</command-name>"
+            "<command-message>note</command-message>"
+            "<command-args>line one\nline two\nline three</command-args>"
+        )
+        assert simplify_command_tags(text) == "/note line one\nline two\nline three"
+
+    def test_simplify_command_tags_args_with_special_chars(self):
+        """Quotes, backticks, ampersands and ``>`` round-trip verbatim."""
+        from claude_code_log.factories import simplify_command_tags
+
+        text = (
+            "<command-name>/run</command-name>"
+            "<command-message>run</command-message>"
+            '<command-args>echo "hi" && diff a > b `date`</command-args>'
+        )
+        assert simplify_command_tags(text) == '/run echo "hi" && diff a > b `date`'
+
+
+class TestCreateSlashCommandMessage:
+    """``create_slash_command_message`` is the structured-content
+    counterpart to ``simplify_command_tags`` — same harness shape, but
+    extracts ``command_name`` / ``command_args`` / ``command_contents``
+    into a typed model. Same normalisation rules apply so HTML,
+    Markdown and JSON output all see the unified ``/cmd`` shape and
+    args containing ``<`` are not silently dropped.
+    """
+
+    @staticmethod
+    def _meta():
+        from claude_code_log.models import MessageMeta
+
+        return MessageMeta(session_id="s1", timestamp="2026-04-28T10:00:00Z", uuid="u1")
+
+    def test_command_name_normalised_when_bare(self):
+        from claude_code_log.factories import create_slash_command_message
+
+        text = (
+            "<command-name>init</command-name>"
+            "<command-message>init</command-message>"
+            "<command-args></command-args>"
+        )
+        msg = create_slash_command_message(self._meta(), text)
+        assert msg is not None
+        assert msg.command_name == "/init"
+
+    def test_command_name_already_slash_unchanged(self):
+        from claude_code_log.factories import create_slash_command_message
+
+        text = (
+            "<command-name>/exit</command-name>"
+            "<command-message>exit</command-message>"
+            "<command-args></command-args>"
+        )
+        msg = create_slash_command_message(self._meta(), text)
+        assert msg is not None
+        assert msg.command_name == "/exit"
+
+    def test_command_args_with_less_than_preserved(self):
+        from claude_code_log.factories import create_slash_command_message
+
+        text = (
+            "<command-name>/explain</command-name>"
+            "<command-message>explain</command-message>"
+            "<command-args>render <Component> here</command-args>"
+        )
+        msg = create_slash_command_message(self._meta(), text)
+        assert msg is not None
+        assert msg.command_args == "render <Component> here"
+
+    def test_command_args_real_world_init_payload(self):
+        from claude_code_log.factories import create_slash_command_message
+
+        args_payload = "and pay particular attention to dev-docs/, but ignore examples/"
+        text = (
+            "<command-name>/init</command-name>"
+            "<command-message>init</command-message>"
+            f"<command-args>{args_payload}</command-args>"
+        )
+        msg = create_slash_command_message(self._meta(), text)
+        assert msg is not None
+        assert msg.command_name == "/init"
+        assert msg.command_args == args_payload
+
 
 class TestSystemMessageLocalCommandCleanup:
     """SystemMessage ``text`` for ``subtype="local_command"`` must come
@@ -776,6 +924,22 @@ class TestSystemMessageLocalCommandCleanup:
         msg = create_system_message(entry)
         assert isinstance(msg, SystemMessage)
         assert msg.text == "Status dialog dismissed"
+
+    def test_local_command_bare_name_normalised(self):
+        """Legacy bare ``<command-name>X</command-name>`` is normalised
+        to ``/X`` so the SystemMessage text never carries the inconsistent
+        bare shape into HTML/Markdown/JSON output."""
+        from claude_code_log.factories import create_system_message
+        from claude_code_log.models import SystemMessage
+
+        entry = self._make_system(
+            "<command-name>init</command-name>"
+            "<command-message>init</command-message>"
+            "<command-args></command-args>"
+        )
+        msg = create_system_message(entry)
+        assert isinstance(msg, SystemMessage)
+        assert msg.text == "/init"
 
     def test_other_subtype_passes_through_unchanged(self):
         """Cleanup is gated on ``subtype == "local_command"`` — the
