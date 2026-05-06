@@ -1824,3 +1824,163 @@ class TestParallelToolUseViaPassthrough:
         assert "p00" in uuids  # stitched in as the structural sibling
         branch_count = sum(1 for s in tree.sessions.values() if s.is_branch)
         assert branch_count == 0
+
+
+# =============================================================================
+# Test: Orphan-subagent self-anchor regression
+# =============================================================================
+
+
+class TestOrphanSubagentNoSelfAnchor:
+    """Regression: an orphan subagent transcript must not anchor to itself.
+
+    ``_integrate_agent_entries`` re-parents a sidechain root (parentUuid=None)
+    to the trunk tool_result that spawned that agentId. Earlier versions
+    accepted *any* sidechain entry as a fallback anchor, so when the trunk
+    transcript wasn't loaded the agent's own root entry got registered as
+    its own anchor — the subsequent re-parent step then set
+    ``parentUuid = uuid`` and ``build_dag`` raised "Cycle detected".
+
+    See ``test_data/dag_cycle.jsonl`` for a real-world repro from the
+    claude-code-log project's own logs (single sidechain assistant entry,
+    no trunk anchor anywhere).
+    """
+
+    def test_dag_cycle_fixture_no_self_loop(self) -> None:
+        """Loading the orphan-subagent fixture must not produce self-loops.
+
+        The fixture is a one-line JSONL with a sidechain assistant entry
+        whose parentUuid is null and whose agentId has no matching trunk.
+        After ``_integrate_agent_entries``, the entry's parentUuid must
+        not equal its own uuid.
+        """
+        from claude_code_log.converter import _integrate_agent_entries
+
+        entries = load_entries_from_jsonl(TEST_DATA / "dag_cycle.jsonl")
+        assert len(entries) == 1, "fixture should be a single orphan sidechain entry"
+
+        _integrate_agent_entries(entries)
+
+        entry = entries[0]
+        uuid = getattr(entry, "uuid", None)
+        parent_uuid = getattr(entry, "parentUuid", None)
+        assert uuid is not None
+        assert parent_uuid != uuid, (
+            f"orphan subagent re-parented to itself: parentUuid={parent_uuid} "
+            f"uuid={uuid} — would create a self-loop in the DAG"
+        )
+
+    def test_dag_cycle_fixture_emits_no_cycle_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """End-to-end: building the DAG from the fixture emits no cycle warning."""
+        import logging as _logging
+
+        from claude_code_log.converter import _integrate_agent_entries
+
+        entries = load_entries_from_jsonl(TEST_DATA / "dag_cycle.jsonl")
+        _integrate_agent_entries(entries)
+
+        with caplog.at_level(_logging.WARNING, logger="claude_code_log.dag"):
+            build_dag_from_entries(entries)
+
+        cycle_warnings = [r for r in caplog.records if "Cycle detected" in r.message]
+        assert not cycle_warnings, (
+            f"unexpected cycle warning(s): {[r.message for r in cycle_warnings]}"
+        )
+
+    def test_nested_agent_anchor_in_sidechain_still_resolves(self) -> None:
+        """Nested anchor (A's sidechain spawns B) must still re-parent B's root.
+
+        Guards against over-tightening the fix: the legitimate sidechain
+        anchor case — where a parent agent A's tool_result inside its own
+        sidechain references a child agent B (different agentId) — must
+        keep working. A's chain entries have agentId='A'; the B-spawning
+        tool_result inside A has agentId='B' and a parent with agentId='A'.
+        That's the cross-agent boundary that qualifies it as a true anchor.
+        """
+        from claude_code_log.converter import _integrate_agent_entries
+
+        # Agent A's sidechain transcript: root + tool_use + tool_result anchor for B
+        a_root = {
+            "type": "user",
+            "timestamp": "2025-07-01T10:00:00.000Z",
+            "parentUuid": None,
+            "isSidechain": True,
+            "userType": "human",
+            "cwd": "/tmp",
+            "sessionId": "s1",
+            "version": "1.0.0",
+            "uuid": "a_root",
+            "agentId": "agent-A",
+            "message": {"role": "user", "content": [{"type": "text", "text": "hi A"}]},
+        }
+        a_tool = {
+            "type": "assistant",
+            "timestamp": "2025-07-01T10:01:00.000Z",
+            "parentUuid": "a_root",
+            "isSidechain": True,
+            "userType": "human",
+            "cwd": "/tmp",
+            "sessionId": "s1",
+            "version": "1.0.0",
+            "uuid": "a_tool",
+            "agentId": "agent-A",
+            "requestId": "r1",
+            "message": {
+                "id": "a_tool",
+                "type": "message",
+                "role": "assistant",
+                "model": "claude-3",
+                "content": [{"type": "text", "text": "spawning B"}],
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        }
+        # tool_result anchor for B inside A's sidechain — agentId differs from A
+        b_anchor = {
+            "type": "user",
+            "timestamp": "2025-07-01T10:02:00.000Z",
+            "parentUuid": "a_tool",
+            "isSidechain": True,
+            "userType": "human",
+            "cwd": "/tmp",
+            "sessionId": "s1",
+            "version": "1.0.0",
+            "uuid": "b_anchor",
+            "agentId": "agent-B",
+            "message": {
+                "role": "user",
+                "content": [{"type": "text", "text": "B done"}],
+            },
+        }
+        # Agent B's own sidechain root (parentUuid=None, agentId=B)
+        b_root = {
+            "type": "user",
+            "timestamp": "2025-07-01T10:01:30.000Z",
+            "parentUuid": None,
+            "isSidechain": True,
+            "userType": "human",
+            "cwd": "/tmp",
+            "sessionId": "s1",
+            "version": "1.0.0",
+            "uuid": "b_root",
+            "agentId": "agent-B",
+            "message": {"role": "user", "content": [{"type": "text", "text": "hi B"}]},
+        }
+        entries = [
+            create_transcript_entry(d) for d in (a_root, a_tool, b_anchor, b_root)
+        ]
+        _integrate_agent_entries(entries)
+
+        # B's root should be re-parented to b_anchor (not to itself or to b_root)
+        b_root_entry = next(e for e in entries if getattr(e, "uuid", "") == "b_root")
+        assert b_root_entry.parentUuid == "b_anchor", (
+            f"nested anchor not honoured: b_root.parentUuid={b_root_entry.parentUuid}"
+        )
+        # A's root is the only remaining true root for agent-A and has no
+        # trunk anchor — it should stay as a root, not self-loop.
+        a_root_entry = next(e for e in entries if getattr(e, "uuid", "") == "a_root")
+        assert a_root_entry.parentUuid is None, (
+            f"agent-A root self-loop: parentUuid={a_root_entry.parentUuid}"
+        )

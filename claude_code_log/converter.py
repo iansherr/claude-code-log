@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Convert Claude transcript JSONL files to HTML."""
 
+import contextlib
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 import traceback
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
+from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING, cast
 
 import dateparser
 
@@ -664,6 +666,24 @@ def _integrate_agent_entries(messages: list[TranscriptEntry]) -> None:
     # Prefer non-sidechain anchors (main session), but also accept sidechain
     # anchors (nested agents: agent A spawns agent B, so B's anchor lives
     # inside A's sidechain).
+    #
+    # For sidechain anchors we require a *cross-agent boundary* — the
+    # candidate's parent must belong to a different agent's transcript.
+    # Without that guard, the agent's own root entry (parentUuid=None,
+    # agentId=X) gets registered as the anchor for X, and the re-parent
+    # step below sets ``parentUuid = uuid``, producing a self-loop and
+    # a "Cycle detected" warning at DAG construction. Repros when an
+    # orphan subagent transcript is loaded but its trunk session isn't
+    # (e.g. warmup-only sessions); see ``test_data/dag_cycle.jsonl``.
+    sidechain_agent_by_uuid: dict[str, str] = {}
+    for msg in messages:
+        if (
+            isinstance(msg, (BaseTranscriptEntry, PassthroughTranscriptEntry))
+            and msg.isSidechain
+            and msg.agentId
+        ):
+            sidechain_agent_by_uuid[msg.uuid] = msg.agentId
+
     agent_anchors: dict[str, str] = {}
     agent_anchors_from_sidechain: dict[str, str] = {}
     for msg in messages:
@@ -672,6 +692,13 @@ def _integrate_agent_entries(messages: list[TranscriptEntry]) -> None:
         if not msg.agentId:
             continue
         if msg.isSidechain:
+            # Skip entries that are part of agent X's own transcript chain
+            # (root with parentUuid=None, or parent shares the same agentId).
+            if msg.parentUuid is None:
+                continue
+            parent_agent_id = sidechain_agent_by_uuid.get(msg.parentUuid)
+            if parent_agent_id is None or parent_agent_id == msg.agentId:
+                continue
             agent_anchors_from_sidechain.setdefault(msg.agentId, msg.uuid)
         else:
             agent_anchors[msg.agentId] = msg.uuid
