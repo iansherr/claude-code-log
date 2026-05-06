@@ -5,10 +5,11 @@ import contextlib
 import json
 import logging
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 import traceback
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING, cast
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 import dateparser
 
@@ -51,11 +52,6 @@ from .dag import SessionTree, build_dag_from_entries, traverse_session_tree
 from .renderer import get_renderer, is_html_outdated
 
 
-# Internal Claude Code message types that carry no DAG fields and are
-# dropped without warning. Unknown types outside this set are surfaced
-# so we notice new kinds worth supporting (see the else branch in
-# load_transcript). `progress` is not here because it has uuid+sessionId
-# and participates in the DAG as a PassthroughTranscriptEntry.
 @contextlib.contextmanager
 def _dag_warnings_suppressed(silent: bool) -> Iterator[None]:
     """Temporarily raise the DAG module's log level under ``silent=True``.
@@ -78,6 +74,11 @@ def _dag_warnings_suppressed(silent: bool) -> Iterator[None]:
         dag_logger.setLevel(previous)
 
 
+# Internal Claude Code message types that carry no DAG fields and are
+# dropped without warning. Unknown types outside this set are surfaced
+# so we notice new kinds worth supporting (see the else branch in
+# load_transcript). `progress` is not here because it has uuid+sessionId
+# and participates in the DAG as a PassthroughTranscriptEntry.
 SILENT_SKIP_TYPES: frozenset[str] = frozenset(
     {
         "file-history-snapshot",  # Internal file backup metadata
@@ -1133,6 +1134,33 @@ def _build_session_data_from_messages(
     # Pre-compute warmup session IDs to filter them out
     warmup_session_ids = get_warmup_session_ids(messages)
 
+    # Map summaries to sessions via leafUuid -> message UUID -> session ID.
+    # Mirrors _update_cache_with_session_data so the title fallback chain
+    # (ai_title > summary > preview > id) survives the cache-miss path.
+    uuid_to_session: Dict[str, str] = {}
+    uuid_to_session_backup: Dict[str, str] = {}
+    for message in messages:
+        if hasattr(message, "uuid") and hasattr(message, "sessionId"):
+            message_uuid = getattr(message, "uuid", "")
+            session_id = getattr(message, "sessionId", "")
+            if message_uuid and session_id:
+                if type(message) is AssistantTranscriptEntry:
+                    uuid_to_session[message_uuid] = session_id
+                else:
+                    uuid_to_session_backup[message_uuid] = session_id
+
+    session_summaries: Dict[str, str] = {}
+    for message in messages:
+        if isinstance(message, SummaryTranscriptEntry):
+            leaf_uuid = message.leafUuid
+            if leaf_uuid in uuid_to_session:
+                session_summaries[uuid_to_session[leaf_uuid]] = message.summary
+            elif (
+                leaf_uuid in uuid_to_session_backup
+                and uuid_to_session_backup[leaf_uuid] not in session_summaries
+            ):
+                session_summaries[uuid_to_session_backup[leaf_uuid]] = message.summary
+
     # Map AI-generated titles to sessions (last entry per sessionId wins).
     session_ai_titles: Dict[str, str] = {}
     for message in messages:
@@ -1218,6 +1246,7 @@ def _build_session_data_from_messages(
     for session_id, data in sessions.items():
         result[session_id] = SessionCacheData(
             session_id=session_id,
+            summary=session_summaries.get(session_id),
             ai_title=session_ai_titles.get(session_id),
             first_timestamp=data["first_timestamp"],
             last_timestamp=data["last_timestamp"],

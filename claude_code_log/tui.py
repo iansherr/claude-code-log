@@ -1748,13 +1748,6 @@ class SessionBrowser(App[Optional[str]]):
         except Exception as e:
             self.notify(f"Error resuming session: {e}", severity="error")
 
-    def _escape_rich_markup(self, text: str) -> str:
-        """Escape Rich markup characters in text to prevent parsing errors."""
-        if not text:
-            return text
-        # Escape square brackets which are used for Rich markup
-        return text.replace("[", "\\[").replace("]", "\\]")
-
     def _update_expanded_content(self) -> None:
         """Update the expanded content for the currently selected session."""
         if not self.selected_session_id:
@@ -1777,24 +1770,24 @@ class SessionBrowser(App[Optional[str]]):
 
         # AI title (Claude Code's curated short title) - escape markup
         if session_data.ai_title:
-            escaped_title = self._escape_rich_markup(session_data.ai_title)
+            escaped_title = escape_markup(session_data.ai_title)
             content_parts.append(f"\n[bold]Title:[/bold] {escaped_title}")
 
         # Summary (if available) - escape markup
         if session_data.summary:
-            escaped_summary = self._escape_rich_markup(session_data.summary)
+            escaped_summary = escape_markup(session_data.summary)
             content_parts.append(f"\n[bold]Summary:[/bold] {escaped_summary}")
 
         # First user message - escape markup
         if session_data.first_user_message:
-            escaped_message = self._escape_rich_markup(session_data.first_user_message)
+            escaped_message = escape_markup(session_data.first_user_message)
             content_parts.append(
                 f"\n[bold]First User Message:[/bold] {escaped_message}"
             )
 
         # Working directory (if available) - escape markup
         if session_data.cwd:
-            escaped_cwd = self._escape_rich_markup(session_data.cwd)
+            escaped_cwd = escape_markup(session_data.cwd)
             content_parts.append(f"\n[bold]Working Directory:[/bold] {escaped_cwd}")
 
         # Token usage (safe - numeric data)

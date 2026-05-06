@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +20,7 @@ from claude_code_log.converter import (
     deduplicate_messages,
     load_transcript,
 )
-from claude_code_log.cache import SessionCacheData
+from claude_code_log.cache import CacheManager, SessionCacheData
 from claude_code_log.models import AiTitleTranscriptEntry
 
 
@@ -150,4 +151,43 @@ class TestBuildSessionTitlePriority:
         assert (
             build_session_title("Project", "abc12345", None)
             == "Project: Session abc12345"
+        )
+
+
+class TestAiTitleCacheRoundTrip:
+    """Persisting ai_title through SQLite must survive a reload — guards
+    against schema/binding regressions in update_session_cache and the
+    SELECT in get_cached_project_data."""
+
+    def test_ai_title_persisted_and_reloaded(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+
+        with patch(
+            "claude_code_log.cache.get_library_version", return_value="1.0.0-test"
+        ):
+            writer = CacheManager(project_dir, "1.0.0-test")
+            writer.update_session_cache(
+                {
+                    "s1": SessionCacheData(
+                        session_id="s1",
+                        ai_title="Saved AI title",
+                        first_timestamp="2026-05-05T10:00:00Z",
+                        last_timestamp="2026-05-05T10:05:00Z",
+                        message_count=1,
+                        first_user_message="hi",
+                    )
+                }
+            )
+
+            # Fresh manager forces a SELECT path through SQLite, not memory.
+            reader = CacheManager(project_dir, "1.0.0-test")
+            cached = reader.get_cached_project_data()
+
+        assert cached is not None
+        assert "s1" in cached.sessions
+        reloaded = cached.sessions["s1"]
+        assert reloaded.ai_title == "Saved AI title"
+        assert (
+            build_session_title("Project", "s1", reloaded) == "Project: Saved AI title"
         )
