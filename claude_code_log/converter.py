@@ -34,6 +34,7 @@ from .parser import parse_timestamp
 from .factories import create_transcript_entry
 from .factories.teammate_factory import find_team_lead_body
 from .models import (
+    AiTitleTranscriptEntry,
     BaseTranscriptEntry,
     DetailLevel,
     PassthroughTranscriptEntry,
@@ -261,8 +262,9 @@ def filter_messages_by_date(
 
     filtered_messages: list[TranscriptEntry] = []
     for message in messages:
-        # Handle SummaryTranscriptEntry which doesn't have timestamp
-        if isinstance(message, SummaryTranscriptEntry):
+        # Summary / ai-title entries carry no timestamp — keep them so
+        # the title/summary survives date filtering.
+        if isinstance(message, (SummaryTranscriptEntry, AiTitleTranscriptEntry)):
             filtered_messages.append(message)
             continue
 
@@ -378,6 +380,7 @@ def load_transcript(
                         "user",
                         "assistant",
                         "summary",
+                        "ai-title",
                         "system",
                         "queue-operation",
                     ]:
@@ -767,11 +770,19 @@ def load_directory_transcripts(
         )
         dag_ordered = traverse_session_tree(tree)
 
-    # Re-add summaries/queue-ops (excluded from DAG since they lack uuid)
+    # Re-add summaries/ai-titles/queue-ops (excluded from DAG since they
+    # lack uuid).
     non_dag_entries: list[TranscriptEntry] = [
         e
         for e in all_messages
-        if isinstance(e, (SummaryTranscriptEntry, QueueOperationTranscriptEntry))
+        if isinstance(
+            e,
+            (
+                SummaryTranscriptEntry,
+                AiTitleTranscriptEntry,
+                QueueOperationTranscriptEntry,
+            ),
+        )
     ]
 
     return dag_ordered + non_dag_entries, tree
@@ -852,6 +863,13 @@ def deduplicate_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntr
         elif isinstance(message, SummaryTranscriptEntry):
             # Summaries have no timestamp or uuid - use leafUuid to keep them distinct
             content_key = message.leafUuid
+        elif isinstance(message, AiTitleTranscriptEntry):
+            # ai-title entries have no timestamp/uuid; collapse duplicates
+            # per session so we don't carry the same title 12x downstream.
+            # The last entry wins via prepare_session_ai_titles either way,
+            # but deduping here keeps message lists tidy.
+            session_id = message.sessionId
+            content_key = "ai-title"
         elif isinstance(message, (SystemTranscriptEntry, PassthroughTranscriptEntry)):
             content_key = message.uuid
 
@@ -867,6 +885,10 @@ def deduplicate_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntr
                     message.message.content
                 ) > len(existing.message.content):
                     deduplicated[idx] = message  # Replace with better version
+            elif isinstance(message, AiTitleTranscriptEntry):
+                # Always keep the most recent ai-title per session — Claude
+                # Code may refine the curated title across the session.
+                deduplicated[seen[dedup_key]] = message
             # Otherwise skip duplicate
         else:
             seen[dedup_key] = len(deduplicated)
@@ -1111,11 +1133,22 @@ def _build_session_data_from_messages(
     # Pre-compute warmup session IDs to filter them out
     warmup_session_ids = get_warmup_session_ids(messages)
 
+    # Map AI-generated titles to sessions (last entry per sessionId wins).
+    session_ai_titles: Dict[str, str] = {}
+    for message in messages:
+        if isinstance(message, AiTitleTranscriptEntry):
+            session_ai_titles[message.sessionId] = message.aiTitle
+
     # Group messages by session
     sessions: Dict[str, Dict[str, Any]] = {}
     for message in messages:
         if not hasattr(message, "sessionId") or isinstance(
-            message, (SummaryTranscriptEntry, PassthroughTranscriptEntry)
+            message,
+            (
+                SummaryTranscriptEntry,
+                AiTitleTranscriptEntry,
+                PassthroughTranscriptEntry,
+            ),
         ):
             continue
 
@@ -1185,6 +1218,7 @@ def _build_session_data_from_messages(
     for session_id, data in sessions.items():
         result[session_id] = SessionCacheData(
             session_id=session_id,
+            ai_title=session_ai_titles.get(session_id),
             first_timestamp=data["first_timestamp"],
             last_timestamp=data["last_timestamp"],
             message_count=data["message_count"],
@@ -1774,6 +1808,12 @@ def _update_cache_with_session_data(
             ):
                 session_summaries[uuid_to_session_backup[leaf_uuid]] = message.summary
 
+    # Map AI-generated titles to sessions (last entry per sessionId wins).
+    session_ai_titles: dict[str, str] = {}
+    for message in messages:
+        if isinstance(message, AiTitleTranscriptEntry):
+            session_ai_titles[message.sessionId] = message.aiTitle
+
     # Group messages by session and calculate session data
     sessions_cache_data: dict[str, SessionCacheData] = {}
 
@@ -1797,9 +1837,10 @@ def _update_cache_with_session_data(
                 if not earliest_timestamp or message_timestamp < earliest_timestamp:
                     earliest_timestamp = message_timestamp
 
-        # Process session-level data (skip summaries)
+        # Process session-level data (skip summaries and ai-title — they
+        # carry no DAG fields and are folded into session metadata above).
         if hasattr(message, "sessionId") and not isinstance(
-            message, SummaryTranscriptEntry
+            message, (SummaryTranscriptEntry, AiTitleTranscriptEntry)
         ):
             session_id = get_parent_session_id(getattr(message, "sessionId", ""))
             if not session_id:
@@ -1809,6 +1850,7 @@ def _update_cache_with_session_data(
                 sessions_cache_data[session_id] = SessionCacheData(
                     session_id=session_id,
                     summary=session_summaries.get(session_id),
+                    ai_title=session_ai_titles.get(session_id),
                     first_timestamp=getattr(message, "timestamp", ""),
                     last_timestamp=getattr(message, "timestamp", ""),
                     message_count=0,
@@ -1941,12 +1983,18 @@ def _collect_project_sessions(messages: list[TranscriptEntry]) -> list[dict[str,
             ):
                 session_summaries[uuid_to_session_backup[leaf_uuid]] = message.summary
 
+    # Overlay AI-generated titles (last per session wins) — these take
+    # precedence over leafUuid-mapped summaries for display purposes.
+    for message in messages:
+        if isinstance(message, AiTitleTranscriptEntry):
+            session_summaries[message.sessionId] = message.aiTitle
+
     # Group messages by session (excluding warmup-only sessions,
     # coalescing agent sessions into their parent)
     sessions: dict[str, dict[str, Any]] = {}
     for message in messages:
         if hasattr(message, "sessionId") and not isinstance(
-            message, SummaryTranscriptEntry
+            message, (SummaryTranscriptEntry, AiTitleTranscriptEntry)
         ):
             session_id = get_parent_session_id(getattr(message, "sessionId", ""))
             if not session_id or session_id in warmup_session_ids:
@@ -2013,10 +2061,13 @@ def build_session_title(
 ) -> str:
     """Build a display title for a session.
 
-    Uses the session summary if available, otherwise the first user message
-    preview (truncated to 50 chars), falling back to "Session {id[:8]}".
+    Priority: Claude Code's curated ``ai_title`` (if any), then the
+    session summary, then a 50-char-truncated first-user-message preview,
+    finally "Session {id[:8]}".
     """
     if session_cache:
+        if session_cache.ai_title:
+            return f"{project_title}: {session_cache.ai_title}"
         if session_cache.summary:
             return f"{project_title}: {session_cache.summary}"
         preview = session_cache.first_user_message
@@ -2576,7 +2627,10 @@ def process_projects_hierarchy(
                             "sessions": [
                                 {
                                     "id": session_data.session_id,
-                                    "summary": session_data.summary,
+                                    # Display title: ai_title (Claude Code's
+                                    # curated short title) wins over summary.
+                                    "summary": session_data.ai_title
+                                    or session_data.summary,
                                     "timestamp_range": format_timestamp_range(
                                         session_data.first_timestamp,
                                         session_data.last_timestamp,
@@ -2684,7 +2738,7 @@ def process_projects_hierarchy(
             warmup_for_teams = get_warmup_session_ids(messages)
             team_name_per_session: dict[str, str] = {}
             for _msg in messages:
-                if isinstance(_msg, SummaryTranscriptEntry):
+                if isinstance(_msg, (SummaryTranscriptEntry, AiTitleTranscriptEntry)):
                     continue
                 if not hasattr(_msg, "sessionId"):
                     continue
@@ -2775,7 +2829,7 @@ def process_projects_hierarchy(
                     "sessions": [
                         {
                             "id": session_data.session_id,
-                            "summary": session_data.summary,
+                            "summary": session_data.ai_title or session_data.summary,
                             "timestamp_range": format_timestamp_range(
                                 session_data.first_timestamp,
                                 session_data.last_timestamp,

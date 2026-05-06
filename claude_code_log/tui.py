@@ -1469,11 +1469,13 @@ class SessionBrowser(App[Optional[str]]):
             )
             token_display = f"{total_tokens:,}" if total_tokens > 0 else "-"
 
-            # Get summary or first user message
+            # Get title preview: ai_title (Claude Code's curated title)
+            # wins over summary, then first user message preview.
             # Escape Rich markup to prevent MarkupError from square brackets
-            # in paths like [/Users/foo/bar] being parsed as closing tags
+            # in paths like [/Users/foo/bar] being parsed as closing tags.
             preview = escape_markup(
-                session_data.summary
+                session_data.ai_title
+                or session_data.summary
                 or session_data.first_user_message
                 or "No preview available"
             )
@@ -1772,6 +1774,11 @@ class SessionBrowser(App[Optional[str]]):
 
         # Session ID (safe - UUID format)
         content_parts.append(f"[bold]Session ID:[/bold] {self.selected_session_id}")
+
+        # AI title (Claude Code's curated short title) - escape markup
+        if session_data.ai_title:
+            escaped_title = self._escape_rich_markup(session_data.ai_title)
+            content_parts.append(f"\n[bold]Title:[/bold] {escaped_title}")
 
         # Summary (if available) - escape markup
         if session_data.summary:

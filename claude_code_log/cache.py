@@ -47,6 +47,10 @@ class SessionCacheData(BaseModel):
 
     session_id: str
     summary: Optional[str] = None
+    # Claude Code's AI-generated short session title, sourced from
+    # `ai-title` JSONL entries (last one wins). Preferred over `summary`
+    # for display when present.
+    ai_title: Optional[str] = None
     first_timestamp: str
     last_timestamp: str
     message_count: int
@@ -624,8 +628,8 @@ class CacheManager:
                         message_count, first_user_message, cwd,
                         total_input_tokens, total_output_tokens,
                         total_cache_creation_tokens, total_cache_read_tokens,
-                        team_name
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        team_name, ai_title
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(project_id, session_id) DO UPDATE SET
                         summary = excluded.summary,
                         first_timestamp = excluded.first_timestamp,
@@ -637,7 +641,8 @@ class CacheManager:
                         total_output_tokens = excluded.total_output_tokens,
                         total_cache_creation_tokens = excluded.total_cache_creation_tokens,
                         total_cache_read_tokens = excluded.total_cache_read_tokens,
-                        team_name = excluded.team_name
+                        team_name = excluded.team_name,
+                        ai_title = excluded.ai_title
                     """,
                     (
                         self._project_id,
@@ -657,6 +662,7 @@ class CacheManager:
                         data.total_cache_creation_tokens,
                         data.total_cache_read_tokens,
                         scrub_surrogates(data.team_name),
+						scrub_surrogates(data.ai_title),
                     ),
                 )
 
@@ -775,6 +781,7 @@ class CacheManager:
                 sessions[row["session_id"]] = SessionCacheData(
                     session_id=row["session_id"],
                     summary=row["summary"],
+                    ai_title=row["ai_title"] if "ai_title" in row.keys() else None,
                     first_timestamp=row["first_timestamp"],
                     last_timestamp=row["last_timestamp"],
                     message_count=row["message_count"],
@@ -824,6 +831,11 @@ class CacheManager:
             # 0.9.0 introduced _compact_ide_tags_for_preview() which transforms
             # first_user_message to use emoji indicators instead of raw IDE tags
             "0.8.0": "0.9.0",
+            # 1.3.0 added handling for `ai-title` JSONL entries: existing
+            # caches have a NULL `ai_title` column for every session until
+            # JSONLs are re-ingested, so the project index keeps showing
+            # the old session-id title until the cache is rebuilt.
+            "1.2.0": "1.3.0",
         }
 
         cache_ver = version.parse(cache_version)
@@ -1093,6 +1105,7 @@ class CacheManager:
                     archived_sessions[session_id] = SessionCacheData(
                         session_id=session_id,
                         summary=row["summary"],
+                        ai_title=row["ai_title"] if "ai_title" in row.keys() else None,
                         first_timestamp=row["first_timestamp"],
                         last_timestamp=row["last_timestamp"],
                         message_count=row["message_count"],

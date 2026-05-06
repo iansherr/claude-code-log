@@ -190,24 +190,26 @@ class TestCacheManager:
         assert not cache_manager.is_file_cached(jsonl_path)
 
     def test_cache_invalidation_version_mismatch(self, temp_project_dir):
-        """Test cache invalidation when library version changes."""
-        # Create cache with version 1.0.0
-        with patch("claude_code_log.cache.get_library_version", return_value="1.0.0"):
-            cache_manager_v1 = CacheManager(temp_project_dir, "1.0.0")
-            # Verify project was created with version 1.0.0
+        """Test cache compatibility when library version changes.
+
+        Uses a version pair outside the explicit ``breaking_changes`` rules
+        in ``cache.py`` so the test stays focused on default-path
+        compatibility (caches are preserved across compatible upgrades).
+        """
+        # Create cache with version 5.0.0 — well outside any breaking rule
+        with patch("claude_code_log.cache.get_library_version", return_value="5.0.0"):
+            cache_manager_v1 = CacheManager(temp_project_dir, "5.0.0")
             cached_data = cache_manager_v1.get_cached_project_data()
             assert cached_data is not None
-            assert cached_data.version == "1.0.0"
+            assert cached_data.version == "5.0.0"
 
-        # Create new cache manager with different version
-        with patch("claude_code_log.cache.get_library_version", return_value="2.0.0"):
-            cache_manager_v2 = CacheManager(temp_project_dir, "2.0.0")
-            # Since the default implementation has empty breaking_changes,
-            # versions should be compatible and cache should be preserved
+        # Bump to 5.1.0 — still no breaking rule between these.
+        with patch("claude_code_log.cache.get_library_version", return_value="5.1.0"):
+            cache_manager_v2 = CacheManager(temp_project_dir, "5.1.0")
             cached_data = cache_manager_v2.get_cached_project_data()
             assert cached_data is not None
-            # Version should remain 1.0.0 since it's compatible
-            assert cached_data.version == "1.0.0"
+            # Version should remain 5.0.0 since it's compatible
+            assert cached_data.version == "5.0.0"
 
     def test_filtered_loading_with_dates(self, cache_manager, temp_project_dir):
         """Test timestamp-based filtering during cache loading."""

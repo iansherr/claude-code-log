@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .models import (
+    AiTitleTranscriptEntry,
     BaseTranscriptEntry,
     TranscriptEntry,
     SummaryTranscriptEntry,
@@ -90,14 +91,21 @@ def build_message_index(
 ) -> dict[str, MessageNode]:
     """Build a deduplicated message index from transcript entries.
 
-    Skips SummaryTranscriptEntry (no uuid/sessionId) and
-    QueueOperationTranscriptEntry (no uuid). For duplicate uuids,
+    Skips SummaryTranscriptEntry / AiTitleTranscriptEntry (no uuid)
+    and QueueOperationTranscriptEntry (no uuid). For duplicate uuids,
     keeps the entry from the earliest session (by first entry timestamp).
     """
     # First pass: determine earliest timestamp per session
     session_first_ts: dict[str, str] = {}
     for entry in entries:
-        if isinstance(entry, (SummaryTranscriptEntry, QueueOperationTranscriptEntry)):
+        if isinstance(
+            entry,
+            (
+                SummaryTranscriptEntry,
+                AiTitleTranscriptEntry,
+                QueueOperationTranscriptEntry,
+            ),
+        ):
             continue
         sid = entry.sessionId
         ts = entry.timestamp
@@ -107,7 +115,14 @@ def build_message_index(
     # Second pass: build nodes, deduplicating by uuid (earliest session wins)
     nodes: dict[str, MessageNode] = {}
     for entry in entries:
-        if isinstance(entry, (SummaryTranscriptEntry, QueueOperationTranscriptEntry)):
+        if isinstance(
+            entry,
+            (
+                SummaryTranscriptEntry,
+                AiTitleTranscriptEntry,
+                QueueOperationTranscriptEntry,
+            ),
+        ):
             continue
         uuid = entry.uuid
         sid = entry.sessionId

@@ -28,6 +28,7 @@ class MessageType(str, Enum):
     SYSTEM = "system"
     SUMMARY = "summary"
     QUEUE_OPERATION = "queue-operation"
+    AI_TITLE = "ai-title"
 
     # Rendering/display types (derived from content)
     TOOL_USE = "tool_use"
@@ -204,6 +205,19 @@ class SummaryTranscriptEntry(BaseModel):
     sessionId: None = None  # Summaries don't have a sessionId
 
 
+class AiTitleTranscriptEntry(BaseModel):
+    """AI-generated session title.
+
+    Claude Code emits these as session-level metadata (no uuid, no parent
+    chain). Multiple entries may be written per session as the title is
+    refined; the last one wins.
+    """
+
+    type: Literal["ai-title"]
+    aiTitle: str
+    sessionId: str
+
+
 class SystemTranscriptEntry(BaseTranscriptEntry):
     """System messages like warnings, notifications, hook summaries, etc."""
 
@@ -264,6 +278,7 @@ TranscriptEntry = Union[
     UserTranscriptEntry,
     AssistantTranscriptEntry,
     SummaryTranscriptEntry,
+    AiTitleTranscriptEntry,
     SystemTranscriptEntry,
     QueueOperationTranscriptEntry,
     PassthroughTranscriptEntry,

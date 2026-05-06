@@ -415,7 +415,14 @@ class TestIncrementalHtmlCache:
         assert session2_html.stat().st_mtime == session2_mtime
 
     def test_html_cache_detects_library_version_change(self, tmp_path):
-        """Test that HTML is regenerated when library version changes."""
+        """Test that HTML is regenerated when library version changes.
+
+        Uses version values past all current ``breaking_changes`` rules so
+        the cache itself isn't invalidated — exercising the HTML
+        staleness ``version_mismatch`` path specifically.
+        """
+        from unittest.mock import patch
+
         # Setup project
         project_dir = tmp_path / "test_project"
         project_dir.mkdir()
@@ -429,17 +436,30 @@ class TestIncrementalHtmlCache:
             encoding="utf-8",
         )
 
-        # Generate HTML with current version
-        convert_jsonl_to_html(project_dir)
+        # Build the cache + HTML at a version past all breaking rules so
+        # our compatibility-window changes don't accidentally invalidate
+        # the cache here. Patch the symbol at every call-site (the name
+        # is imported into multiple modules at startup).
+        with (
+            patch(
+                "claude_code_log.cache.get_library_version",
+                return_value="999.999.998",
+            ),
+            patch(
+                "claude_code_log.converter.get_library_version",
+                return_value="999.999.998",
+            ),
+        ):
+            convert_jsonl_to_html(project_dir)
 
-        cache_manager = CacheManager(project_dir, get_library_version())
+            cache_manager = CacheManager(project_dir, "999.999.998")
 
-        # Check staleness with same version
-        is_stale, reason = cache_manager.is_html_stale("combined_transcripts.html")
-        assert not is_stale
-        assert reason == "up_to_date"
+            # Check staleness with same version
+            is_stale, reason = cache_manager.is_html_stale("combined_transcripts.html")
+            assert not is_stale
+            assert reason == "up_to_date"
 
-        # Create new cache manager with different version
+        # Create new cache manager with a higher (but still post-rule) version
         cache_manager_new = CacheManager(project_dir, "999.999.999")
         is_stale, reason = cache_manager_new.is_html_stale("combined_transcripts.html")
         assert is_stale

@@ -20,6 +20,7 @@ from .models import (
     MessageMeta,
     MessageType,
     TranscriptEntry,
+    AiTitleTranscriptEntry,
     AssistantMessageModel,
     AssistantTranscriptEntry,
     PassthroughTranscriptEntry,
@@ -656,9 +657,13 @@ def generate_template_messages(
                 if getattr(msg, "sessionId", None) not in warmup_session_ids
             ]
 
-    # Pre-process to find session summaries
+    # Pre-process to find session summaries. AI-generated session titles
+    # ("ai-title" entries) override any leafUuid-mapped summary so the
+    # session header and back-link labels use the curated short title
+    # whenever Claude Code has emitted one.
     with log_timing("Session summary processing", t_start):
         session_summaries = prepare_session_summaries(messages)
+        session_summaries.update(prepare_session_ai_titles(messages))
 
     # Pre-process: collect teamName per session (teammates feature) so
     # session headers can surface a team badge without re-scanning later.
@@ -935,6 +940,22 @@ def prepare_session_team_names(messages: list[TranscriptEntry]) -> dict[str, str
         if not session_id:
             continue
         out.setdefault(session_id, team_name)
+    return out
+
+
+def prepare_session_ai_titles(messages: list[TranscriptEntry]) -> dict[str, str]:
+    """Extract Claude Code AI-generated session titles from messages.
+
+    Multiple ``ai-title`` entries may appear per session as the title is
+    refined; the last one wins.
+
+    Returns:
+        Dict mapping session_id to ai_title text.
+    """
+    out: dict[str, str] = {}
+    for message in messages:
+        if isinstance(message, AiTitleTranscriptEntry):
+            out[message.sessionId] = message.aiTitle
     return out
 
 
@@ -2714,6 +2735,10 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
         if isinstance(message, SummaryTranscriptEntry):
             continue
 
+        # Skip ai-title entries (folded into session metadata, not rendered)
+        if isinstance(message, AiTitleTranscriptEntry):
+            continue
+
         # Skip passthrough entries (structural DAG nodes, not rendered)
         if isinstance(message, PassthroughTranscriptEntry):
             continue
@@ -3404,10 +3429,17 @@ def _render_messages(
                 ctx.register(system_msg)
             continue
 
-        # Skip summary and passthrough entries (should be filtered in pass 1,
-        # but be defensive — they lack .message / BaseTranscriptEntry fields
-        # used by the rendering path below)
-        if isinstance(message, (SummaryTranscriptEntry, PassthroughTranscriptEntry)):
+        # Skip summary, ai-title, and passthrough entries (should be
+        # filtered in pass 1, but be defensive — they lack .message /
+        # BaseTranscriptEntry fields used by the rendering path below)
+        if isinstance(
+            message,
+            (
+                SummaryTranscriptEntry,
+                AiTitleTranscriptEntry,
+                PassthroughTranscriptEntry,
+            ),
+        ):
             continue
 
         # Handle queue-operation 'remove' messages as user messages
