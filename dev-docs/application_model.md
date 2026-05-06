@@ -72,7 +72,10 @@ single transcript or directory. Major flags:
   the default; Markdown is mainly used for sharing transcripts inline;
   JSON exports the processed tree for downstream tooling — see § 2.5).
 - `--compact` — Markdown-only; suppresses repeated headings.
-- `--page-size N` — split per-session HTML into N-message pages.
+- `--page-size N` — paginate the combined-transcript HTML/Markdown
+  output, packing whole sessions into pages of up to N messages each
+  (sessions are never split across pages, so individual pages may
+  overflow). Per-session HTML files are not paginated.
 
 CLI orchestration delegates to `converter.py` (which owns the
 high-level "load + render + write" flow) and never touches `renderer.py`
@@ -225,15 +228,19 @@ pass also has to update cached parent-message references on
 ### 2.7 Image export
 
 [`image_export.py`](../claude_code_log/image_export.py) is
-format-agnostic: HTML and Markdown both call into it. Three modes:
+format-agnostic: HTML and Markdown both call into it. Three modes
+(matching the `--image-export-mode` CLI choices):
 
-- `inline` — base64-encode the image directly into the output.
-- `referenced` — write the image to disk next to the output, embed
-  a `src=` reference.
-- `dropped` — replace the image with a placeholder string.
+- `placeholder` — drop the image and render a placeholder marker
+  in its place.
+- `embedded` — base64-encode the image directly into the output as
+  a data URL.
+- `referenced` — write the image to disk next to the output and
+  embed a `src=` reference.
 
-Default is `referenced` for HTML (small files, no inline payload
-bloat) and `inline` for Markdown (single self-contained file).
+Default is `embedded` for HTML (single self-contained file) and
+`referenced` for Markdown (keeps the `.md` text small and lets
+images live as separate PNGs alongside).
 
 ### 2.8 Performance profiling
 
