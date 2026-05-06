@@ -53,6 +53,28 @@ from .renderer import get_renderer, is_html_outdated
 # so we notice new kinds worth supporting (see the else branch in
 # load_transcript). `progress` is not here because it has uuid+sessionId
 # and participates in the DAG as a PassthroughTranscriptEntry.
+@contextlib.contextmanager
+def _dag_warnings_suppressed(silent: bool) -> Iterator[None]:
+    """Temporarily raise the DAG module's log level under ``silent=True``.
+
+    The DAG layer routes its cycle / multi-root / orphan diagnostics
+    through ``logging`` (so users running with ``--debug`` still see
+    them), but cache rebuilds and silent CLI flows shouldn't surface
+    that noise. Bumping the logger level for the duration of the call
+    suppresses the warnings without changing call signatures.
+    """
+    if not silent:
+        yield
+        return
+    dag_logger = logging.getLogger("claude_code_log.dag")
+    previous = dag_logger.level
+    dag_logger.setLevel(logging.ERROR)
+    try:
+        yield
+    finally:
+        dag_logger.setLevel(previous)
+
+
 SILENT_SKIP_TYPES: frozenset[str] = frozenset(
     {
         "file-history-snapshot",  # Internal file backup metadata
@@ -709,11 +731,14 @@ def load_directory_transcripts(
     # agents never referenced via agentId) to suppress orphan warnings
     unloaded_sidechain_uuids = _scan_sidechain_uuids(directory_path)
 
-    # Build DAG and traverse (entries grouped by session, depth-first)
-    tree = build_dag_from_entries(
-        all_messages, sidechain_uuids=unloaded_sidechain_uuids
-    )
-    dag_ordered = traverse_session_tree(tree)
+    # Build DAG and traverse (entries grouped by session, depth-first).
+    # Cycle / multi-root / orphan warnings are suppressed under silent
+    # so cache rebuilds and quiet CLI flows stay clean.
+    with _dag_warnings_suppressed(silent):
+        tree = build_dag_from_entries(
+            all_messages, sidechain_uuids=unloaded_sidechain_uuids
+        )
+        dag_ordered = traverse_session_tree(tree)
 
     # Re-add summaries/queue-ops (excluded from DAG since they lack uuid)
     non_dag_entries: list[TranscriptEntry] = [
