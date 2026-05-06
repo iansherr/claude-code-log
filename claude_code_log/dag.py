@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .models import (
+    BaseTranscriptEntry,
     TranscriptEntry,
     SummaryTranscriptEntry,
     QueueOperationTranscriptEntry,
@@ -389,6 +390,70 @@ def _is_expected_root_type(entry: TranscriptEntry) -> bool:
     return False
 
 
+def _classify_unexpected_roots(
+    roots: list[MessageNode],
+    nodes: dict[str, MessageNode],
+) -> list[MessageNode]:
+    """Filter a session's roots down to those whose presence is anomalous.
+
+    Routine multi-root sources are ignored:
+
+    * ``compact_boundary`` / ``local_command`` system entries.
+    * ``progress`` passthrough hooks (handled by ``_is_expected_root_type``).
+    * Sidechain entries with ``parentUuid=None`` — orphan subagent
+      transcripts loaded without their trunk anchor (older Claude Code
+      Task prompts that didn't carry agentId, or partially-loaded data).
+    * Cross-session attachments — the entry's ``parent_uuid`` resolves
+      to a node in *another* loaded session (typical ``--resume`` shape,
+      where the resumed transcript replays history under a new
+      ``sessionId``). The local session treats it as a root because the
+      parent isn't in *its* uuid set, but the parent does exist.
+    * The genuine session-start root — the earliest *non-sidechain*
+      root with ``parent_uuid=None`` that isn't otherwise classified.
+      Every session has exactly one, and it's mandatory by definition;
+      flagging it as 'unexpected' alongside the routine roots above
+      produced noise on every long session.
+    """
+    if not roots:
+        return []
+
+    sorted_roots = sorted(roots, key=lambda n: n.timestamp)
+
+    expected: set[str] = set()
+    genuine_start_candidates: list[MessageNode] = []
+    for r in sorted_roots:
+        if _is_expected_root_type(r.entry):
+            expected.add(r.uuid)
+            continue
+        if (
+            isinstance(r.entry, (BaseTranscriptEntry, PassthroughTranscriptEntry))
+            and r.entry.isSidechain
+            and r.parent_uuid is None
+        ):
+            # Orphan subagent transcript root.
+            expected.add(r.uuid)
+            continue
+        if r.parent_uuid is not None and r.parent_uuid in nodes:
+            # Cross-session attachment.
+            expected.add(r.uuid)
+            continue
+        if r.parent_uuid is None:
+            # Candidate for the session's genuine start. Restricted to
+            # non-sidechain roots so a sidechain orphan can't shadow the
+            # real session start when its timestamp happens to be earlier.
+            if not (
+                isinstance(r.entry, (BaseTranscriptEntry, PassthroughTranscriptEntry))
+                and r.entry.isSidechain
+            ):
+                genuine_start_candidates.append(r)
+
+    # The earliest non-classified natural root is the genuine session start.
+    if genuine_start_candidates:
+        expected.add(genuine_start_candidates[0].uuid)
+
+    return [r for r in sorted_roots if r.uuid not in expected]
+
+
 def _stitch_tool_results(
     children: list[str],
     session_uuids: set[str],
@@ -718,13 +783,12 @@ def extract_session_dag_lines(
         # Sort roots by timestamp (earliest first = primary root)
         roots.sort(key=lambda n: n.timestamp)
         if len(roots) > 1:
-            # Roots that arise from expected Claude Code mechanisms —
-            # `/compact` writes a compact_boundary system entry with no
-            # parentUuid; early `local_command` entries like `/memory`
-            # sometimes land as orphans too. Warn only when an unexpected
-            # root shows up (e.g. an orphan user/assistant that hints at a
-            # missing parent); otherwise log at debug level.
-            unexpected = [n for n in roots if not _is_expected_root_type(n.entry)]
+            # Filter to genuinely anomalous roots — see
+            # ``_classify_unexpected_roots`` for the categories that are
+            # treated as routine (compact_boundary, progress, sidechain
+            # orphans, cross-session attachments, the genuine session
+            # start).
+            unexpected = _classify_unexpected_roots(roots, nodes)
             if unexpected:
                 logger.warning(
                     "Session %s: %d roots found (%d unexpected), "
@@ -736,8 +800,9 @@ def extract_session_dag_lines(
                 )
             else:
                 logger.debug(
-                    "Session %s: %d expected roots (compact_boundary / "
-                    "local_command), walking all from earliest (%s)",
+                    "Session %s: %d roots — all expected (mechanism / "
+                    "sidechain orphan / cross-session attachment / "
+                    "genuine start); walking all from earliest (%s)",
                     session_id,
                     len(roots),
                     roots[0].uuid,
