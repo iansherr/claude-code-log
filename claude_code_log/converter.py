@@ -2278,7 +2278,7 @@ def _print_archived_sessions_note(total_archived: int) -> None:
         f"\nNote: {total_archived} archived session(s) found{cleanup_info}.\n"
         "  These sessions were cached before their JSONL files were deleted.\n"
         "  To restore them or adjust cleanup settings, see:\n"
-        "  https://github.com/daaain/claude-code-log/blob/main/dev-docs/restoring-archived-sessions.md"
+        "  https://github.com/daaain/claude-code-log/blob/main/docs/restoring-archived-sessions.md"
     )
 
 

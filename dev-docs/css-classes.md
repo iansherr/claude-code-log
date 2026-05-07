@@ -1,5 +1,7 @@
 # CSS Classes for Message Types
 
+> See [application_model.md](application_model.md) for the system overview.
+
 This document provides a comprehensive reference for CSS class combinations used in Claude Code Log HTML output, their CSS rule support status, and pairing behavior.
 
 **Generated from analysis of:** 29 session HTML files (3,244 message elements)

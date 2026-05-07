@@ -1,5 +1,7 @@
 # Teammates Support
 
+> See [application_model.md](application_model.md) for the system overview.
+
 This document describes how `claude-code-log` supports the Claude Code
 teammates feature (research preview, gated by
 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, available in CC 2.1.32+).

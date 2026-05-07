@@ -50,7 +50,9 @@ claude_code_log/
 
 scripts/                # Development utilities
 test/test_data/         # Representative JSONL samples
-dev-docs/               # Architecture documentation
+dev-docs/               # Architecture / dev documentation (start in application_model.md)
+docs/                   # User-facing operations docs
+work/                   # Plans, TODOs, in-flight design docs
 ```
 
 ## Development Setup
@@ -199,7 +201,10 @@ The handler is installed in `cli.py` via `faulthandler.register(SIGUSR1)`. POSIX
 
 ## Architecture
 
-For detailed architecture documentation, see [dev-docs/rendering-architecture.md](dev-docs/rendering-architecture.md).
+Start with [dev-docs/application_model.md](dev-docs/application_model.md)
+for the system overview (subsystems, data lifecycle, glossary). For
+the rendering pipeline specifically, see
+[dev-docs/rendering-architecture.md](dev-docs/rendering-architecture.md).
 
 ### Data Flow Overview
 

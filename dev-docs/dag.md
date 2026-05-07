@@ -1,5 +1,7 @@
 # DAG-Based Message Architecture
 
+> See [application_model.md](application_model.md) for the system overview.
+
 Replaces timestamp-based ordering with `parentUuid` → `uuid` graph traversal.
 
 Reference: [Messages as Commits: Claude Code's Git-Like DAG of Conversations](https://piebald.ai/blog/messages-as-commits-claude-codes-git-like-dag-of-conversations)
@@ -96,6 +98,14 @@ Where `s1`, `s2`, `s3` are synthesized session header messages.
 - **Backlinks** on session headers: "Continues from message X in Session Y"
   (shown on `s2` and `s3`)
 
+> Where branch / session header *titles* (the `Branch • <uuid8> •
+> <preview>` text) are assembled is a renderer concern, not a DAG
+> concern. See the `SessionHeaderMessage` glossary entry in
+> [application_model.md](application_model.md#4-cross-cutting-glossary)
+> for the four functions involved (`_branch_label`,
+> `_enrich_branch_titles`, `create_session_preview`,
+> `simplify_command_tags`).
+
 #### Current: `d-{index}` anchors (combined transcript only)
 
 Backlinks use `#msg-d-{N}` anchors which are sequential indices assigned
@@ -178,8 +188,28 @@ is available.
 
 1. Parse all entries, index by `uuid`
 2. For duplicate `uuid`s, keep the one from the earliest `sessionId`
-3. Build `children_by_uuid` from `parentUuid` links
-4. Group messages by `sessionId`
+3. Group messages by `sessionId`
+4. `build_dag(nodes, sidechain_uuids)` populates `children_uuids` —
+   in three steps that **must run in this order** (PR #135):
+
+   ```mermaid
+   flowchart TB
+       A["entries indexed by uuid<br/>(parent_uuid pointers may<br/>dangle or cycle)"] --> S1
+       S1["Step 1 — orphan promotion<br/>parent_uuid not in nodes →<br/>null it; warn unless the<br/>parent is a known sidechain<br/>uuid (silently promote)"] --> S2
+       S2["Step 2 — cycle break<br/>walk parent_uuid from each<br/>node; revisit ⇒ null the<br/>revisited node's parent;<br/>warn"] --> S3
+       S3["Step 3 — children build<br/>for each node with non-null<br/>parent_uuid, append to<br/>parent.children_uuids;<br/>skip self-loops, dedup"] --> O["acyclic parent→children DAG<br/>safe to walk"]
+       classDef step fill:#eef,stroke:#99c
+       class S1,S2,S3 step
+   ```
+
+   Steps 1 and 2 mutate `parent_uuid` on the input nodes (they're
+   one-way: a promoted-to-root node can't recover its dangling
+   parent later). Step 3 is the only step that builds the
+   `children_uuids` lists. Doing children first would propagate
+   any cyclic edge into the children graph, and downstream walks
+   via `children_uuids` would loop forever — so cycles must be
+   broken at the parent-pointer layer before children are
+   materialised.
 
 ### Phase 3: Extract Session DAG-lines
 
@@ -197,6 +227,16 @@ For each session (`extract_session_dag_lines` in `dag.py`):
    (ordered by `first_timestamp`); branch DAG-lines stay separate.
 5. If DAG walk coverage is incomplete, fall back to a timestamp sort for
    the whole session.
+
+**Defence-in-depth in the walker** (PR #135): even though `build_dag`
+breaks parent-pointer cycles before populating `children_uuids`, a
+future bug or hand-edited fixture could reintroduce a cyclic edge
+*after* DAG construction. `_walk_session_with_forks` keeps a
+`walk_visited: set[str]` across the whole queue-driven walk; if a
+uuid is visited twice, the chain is truncated at that point and a
+warning is logged. The build-time cycle break and this walk-time
+guard together rule out the unbounded-loop class of hangs that
+motivated the PR.
 
 ### Phase 4: Build Session Tree
 
@@ -575,7 +615,11 @@ These should be checked at runtime (log warnings, don't crash):
    produce multiple roots within one `sessionId`; all are walked and the
    trunks are merged. Other multi-root causes warn (may indicate missing
    parent data).
-3. **DAG acyclicity**: No cycles in `parentUuid` chains
+3. **DAG acyclicity**: `build_dag` walks each node's `parent_uuid`
+   chain and nulls the first revisited node's parent if a cycle is
+   detected (warns and promotes that node to root). The DAG seen by
+   downstream walks is always acyclic; `_walk_session_with_forks`
+   adds a `walk_visited` belt for defence-in-depth.
 4. **Unique ownership**: After deduplication, each `uuid` belongs to
    exactly one session
 5. **Agent parenting**: Every top-level agent transcript has an identifiable
@@ -655,4 +699,4 @@ validate DAG construction against known transcripts.
 
 - [rendering-architecture.md](rendering-architecture.md) — Current pipeline
 - [messages.md](messages.md) — Message type reference
-- [rendering-next.md](rendering-next.md) — Future rendering improvements
+- [../work/rendering-next.md](../work/rendering-next.md) — Future rendering improvements

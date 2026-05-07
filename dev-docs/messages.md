@@ -1,5 +1,7 @@
 # Message Types in Claude Code Transcripts
 
+> See [application_model.md](application_model.md) for the system overview.
+
 This document describes all message types found in Claude Code JSONL transcript files and their corresponding output representations. The goal is to define an **intermediate representation** that captures the logical message structure independent of HTML rendering.
 
 ## Overview
@@ -930,4 +932,4 @@ Sub-agent messages (from `Task` tool):
   - [system_factory.py](../claude_code_log/factories/system_factory.py) - `create_system_message()`
   - [meta_factory.py](../claude_code_log/factories/meta_factory.py) - `create_meta()`
 - [rendering-architecture.md](rendering-architecture.md) - Rendering pipeline and Renderer class hierarchy
-- [rendering-next.md](rendering-next.md) - Future rendering improvements
+- [../work/rendering-next.md](../work/rendering-next.md) - Future rendering improvements

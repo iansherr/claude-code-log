@@ -1,5 +1,7 @@
 # Agents
 
+> See [application_model.md](application_model.md) for the system overview.
+
 `claude-code-log` renders three flavors of Task-spawned agents:
 
 | Flavor | Trigger | Reference |

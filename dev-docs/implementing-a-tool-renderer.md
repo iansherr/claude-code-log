@@ -1,5 +1,7 @@
 # Implementing a Tool Renderer
 
+> See [application_model.md](application_model.md) for the system overview.
+
 This guide walks through adding rendering support for a new Claude Code tool, using WebSearch as an example.
 
 ## Overview
@@ -10,6 +12,14 @@ Tool rendering involves several components working together:
 2. **Factory** (`factories/tool_factory.py`) - Parsing raw JSON into typed models
 3. **HTML Formatters** (`html/tool_formatters.py`) - HTML rendering functions
 4. **Renderers** - Integration with HTML and Markdown renderers
+
+JSON output (`json/renderer.py`, since PR #36) needs **no per-tool
+integration**: it serialises whatever typed input/output models the
+factory produced via `dataclasses.asdict` (with a `_json_default`
+shim for Pydantic models embedded inside the dataclasses). Add the
+models in Step 1 and the factory hooks in Steps 2–3, and your tool
+shows up in JSON exports automatically. The HTML/Markdown formatter
+work in Steps 4–5 stays format-specific.
 
 ## Step 1: Define Models
 
@@ -252,6 +262,13 @@ Create test cases in the appropriate test files:
 1. **Parser tests** - Verify output parsing handles various formats
 2. **Formatter tests** - Verify HTML/Markdown output is correct
 3. **Integration tests** - Verify end-to-end rendering
+
+JSON output is exercised by the broader `test/test_json_rendering.py`
+/ `test/test_json_real_projects.py` suites; per-tool JSON output
+typically needs no dedicated test because the `dataclasses.asdict`
+serialisation is trivial. Add a JSON-specific case only if your tool
+embeds a non-dataclass type the `_json_default` shim doesn't already
+cover.
 
 ## Checklist
 

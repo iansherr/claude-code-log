@@ -1,11 +1,13 @@
 # Rendering Architecture
 
-This document describes how Claude Code transcript data flows from raw JSONL entries to final output (HTML, Markdown). The architecture separates concerns into distinct layers:
+> See [application_model.md](application_model.md) for the system overview.
+
+This document describes how Claude Code transcript data flows from raw JSONL entries to final output (HTML, Markdown, JSON). The architecture separates concerns into distinct layers:
 
 1. **Parsing Layer** - Raw JSONL to typed transcript entries
 2. **Factory Layer** - Transcript entries to `MessageContent` models
 3. **Rendering Layer** - Format-neutral tree building and relationship processing
-4. **Output Layer** - Format-specific rendering (HTML, Markdown)
+4. **Output Layer** - Format-specific rendering (HTML, Markdown, JSON)
 
 ---
 
@@ -16,14 +18,26 @@ JSONL File
     ↓ (parser.py)
 list[TranscriptEntry]
     ↓ (factories/)
-list[TemplateMessage] with MessageContent
+list[TemplateMessage] with MessageContent     ← factory-layer
+                                                normalisation seam
+                                                (raw → display-polished)
     ↓ (renderer.py: generate_template_messages)
 Tree of TemplateMessage (roots with children)
 + RenderingContext (message registry)
 + Session navigation data
-    ↓ (html/renderer.py or markdown/renderer.py)
-Final output (HTML or Markdown)
+    ↓ (html/renderer.py | markdown/renderer.py | json/renderer.py)
+Final output (HTML, Markdown, or JSON)
 ```
+
+**The factory-layer seam matters**: any cleanup that should appear
+in *every* output format (slash-command normalisation, command-args
+hardening, teammate session-color enrichment, etc.) lives at factory
+time, in the typed `MessageContent` models. The three renderers are
+pure consumers of the polished tree — they never re-implement
+display polish per format. As a corollary, when a new output format
+is added (JSON shipped this way in PR #36), it inherits all polish
+for free as long as it consumes `generate_template_messages`'
+output.
 
 **Key cardinality rules**:
 - Each transcript entry has a `uuid`, but a single entry's `list[ContentItem]` may be chunked and produce multiple `MessageContent` objects (e.g., tool_use items are split into separate messages)
@@ -278,6 +292,20 @@ def title_ToolUseMessage(self, content: ToolUseMessage, message: TemplateMessage
 - Writes directly to file/string without templates
 - Simpler structure suited to plain text output
 
+**JsonRenderer** ([json/renderer.py](../claude_code_log/json/renderer.py)):
+- Doesn't implement `format_*` per content type — instead serialises
+  the entire `TemplateMessage` subtree via `dataclasses.asdict` plus
+  a small `_json_default` shim for the Pydantic models embedded in
+  tool inputs/outputs (and for `Enum`/`Path`).
+- Calls `title_content(msg)` to attach a per-node title that mirrors
+  what HTML/Markdown surface — the only place dispatcher methods are
+  reused.
+- Output is a single JSON document per session (or per combined
+  transcript / projects index) with the message tree nested directly
+  under each node's `children` array. See [application_model.md
+  § 2.5](application_model.md#25-json-export) for the payload shape
+  and inheritance from the factory-layer normalisation seam.
+
 ---
 
 ## 8. HTML Formatter Organization
@@ -333,9 +361,16 @@ Note that `meta.uuid` is the original transcript entry's UUID. Since a single en
 ### Separation of Concerns
 
 - **models.py**: Pure data structures, no rendering logic
-- **factories/**: Data transformation, no I/O
+- **factories/**: Data transformation, no I/O. **The
+  normalisation seam** — display polish for *all* output formats
+  lives here, not in renderers (e.g. `simplify_command_tags` lifting
+  bare `<command-name>X</command-name>` to `/X`, with the same fix
+  applied to both `simplify_command_tags` and
+  `create_slash_command_message` so HTML/Markdown/JSON observe a
+  single shape).
 - **renderer.py**: Format-neutral processing (pairing, hierarchy, tree)
-- **html/**, **markdown/**: Format-specific output generation
+- **html/**, **markdown/**, **json/**: Format-specific output generation,
+  consuming the polished tree without re-implementing display rules.
 
 ---
 
@@ -343,5 +378,5 @@ Note that `meta.uuid` is the original transcript entry's UUID. Since a single en
 
 - [messages.md](messages.md) - Complete message type reference
 - [css-classes.md](css-classes.md) - CSS class combinations and rules
-- [FOLD_STATE_DIAGRAM.md](FOLD_STATE_DIAGRAM.md) - Fold/unfold state machine
+- [message-hierarchy.md](message-hierarchy.md) - Fold/unfold state machine
 - [dag.md](dag.md) - DAG-based message architecture (replaces timestamp-based ordering)

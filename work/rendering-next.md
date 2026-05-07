@@ -149,5 +149,5 @@ Syntax highlighting is a significant portion of render time. Could cache highlig
 
 ## Related Documentation
 
-- [rendering-architecture.md](rendering-architecture.md) - Current architecture
-- [FOLD_STATE_DIAGRAM.md](FOLD_STATE_DIAGRAM.md) - Fold/unfold state machine
+- [dev-docs/rendering-architecture.md](../dev-docs/rendering-architecture.md) - Current architecture
+- [dev-docs/message-hierarchy.md](../dev-docs/message-hierarchy.md) - Fold/unfold state machine

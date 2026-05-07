@@ -1,4 +1,6 @@
-# Fold Bar State Diagram
+# Message Hierarchy and Fold State
+
+> See [application_model.md](application_model.md) for the system overview.
 
 ## Message Hierarchy
 
