@@ -1560,7 +1560,24 @@ def _build_pairing_indices(messages: list[TemplateMessage]) -> PairingIndices:
 
 
 def _mark_pair(first: TemplateMessage, last: TemplateMessage) -> None:
-    """Mark two messages as a pair by setting their pair indices."""
+    """Mark two messages as a pair by setting their pair indices.
+
+    Each member stores a pointer to the *other* end of the pair, not its
+    own role:
+
+    - ``first.pair_last`` is the **forward** link from the first member
+      to its partner (the last member).
+    - ``last.pair_first`` is the **back** link from the last member to
+      its partner (the first member).
+
+    So this function does NOT set ``first.pair_first`` — that field
+    stays ``None`` on a first-role member, and is read by
+    ``is_first_in_pair`` to detect the role. Likewise it does not set
+    ``last.pair_last``. Mistaking the asymmetry has caused two bugs
+    (#137 chain pairing; CodeRabbit-flagged sibling-overwrite); guard
+    logic at call sites must check both fields when deciding whether a
+    parent is already involved in any pair.
+    """
     first_index = first.message_index
     last_index = last.message_index
     if first_index is not None and last_index is not None:
@@ -1683,21 +1700,37 @@ def _try_pair_by_index(
     # System child message finding its parent (by parent_uuid).
     # The uuid index only contains system messages, so this is a
     # system→system pairing path. Skip when the candidate parent is
-    # itself already a child in some other pair (``pair_first`` set):
-    # chained system entries (each one's ``parentUuid`` = the previous
-    # system entry's ``uuid`` — common with ``/context`` / ``/cost``
-    # multi-step output) would otherwise call ``_mark_pair`` on every
-    # link, leaving each interior node with both ``pair_first`` and
-    # ``pair_last`` set, which ``is_middle_in_pair`` reads as a
-    # triple-middle. The result was a fake N-tuple rendering as
-    # ``pair_first → pair_middle × (N-2) → pair_last`` instead of
-    # N/2 discrete pairs (#137). Skipping pre-paired parents breaks
-    # chains into pairs of two from the leading edge — the natural
-    # shape for command/result rhythms like ``/color`` invoked +
-    # confirmation, ``/context`` invoked + grid.
+    # **already involved in any pair** — both ``pair_first`` and
+    # ``pair_last`` must be ``None`` for the call to fire. Two distinct
+    # failure modes this guard covers (#137):
+    #
+    # 1. **Chain.** Each system entry's ``parentUuid`` = the previous
+    #    system entry's ``uuid`` (common with ``/context`` / ``/cost``
+    #    multi-step output). Without a guard, ``_mark_pair`` fires on
+    #    every link, leaving each interior node with both ``pair_first``
+    #    AND ``pair_last`` set, which ``is_middle_in_pair`` reads as a
+    #    triple-middle. The chain-bug guard alone (``pair_first is
+    #    None``) catches this — the second link sees the parent has
+    #    already been paired AS A CHILD (``pair_first`` set).
+    #
+    # 2. **Siblings sharing a parent.** Two system entries with the
+    #    same ``parentUuid``. The chain-bug guard alone misses this:
+    #    ``_mark_pair`` only sets ``parent.pair_last``, never
+    #    ``parent.pair_first``, so a parent that's already someone's
+    #    *first* still passes the ``pair_first is None`` check. The
+    #    second sibling's call would overwrite ``parent.pair_last`` and
+    #    leave the first sibling's ``pair_first`` pointing at a parent
+    #    whose ``pair_last`` no longer points back. The full guard
+    #    (``pair_first is None and pair_last is None``) only pairs
+    #    virgin parents, so siblings beyond the first render as
+    #    standalone cards rather than half-pairs.
     if current.type == "system" and current.parent_uuid:
         parent = indices.uuid.get(current.parent_uuid)
-        if parent is not None and parent.pair_first is None:
+        if (
+            parent is not None
+            and parent.pair_first is None
+            and parent.pair_last is None
+        ):
             _mark_pair(parent, current)
 
 

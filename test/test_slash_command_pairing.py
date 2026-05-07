@@ -484,3 +484,91 @@ class TestSystemMessageChainPairing:
         assert "pair_middle" not in roles, (
             f"Chains must not produce pair_middle, got: {roles}"
         )
+
+    @staticmethod
+    def _build_siblings(tmp_path):
+        """Two system entries with the SAME ``parentUuid`` (siblings).
+
+        Distinct from the chain shape above: chains are A→B→C→…; here
+        both system entries point at the same parent. ``_mark_pair``
+        sets only ``parent.pair_last`` (forward-link), never
+        ``parent.pair_first``, so a guard that only checks the back-
+        link silently fires twice and the second sibling overwrites
+        the first's pairing — the bug CodeRabbit flagged on PR #140.
+        """
+        import json
+        from claude_code_log.converter import load_transcript
+
+        ts = "2026-05-07T10:00:00Z"
+        lines: list[dict[str, object]] = [
+            {
+                "parentUuid": None,
+                "isSidechain": False,
+                "userType": "external",
+                "cwd": "/tmp",
+                "sessionId": "s1",
+                "version": "2.0.0",
+                "type": "user",
+                "message": {"role": "user", "content": "hello"},
+                "uuid": "root",
+                "timestamp": ts,
+            },
+            {
+                "parentUuid": "root",
+                "isSidechain": False,
+                "userType": "external",
+                "cwd": "/tmp",
+                "sessionId": "s1",
+                "version": "2.0.0",
+                "type": "system",
+                "level": "info",
+                "subtype": "local_command",
+                "content": "parent system entry",
+                "uuid": "parent",
+                "timestamp": ts,
+            },
+        ]
+        # Two siblings, both pointing at "parent".
+        for i in range(2):
+            lines.append(
+                {
+                    "parentUuid": "parent",
+                    "isSidechain": False,
+                    "userType": "external",
+                    "cwd": "/tmp",
+                    "sessionId": "s1",
+                    "version": "2.0.0",
+                    "type": "system",
+                    "level": "info",
+                    "subtype": "local_command",
+                    "content": f"sibling {i}",
+                    "uuid": f"sib{i}",
+                    "timestamp": ts,
+                }
+            )
+        fn = tmp_path / "siblings.jsonl"
+        fn.write_text("\n".join(json.dumps(line) for line in lines))
+        return load_transcript(fn)
+
+    def test_siblings_share_parent_only_first_pairs(self, tmp_path) -> None:
+        """Two system messages with the same parent: only the first
+        pairs with the parent; the second renders standalone.
+
+        Pre-fix shape (chain-bug guard alone, ``pair_first is None``):
+        ``[pair_first (parent, pointing at sib1), pair_last (sib0,
+        stale-pointing at parent), pair_last (sib1)]`` — sib0's
+        ``pair_first`` no longer matches ``parent.pair_last`` after
+        sib1 overwrites it.
+
+        Post-fix shape (full guard, ``pair_first AND pair_last is
+        None``): ``[pair_first (parent ↔ sib0), pair_last (sib0 ↔
+        parent), none (sib1 standalone)]``.
+        """
+        from claude_code_log.html.renderer import HtmlRenderer
+
+        msgs = self._build_siblings(tmp_path)
+        html = HtmlRenderer().generate(msgs, "Test")
+        roles = self._system_pair_classes(html)
+        assert roles == ["pair_first", "pair_last", "none"], (
+            f"Expected siblings-pair shape, got: {roles}"
+        )

@@ -411,8 +411,13 @@
  * etc. preserve their grid alignment via white-space: pre (no wrapping)
  * and horizontal-scroll on narrow viewports. The pre-wrap + break-word
  * combo used for command-output is wrong here: even a single overlong
- * line in a grid breaks the visualisation when it wraps mid-row. */
-.system-content {
+ * line in a grid breaks the visualisation when it wraps mid-row.
+ *
+ * Selector tightened to ``.content pre.system-content`` to win over
+ * the existing ``.content pre`` rule above (specificity 0,1,1 — would
+ * otherwise force ``white-space: pre-wrap`` and undo the fix). Same
+ * pattern as the sibling ``.content pre.command-output-content``. */
+.content pre.system-content {
     background-color: #1e1e1e08;
     padding: 12px;
     border-radius: 4px;
