@@ -7,29 +7,28 @@ cli *ARGS:
 
 # Run only unit tests (fast, no external dependencies)
 test:
-    uv run pytest -n auto -m "not (tui or browser or benchmark)" -v
+    uv run pytest -m "not (tui or browser or benchmark)" -v
 
-# Run benchmark tests (outputs to GITHUB_STEP_SUMMARY in CI)
-
+# Run benchmark tests serially for stable measurements (outputs to GITHUB_STEP_SUMMARY in CI).
 # DEBUG_TIMING enables coverage of renderer_timings.py
 test-benchmark:
-    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -m benchmark -v
+    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -n0 -m benchmark -v
 
 # Update snapshot tests (runs serially for deterministic file ordering)
 update-snapshot:
-    uv run pytest -m snapshot --snapshot-update -v
+    uv run pytest -n0 -m snapshot --snapshot-update -v
 
 # Run TUI tests (requires isolated event loop)
 test-tui:
-    uv run pytest -n auto -m tui -v
+    uv run pytest -m tui -v
 
 # Run browser tests (requires Chromium)
 test-browser:
-    uv run pytest -n auto -m browser -v
+    uv run pytest -m browser -v
 
 # Run integration tests with realistic JSONL data
 test-integration:
-    uv run pytest -n auto -m integration -v
+    uv run pytest -m integration -v
 
 # Run all tests in sequence (separated to avoid event loop conflicts)
 test-all:
@@ -37,15 +36,15 @@ test-all:
     set -e  # Exit on first failure
     echo "🧪 Running all tests in sequence..."
     echo "📦 Running unit tests..."
-    uv run pytest -n auto -m "not (tui or browser or integration or benchmark)" -v
+    uv run pytest -m "not (tui or browser or integration or benchmark)" -v
     echo "🖥️  Running TUI tests..."
-    uv run pytest -n auto -m tui -v
+    uv run pytest -m tui -v
     echo "🌐 Running browser tests..."
-    uv run pytest -n auto -m browser -v
+    uv run pytest -m browser -v
     echo "🔄 Running integration tests..."
-    uv run pytest -n auto -m integration -v
+    uv run pytest -m integration -v
     echo "📊 Running benchmark tests..."
-    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -m benchmark -v
+    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -n0 -m benchmark -v
     echo "✅ All tests completed!"
 
 # Run tests with coverage (all categories)
@@ -54,15 +53,15 @@ test-cov:
     set -e  # Exit on first failure
     echo "📊 Running all tests with coverage..."
     echo "📦 Running unit tests with coverage..."
-    uv run pytest -n auto -m "not (tui or browser or integration or benchmark)" --cov=claude_code_log --cov-report=xml --cov-report=html --cov-report=term -v
+    uv run pytest -m "not (tui or browser or integration or benchmark)" --cov=claude_code_log --cov-report=xml --cov-report=html --cov-report=term -v
     echo "🖥️  Running TUI tests with coverage append..."
-    uv run pytest -n auto -m tui --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
+    uv run pytest -m tui --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
     echo "🌐 Running browser tests with coverage append..."
-    uv run pytest -n auto -m browser --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
+    uv run pytest -m browser --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
     echo "🔄 Running integration tests with coverage append..."
-    uv run pytest -n auto -m integration --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
+    uv run pytest -m integration --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
     echo "📊 Running benchmark tests with coverage append..."
-    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -m benchmark --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
+    CLAUDE_CODE_LOG_DEBUG_TIMING=1 uv run pytest -n0 -m benchmark --cov=claude_code_log --cov-append --cov-report=xml --cov-report=html --cov-report=term -v
     echo "✅ All tests with coverage completed!"
 
 format:

@@ -46,6 +46,11 @@ exclude = ["/docs", "/test", "/scripts"]
 testpaths = ["test"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Parallelise across all cores; worksteal rebalances heavyweight integration
+# tests across workers (default `load` left workers idle while one slogged
+# through the queue). Override with `-n0` for serial runs (snapshot updates,
+# benchmarks).
+addopts = "-n auto --dist=worksteal"
 markers = [
     "tui: TUI tests using Textual framework (requires isolated event loop)",
     "browser: Browser integration tests using Playwright (requires Chromium)",
