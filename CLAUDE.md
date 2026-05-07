@@ -109,3 +109,16 @@ with pointers to the deep-dive docs:
 - [dev-docs/implementing-a-tool-renderer.md](dev-docs/implementing-a-tool-renderer.md) - How-to: add a new tool
 
 User-facing docs live in [docs/](docs/); plans and TODOs live in [work/](work/).
+
+### Keeping dev-docs/ in sync
+
+`dev-docs/` is **as-built reference** — the code is the authoritative
+source. When a non-trivial change alters behavior, structure, or
+invariants documented in a deep-dive, update the relevant page in
+the same commit (or as a prompt follow-up). If `dev-docs/` and the
+code disagree, the doc is wrong.
+
+Typical lifecycle: a feature begins as a spec in `work/`, evolves
+into a WIP scratchpad as the code adapts to reality, then graduates
+into `dev-docs/` (new page or merged into an existing one) once the
+implementation has stabilized.
