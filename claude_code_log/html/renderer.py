@@ -53,6 +53,8 @@ from ..models import (
     SkillInput,
     WebSearchInput,
     WebFetchInput,
+    MonitorInput,
+    MonitorOutput,
     WriteInput,
     # Tool output types
     AskUserQuestionOutput,
@@ -150,6 +152,8 @@ from .tool_formatters import (
     format_websearch_output,
     format_webfetch_input,
     format_webfetch_output,
+    format_monitor_input,
+    format_monitor_output,
     format_write_input,
     format_write_output,
     render_params_table,
@@ -589,6 +593,14 @@ class HtmlRenderer(Renderer):
         """Format → collapsible markdown with metadata badge."""
         return format_webfetch_output(output)
 
+    def format_MonitorInput(self, input: MonitorInput, _: TemplateMessage) -> str:
+        """Format → 4-row params table with collapsible command."""
+        return format_monitor_input(input)
+
+    def format_MonitorOutput(self, output: MonitorOutput, _: TemplateMessage) -> str:
+        """Format → start-confirmation paragraph verbatim."""
+        return format_monitor_output(output)
+
     # -------------------------------------------------------------------------
     # Tool Input Title Methods (for Renderer.title_ToolUseMessage dispatch)
     # -------------------------------------------------------------------------
@@ -698,6 +710,10 @@ class HtmlRenderer(Renderer):
     ) -> str:
         """Title → '🌐 WebFetch <url>'."""
         return self._tool_title(message, "🌐", input.url)
+
+    def title_MonitorInput(self, input: MonitorInput, message: TemplateMessage) -> str:
+        """Title → '🔭 Monitor <description>'."""
+        return self._tool_title(message, "🔭", input.description)
 
     def title_SkillInput(self, input: SkillInput, message: TemplateMessage) -> str:
         """Title → '💡 Skill <skill_name>'."""

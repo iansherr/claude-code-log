@@ -22,6 +22,7 @@ from typing import Any, cast
 
 from .utils import (
     escape_html,
+    render_collapsible_code,
     render_file_content_collapsible,
     render_markdown_collapsible,
 )
@@ -37,6 +38,8 @@ from ..models import (
     ExitPlanModeInput,
     ExitPlanModeOutput,
     GrepInput,
+    MonitorInput,
+    MonitorOutput,
     MultiEditInput,
     ReadInput,
     ReadOutput,
@@ -680,6 +683,81 @@ def format_webfetch_output(output: WebFetchOutput) -> str:
     return f"{badge_html}{content_html}"
 
 
+# -- Monitor Tool -------------------------------------------------------------
+
+
+def format_monitor_input(monitor_input: MonitorInput) -> str:
+    """Format Monitor tool use as a key-value grid.
+
+    Renders four rows — ``description``, ``command``, ``timeout_ms``,
+    ``persistent`` — using the same ``tool-params-table`` shape as
+    other multi-field tool inputs. The ``command`` value (often a
+    multi-line bash poll-loop) renders inside a collapsible block so
+    a long script doesn't dominate the card.
+
+    The ``description`` is shown both in the title and the body; the
+    body row anchors the rendering to the harness's exact field name
+    and keeps the card useful when a future title format changes.
+    """
+    params: dict[str, Any] = {"description": monitor_input.description}
+    # Command rendered separately for adaptive collapsibility — pass
+    # a placeholder through the table builder, then replace with the
+    # specialised cell. This keeps the row layout consistent with
+    # ``render_params_table`` (same CSS hooks downstream) while letting
+    # us keep the line-count badge for the multi-line case.
+    command = monitor_input.command
+    line_count = command.count("\n") + 1
+    escaped_command = escape_html(command)
+    if line_count > 5 or len(command) > 300:
+        # Use the collapsible-code helper for the same visual treatment
+        # other multi-line tool bodies get (line-count badge + preview).
+        preview_lines = "\n".join(command.splitlines()[:3])
+        preview_html = f"<pre>{escape_html(preview_lines)}</pre>"
+        full_html = f"<pre>{escaped_command}</pre>"
+        command_cell = render_collapsible_code(preview_html, full_html, line_count)
+    else:
+        command_cell = f"<pre class='monitor-command'>{escaped_command}</pre>"
+
+    if monitor_input.timeout_ms is not None:
+        params["timeout_ms"] = monitor_input.timeout_ms
+    if monitor_input.persistent is not None:
+        params["persistent"] = monitor_input.persistent
+
+    # Compose the table by hand so the ``command`` row carries the
+    # specialised cell instead of a generic stringification.
+    rows: list[str] = []
+    rows.append(
+        f"<tr><td class='tool-param-key'>description</td>"
+        f"<td class='tool-param-value'>{escape_html(monitor_input.description)}</td></tr>"
+    )
+    rows.append(
+        f"<tr><td class='tool-param-key'>command</td>"
+        f"<td class='tool-param-value'>{command_cell}</td></tr>"
+    )
+    if monitor_input.timeout_ms is not None:
+        rows.append(
+            f"<tr><td class='tool-param-key'>timeout_ms</td>"
+            f"<td class='tool-param-value'>{escape_html(str(monitor_input.timeout_ms))}</td></tr>"
+        )
+    if monitor_input.persistent is not None:
+        rows.append(
+            f"<tr><td class='tool-param-key'>persistent</td>"
+            f"<td class='tool-param-value'>{escape_html(str(monitor_input.persistent))}</td></tr>"
+        )
+    return f"<table class='tool-params-table monitor-input'>{''.join(rows)}</table>"
+
+
+def format_monitor_output(output: MonitorOutput) -> str:
+    """Format Monitor tool result — the start-confirmation paragraph.
+
+    The harness emits a single paragraph confirming the monitor was
+    armed and naming the task id. Render verbatim inside a paragraph
+    block; the body is short enough that no collapsibility is worth
+    the chrome.
+    """
+    return f"<div class='monitor-output'>{escape_html(output.text)}</div>"
+
+
 # -- Generic Parameter Table --------------------------------------------------
 
 
@@ -871,6 +949,7 @@ __all__ = [
     "format_grep_input",
     "format_websearch_input",
     "format_webfetch_input",
+    "format_monitor_input",
     # Tool output formatters (called by HtmlRenderer.format_{OutputClass})
     "format_read_output",
     "format_write_output",
@@ -881,6 +960,7 @@ __all__ = [
     "format_exitplanmode_output",
     "format_websearch_output",
     "format_webfetch_output",
+    "format_monitor_output",
     # Fallback for ToolResultContent
     "format_tool_result_content_raw",
     # Legacy formatters (still used)

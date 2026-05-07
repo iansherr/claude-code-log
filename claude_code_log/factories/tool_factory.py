@@ -45,6 +45,7 @@ from ..models import (
     ToolUseContent,
     ToolUseMessage,
     ToolUseResult,
+    MonitorInput,
     SkillInput,
     WebSearchInput,
     WebFetchInput,
@@ -55,6 +56,7 @@ from ..models import (
     BashOutput,
     EditOutput,
     ExitPlanModeOutput,
+    MonitorOutput,
     ReadOutput,
     SendMessageOutput,
     TaskCreateOutput,
@@ -99,6 +101,7 @@ TOOL_INPUT_MODELS: dict[str, type[BaseModel]] = {
     "ExitPlanMode": ExitPlanModeInput,
     "WebSearch": WebSearchInput,
     "WebFetch": WebFetchInput,
+    "Monitor": MonitorInput,
     "Skill": SkillInput,
     # Teammates feature tools
     "TeamCreate": TeamCreateInput,
@@ -705,6 +708,34 @@ def parse_webfetch_output(
     return None
 
 
+# Match ``Monitor started (task <id>, …)`` so the task id is available
+# to downstream consumers without re-parsing the full body. The id is
+# the short alphanumeric form (e.g. ``b07h5t4ng``) the harness echoes
+# back; not load-bearing for rendering today (the body text is shown
+# verbatim) but useful for the task-end backlink (#142) and any future
+# UI that wants to cross-reference the originating Monitor card.
+_MONITOR_TASK_ID_RE = re.compile(r"Monitor started \(task ([A-Za-z0-9]+)")
+
+
+def parse_monitor_output(
+    tool_result: ToolResultContent,
+    file_path: Optional[str],
+) -> Optional[MonitorOutput]:
+    """Parse Monitor tool's start-confirmation result.
+
+    The harness emits a single paragraph confirming the monitor was
+    armed and naming the task id. Capture the raw text for rendering
+    and extract the task id when the format matches; both fields are
+    optional from the renderer's perspective.
+    """
+    del file_path  # Unused — Monitor's result text is self-contained.
+    text = _extract_tool_result_text(tool_result).strip()
+    if not text:
+        return None
+    task_match = _MONITOR_TASK_ID_RE.search(text)
+    return MonitorOutput(text=text, task_id=task_match.group(1) if task_match else None)
+
+
 # =============================================================================
 # Teammates feature tool output parsers
 # =============================================================================
@@ -1004,6 +1035,7 @@ TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
     "ExitPlanMode": parse_exitplanmode_output,
     "WebSearch": parse_websearch_output,
     "WebFetch": parse_webfetch_output,
+    "Monitor": parse_monitor_output,
     # Teammates feature tools
     "TeamCreate": parse_teamcreate_output,
     "TeamDelete": parse_teamdelete_output,

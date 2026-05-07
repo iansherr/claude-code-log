@@ -4057,7 +4057,7 @@
               </div>
           </div>
           <div class='debug-info'>11111111-000 &rarr; 11111111-000</div>
-          <div class='content'><dl class="teammate-tool-card task-notification-card"><dt>Task ID</dt><dd><code>cccc333</code></dd><dt>Status</dt><dd><span class='task-status status-completed'>completed</span></dd><dt>Tokens</dt><dd><code>23,099</code></dd><dt>Tool uses</dt><dd><code>2</code></dd><dt>Duration</dt><dd><code>15.5s</code></dd><dt>Transcript</dt><dd><code>/tmp/claude-1000/synthetic/tasks/cccc333.output</code></dd><dt>Spawn</dt><dd><a class='task-notification-backlink' href='#msg-d-2'>&#x21b1; Task</a></dd></dl></div>
+          <div class='content'><dl class="teammate-tool-card task-notification-card"><dt>Task ID</dt><dd><a class='task-notification-backlink' href='#msg-d-2'><code>cccc333</code></a></dd><dt>Status</dt><dd><span class='task-status status-completed'>completed</span></dd><dt>Tokens</dt><dd><code>23,099</code></dd><dt>Tool uses</dt><dd><code>2</code></dd><dt>Duration</dt><dd><code>15.5s</code></dd><dt>Transcript</dt><dd><code>/tmp/claude-1000/synthetic/tasks/cccc333.output</code></dd></dl></div>
           
       </div>
       

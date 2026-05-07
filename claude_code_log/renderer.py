@@ -859,6 +859,13 @@ def generate_template_messages(
     with log_timing("Link async notifications", t_start):
         _link_async_notifications(ctx, detail)
 
+    # Independent pass: link tool-use-id-bearing notifications (e.g.
+    # built-in Monitor task-end) back to their originating tool_use.
+    # Distinct from the agent-spawn flow above — there's no fold or
+    # dedup, just a backlink on the Task ID value (#142).
+    with log_timing("Link tool_use notifications", t_start):
+        _link_tool_use_notifications(ctx)
+
     return root_messages, session_nav, ctx
 
 
@@ -2269,6 +2276,48 @@ _ASYNC_AGENT_ID_LINE_RE = re.compile(
     r"^\s*agentId:\s*(?P<agent_id>\w+)\s*\(",
     re.MULTILINE,
 )
+
+
+def _link_tool_use_notifications(ctx: RenderingContext) -> None:
+    """Link ``<task-notification>`` entries that carry ``<tool-use-id>``
+    back to the originating tool_use card (#142 — built-in ``Monitor``).
+
+    Distinct from ``_link_async_notifications``: the agent-spawn flow
+    matches by ``agent_id`` and folds the duplicated answer onto the
+    spawning Task; this pass matches by ``tool_use_id`` directly and
+    only sets the backlink anchor — no fold, no dedup. The Monitor
+    notification's ``<result>`` field is empty by design (it carries
+    a single status summary, not a duplicate body), so there's nothing
+    to dedup against the original tool_use's result.
+
+    Reuses ``spawning_task_message_index`` as the backlink slot to
+    keep the formatter logic single-shape — the field name reads as
+    "the linked tool_use card's index" in either flow.
+    """
+    # Build tool_use_id → message_index map across all messages.
+    tool_use_index: dict[str, int] = {}
+    for tm in ctx.messages:
+        if tm.type == "tool_use" and tm.tool_use_id and tm.message_index is not None:
+            # First occurrence wins — multiple tool_uses sharing the same
+            # tool_use_id is malformed input; the backlink target should
+            # be the earliest, matching reading order.
+            tool_use_index.setdefault(tm.tool_use_id, tm.message_index)
+    if not tool_use_index:
+        return
+
+    for tm in ctx.messages:
+        content = tm.content
+        if not isinstance(content, TaskNotificationMessage):
+            continue
+        if content.spawning_task_message_index is not None:
+            # Already linked by ``_link_async_notifications`` — don't
+            # overwrite (the agent-spawn link is a stronger signal).
+            continue
+        if not content.tool_use_id:
+            continue
+        target_idx = tool_use_index.get(content.tool_use_id)
+        if target_idx is not None:
+            content.spawning_task_message_index = target_idx
 
 
 def _link_async_notifications(

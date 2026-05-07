@@ -723,6 +723,12 @@ class TaskNotificationMessage(MessageContent):
     usage: Optional[TaskNotificationUsage] = None
     transcript_path: Optional[str] = None
     raw_text: Optional[str] = None  # Original content if parsing dropped fields
+    # ``<tool-use-id>`` from the notification block — matches the
+    # originating tool_use's ``id`` (e.g. ``toolu_01...``). Used to emit
+    # a backlink from the notification card's Task ID value to the
+    # original tool_use card (#142 — Monitor tool task-end backlink).
+    # Optional because older notifications didn't carry this field.
+    tool_use_id: Optional[str] = None
     # Phase 3 dedup marker: when True, ``result_text`` duplicates the
     # last sub-assistant in the spawning Task's sidechain (which is
     # already rendered inline). The renderer should then collapse the
@@ -1088,6 +1094,20 @@ class WebSearchInput(BaseModel):
     query: str
 
 
+class MonitorInput(BaseModel):
+    """Input parameters for the built-in ``Monitor`` tool.
+
+    Streams stdout from a long-running shell command, emitting one
+    notification per line. Used to watch CI checks, log tails, or
+    poll-loops that emit only on state change.
+    """
+
+    description: str
+    command: str
+    timeout_ms: Optional[int] = None
+    persistent: Optional[bool] = None
+
+
 class WebFetchInput(BaseModel):
     """Input parameters for the WebFetch tool."""
 
@@ -1197,6 +1217,7 @@ ToolInput = Union[
     ExitPlanModeInput,
     WebSearchInput,
     WebFetchInput,
+    MonitorInput,
     SkillInput,
     TeamCreateInput,
     TeamDeleteInput,
@@ -1399,6 +1420,25 @@ class ExitPlanModeOutput:
 
 
 @dataclass
+class MonitorOutput:
+    """Parsed output for the built-in ``Monitor`` tool's start
+    confirmation.
+
+    The result text is a single paragraph like ``Monitor started
+    (task <id>, timeout <n>ms). You will be notified on each event.
+    Keep working — do not poll or sleep. Events may arrive while
+    you are waiting for the user — an event is not their reply.``
+
+    We capture the raw text and (optionally) the parsed task id
+    when the format matches; the renderer uses the raw text by
+    default and the task id is currently informational only.
+    """
+
+    text: str
+    task_id: Optional[str] = None
+
+
+@dataclass
 class WebSearchLink:
     """Single search result link from WebSearch output."""
 
@@ -1552,6 +1592,7 @@ ToolOutput = Union[
     ExitPlanModeOutput,
     WebSearchOutput,
     WebFetchOutput,
+    MonitorOutput,
     TeamCreateOutput,
     TeamDeleteOutput,
     TaskCreateOutput,

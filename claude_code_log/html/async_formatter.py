@@ -129,7 +129,22 @@ def format_task_notification_content(content: TaskNotificationMessage) -> str:
     """
     rows: list[str] = []
     if content.task_id:
-        rows.append(_row("Task ID", _code(content.task_id)))
+        if content.spawning_task_message_index is not None:
+            # Backlink anchor format matches the rest of the renderer
+            # ("d-{N}" → "msg-d-{N}"; the template emits the corresponding
+            # id on every message div). Wrapping the Task ID itself in
+            # the anchor (rather than a separate "Spawn" row) keeps the
+            # affordance close to the value the reader is looking up
+            # — matches issue #142's spec for the Monitor backlink and
+            # is a cleaner shape for the agent-spawn case too.
+            anchor = f"msg-d-{content.spawning_task_message_index}"
+            task_id_html = (
+                f"<a class='task-notification-backlink' href='#{anchor}'>"
+                f"<code>{escape_html(content.task_id)}</code></a>"
+            )
+        else:
+            task_id_html = _code(content.task_id)
+        rows.append(_row("Task ID", task_id_html))
     if content.status:
         status_class = (
             f"status-{content.status}"
@@ -146,18 +161,6 @@ def format_task_notification_content(content: TaskNotificationMessage) -> str:
     rows.extend(_format_usage_rows(content.usage))
     if content.transcript_path:
         rows.append(_row("Transcript", _code(content.transcript_path)))
-    if content.spawning_task_message_index is not None:
-        # Backlink anchor format matches the rest of the renderer
-        # ("d-{N}" → "msg-d-{N}"; the template emits the corresponding
-        # id on every message div).
-        anchor = f"msg-d-{content.spawning_task_message_index}"
-        rows.append(
-            _row(
-                "Spawn",
-                f"<a class='task-notification-backlink' href='#{anchor}'>"
-                f"&#x21b1; Task</a>",
-            )
-        )
 
     parts: list[str] = []
     if rows:

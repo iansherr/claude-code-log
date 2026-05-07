@@ -50,9 +50,13 @@ _NOTIFICATION_RE = re.compile(
     re.DOTALL,
 )
 
-# Single-tag fields inside the notification.
+# Single-tag fields inside the notification. ``tool-use-id`` is the
+# originating ``toolu_...`` id from the spawning tool_use; surfaced here
+# so the renderer can backlink the notification's Task ID value to the
+# original tool_use card (#142). Older notifications didn't carry it,
+# so the absence is benign — the dict get below returns None.
 _FIELD_RE = re.compile(
-    r"<(?P<tag>task-id|status|summary)>(?P<body>.*?)</(?P=tag)>",
+    r"<(?P<tag>task-id|tool-use-id|status|summary)>(?P<body>.*?)</(?P=tag)>",
     re.DOTALL,
 )
 _RESULT_RE = re.compile(r"<result>\s*(?P<body>.*?)\s*</result>", re.DOTALL)
@@ -153,4 +157,5 @@ def create_task_notification_message(
         usage=usage,
         transcript_path=transcript_path,
         raw_text=text,
+        tool_use_id=fields.get("tool-use-id") or None,
     )

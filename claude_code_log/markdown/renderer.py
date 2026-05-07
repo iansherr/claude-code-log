@@ -61,6 +61,8 @@ from ..models import (
     SkillInput,
     WebSearchInput,
     WebFetchInput,
+    MonitorInput,
+    MonitorOutput,
     WriteInput,
     # Tool output types
     AskUserQuestionOutput,
@@ -837,6 +839,28 @@ class MarkdownRenderer(Renderer):
             return self._code_fence(input.prompt)
         return ""
 
+    def format_MonitorInput(self, input: MonitorInput, _: TemplateMessage) -> str:
+        """Format → bullet list of fields with the command in a fenced block.
+
+        Mirrors the HTML 4-row grid in plain Markdown. The command's
+        adaptive fence width comes from ``_code_fence``; the description
+        is also in the title but kept here so the body stands alone.
+        """
+        lines: list[str] = [f"- **description:** {input.description}"]
+        if input.timeout_ms is not None:
+            lines.append(f"- **timeout_ms:** {input.timeout_ms}")
+        if input.persistent is not None:
+            lines.append(f"- **persistent:** {input.persistent}")
+        lines.append("")
+        lines.append("**command:**")
+        lines.append("")
+        lines.append(self._code_fence(input.command, "bash"))
+        return "\n".join(lines)
+
+    def format_MonitorOutput(self, output: MonitorOutput, _: TemplateMessage) -> str:
+        """Format → start-confirmation paragraph verbatim."""
+        return output.text
+
     def format_SkillInput(self, _input: SkillInput, _: TemplateMessage) -> str:
         """Format → '' (skill name in title; body folded in via skill_body)."""
         return ""
@@ -1393,6 +1417,10 @@ class MarkdownRenderer(Renderer):
         """Title → '🌐 WebFetch `url`' (truncated if > 60 chars)."""
         url = input.url[:60] + "…" if len(input.url) > 60 else input.url
         return f"🌐 WebFetch `{url}`"
+
+    def title_MonitorInput(self, input: MonitorInput, _: TemplateMessage) -> str:
+        """Title → '🔭 Monitor <description>'."""
+        return f"🔭 Monitor {input.description}"
 
     def title_SkillInput(self, input: SkillInput, _: TemplateMessage) -> str:
         """Title → '💡 Skill `<skill_name>`'."""
