@@ -2,7 +2,7 @@
 
 This module formats SystemTranscriptEntry-derived content types to HTML.
 Part of the thematic formatter organization:
-- system_formatters.py: SystemMessage, HookSummaryMessage
+- system_formatters.py: SystemMessage, HookSummaryMessage, AwaySummaryMessage
 - user_formatters.py: SlashCommandMessage, CommandOutputMessage, etc.
 - assistant_formatters.py: AssistantTextMessage, ThinkingMessage, ImageContent
 - tool_formatters.py: tool use/result content
@@ -11,7 +11,9 @@ Part of the thematic formatter organization:
 import html
 
 from .ansi_colors import convert_ansi_to_html
+from .utils import render_markdown
 from ..models import (
+    AwaySummaryMessage,
     HookSummaryMessage,
     SessionHeaderMessage,
     SystemMessage,
@@ -91,6 +93,25 @@ def format_hook_summary_content(content: HookSummaryMessage) -> str:
 </details>"""
 
 
+def format_away_summary_content(content: AwaySummaryMessage) -> str:
+    """Format an away_summary recap as HTML.
+
+    Renders Claude's narrative recap as markdown — the harness emits
+    short prose that may include light markdown (lists, code spans).
+    The "📝 Recap" label is supplied by the message header (icon from
+    get_message_emoji + title_AwaySummaryMessage); the body is plain
+    rendered markdown so block elements (<p>, <ul>) sit at the same
+    level rather than inline beside a stray <strong>.
+
+    Args:
+        content: AwaySummaryMessage with recap text.
+
+    Returns:
+        Rendered markdown HTML.
+    """
+    return render_markdown(content.text)
+
+
 def _team_badge(team_name: str) -> str:
     """Render a colored 'Team: …' pill for the session header (teammates feature).
 
@@ -166,5 +187,6 @@ def format_session_header_content(content: SessionHeaderMessage) -> str:
 __all__ = [
     "format_system_content",
     "format_hook_summary_content",
+    "format_away_summary_content",
     "format_session_header_content",
 ]

@@ -46,7 +46,8 @@ JSONL Parsing (parser.py)
 │
 ├── SystemTranscriptEntry
 │   ├── SystemMessage (level: info/warning/error)
-│   └── HookSummaryMessage (subtype: stop_hook_summary)
+│   ├── HookSummaryMessage (subtype: stop_hook_summary)
+│   └── AwaySummaryMessage (subtype: away_summary)
 │
 ├── SummaryTranscriptEntry → Session metadata (not rendered)
 │
@@ -117,6 +118,7 @@ CSS classes are derived from the content type using `CSS_CLASS_REGISTRY` (in `ht
 | `"system system-warning"` | `SystemMessage` | `level="warning"` |
 | `"system system-error"` | `SystemMessage` | `level="error"` |
 | `"system system-hook"` | `HookSummaryMessage` | — |
+| `"system system-away-summary"` | `AwaySummaryMessage` | — |
 
 The `sidechain` modifier is added when `msg.is_sidechain=True` (a cross-cutting concern that applies to any message type).
 
@@ -658,6 +660,7 @@ System transcript entries (`type: "system"`) convey notifications and hook summa
 System messages are parsed into structured content models in `models.py`:
 - **SystemMessage**: For info/warning/error messages
 - **HookSummaryMessage**: For hook execution summaries
+- **AwaySummaryMessage**: For away_summary recap entries
 
 ## 3.2 System Info/Warning/Error → SystemMessage
 
@@ -696,6 +699,30 @@ class HookSummaryMessage(MessageContent):
     has_output: bool
     hook_errors: List[str]
     hook_infos: List[HookInfo]
+```
+
+## 3.4 Away Summary (Recap) → AwaySummaryMessage
+
+- **Content Model**: `AwaySummaryMessage` (models.py)
+- **Condition**: `subtype: "away_summary"`
+- **CSS Class**: `system system-away-summary`
+- **Header**: `📝 Recap` (icon from `get_message_emoji`, title from `title_AwaySummaryMessage`)
+- **Detail levels**: kept at FULL/HIGH (narrative content), dropped at LOW/MINIMAL/USER_ONLY (alongside bash/thinking)
+
+Claude Code emits these system entries when a session resumes after a break — narrative prose summarising recent activity. The factory strips a trailing `" (disable recaps in /config)"` UI hint when present (suffix-match, not global) so all renderers inherit the polished form.
+
+```python
+@dataclass
+class AwaySummaryMessage(MessageContent):
+    text: str  # markdown-eligible recap body
+```
+
+```json
+{
+  "type": "system",
+  "subtype": "away_summary",
+  "content": "We're adding a project-level layout to validate projectId in the prepare route tree …"
+}
 ```
 
 ---
@@ -763,6 +790,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     # System message types
     SystemMessage: ["system"],  # level added dynamically
     HookSummaryMessage: ["system", "system-hook"],
+    AwaySummaryMessage: ["system", "system-away-summary"],
     # User message types
     UserTextMessage: ["user"],
     UserSteeringMessage: ["user", "steering"],
@@ -920,7 +948,7 @@ Sub-agent messages (from `Task` tool):
 - [models.py](../claude_code_log/models.py) - Pydantic models for transcript data
 - [renderer.py](../claude_code_log/renderer.py) - Main rendering module
 - [html/](../claude_code_log/html/) - HTML-specific formatters (formatting only, content models in models.py)
-  - [system_formatters.py](../claude_code_log/html/system_formatters.py) - SystemMessage, HookSummaryMessage formatting
+  - [system_formatters.py](../claude_code_log/html/system_formatters.py) - SystemMessage, HookSummaryMessage, AwaySummaryMessage formatting
   - [user_formatters.py](../claude_code_log/html/user_formatters.py) - User message formatting
   - [assistant_formatters.py](../claude_code_log/html/assistant_formatters.py) - AssistantTextMessage, ThinkingMessage, ImageContent formatting
   - [tool_formatters.py](../claude_code_log/html/tool_formatters.py) - Tool use/result formatting

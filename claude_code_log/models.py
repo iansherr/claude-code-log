@@ -406,6 +406,27 @@ class HookSummaryMessage(MessageContent):
         return "system"
 
 
+@dataclass
+class AwaySummaryMessage(MessageContent):
+    """Recap of recent activity, emitted by Claude Code's "away_summary" feature.
+
+    Used for system entries with subtype="away_summary" — narrative prose
+    summarising what the assistant was doing, intended to surface when the
+    user comes back to a session. Distinct from HookSummaryMessage (tool noise)
+    and the level-bearing SystemMessage (info/warning/error).
+    """
+
+    text: str  # Recap prose; may contain light markdown.
+
+    @property
+    def message_type(self) -> str:
+        return "system"
+
+    @property
+    def has_markdown(self) -> bool:
+        return True
+
+
 # =============================================================================
 # User Message Content Models
 # =============================================================================

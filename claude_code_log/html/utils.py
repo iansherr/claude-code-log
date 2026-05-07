@@ -24,6 +24,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from .renderer_code import highlight_code_with_pygments, truncate_highlighted_preview
 from ..models import (
     AssistantTextMessage,
+    AwaySummaryMessage,
     BashInputMessage,
     BashOutputMessage,
     CommandOutputMessage,
@@ -59,6 +60,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     # System message types
     SystemMessage: ["system"],  # level added dynamically
     HookSummaryMessage: ["system", "system-hook"],
+    AwaySummaryMessage: ["system", "system-away-summary"],
     # User message types
     UserTextMessage: ["user"],
     UserSteeringMessage: ["user", "steering"],
@@ -185,6 +187,13 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
             return "🔗"
         return "🤖"
     elif msg_type == "system":
+        # Recap entries (away_summary) carry the same `system` message_type
+        # as generic system info but are content, not noise. Give them a
+        # distinct memo glyph so they read at-a-glance in scrolling lists,
+        # and drop the matching label from the body chrome (one icon, one
+        # title — see format_away_summary_content).
+        if isinstance(msg.content, AwaySummaryMessage):
+            return "📝"
         return "⚙️"
     elif msg_type == "tool_use":
         return "🛠️"

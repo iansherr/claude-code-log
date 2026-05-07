@@ -17,6 +17,7 @@ from ..html.utils import is_well_formed_html, render_user_markdown
 from ..utils import generate_unified_diff, strip_error_tags
 from ..models import (
     AssistantTextMessage,
+    AwaySummaryMessage,
     BashInputMessage,
     BashOutputMessage,
     CommandOutputMessage,
@@ -455,6 +456,12 @@ class MarkdownRenderer(Renderer):
         if "\n" in content.text:
             return f"{level_prefix}\n{self._code_fence(content.text)}"
         return f"{level_prefix} {content.text}"
+
+    def format_AwaySummaryMessage(
+        self, content: AwaySummaryMessage, _: TemplateMessage
+    ) -> str:
+        """Format → '📝 Recap: <text>'."""
+        return f"📝 Recap: {content.text}"
 
     def format_HookSummaryMessage(
         self, content: HookSummaryMessage, _: TemplateMessage

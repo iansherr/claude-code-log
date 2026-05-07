@@ -31,6 +31,7 @@ This document provides a comprehensive reference for CSS class combinations used
 | `image` | User-attached image | ✅ Full |
 | `session-header` | Session header divider | ✅ Full |
 | `system` | System message (user-initiated) | ✅ Full |
+| `system-away-summary` | Away-summary recap | ✅ Full |
 | `system-error` | System error (assistant-generated) | ✅ Full |
 | `system-info` | System info message | ✅ Full |
 | `system-warning` | System warning (assistant-generated) | ✅ Full |
@@ -57,6 +58,7 @@ This document provides a comprehensive reference for CSS class combinations used
 | `steering` | `user` | User steering via queue operation |
 | `system-info` | `system` | System info level |
 | `system-hook` | `system` | Hook execution summary |
+| `system-away-summary` | `system` | Away-summary recap (left-aligned, narrative) |
 
 ---
 
@@ -159,6 +161,7 @@ The fold-bar component uses `data-border-color` attribute to style borders based
 - `image sidechain`
 - `session-header`
 - `system`
+- `system-away-summary`
 - `system-error`
 - `system-info`
 - `system-warning`

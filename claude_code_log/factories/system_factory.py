@@ -3,6 +3,7 @@
 This module handles creation of MessageContent from SystemTranscriptEntry:
 - SystemMessage: Regular system messages with level (info, warning, error)
 - HookSummaryMessage: Hook execution summaries
+- AwaySummaryMessage: Recap entries (subtype="away_summary")
 
 Also provides:
 - is_system_message: Check if text content is a system message to filter
@@ -11,6 +12,7 @@ Also provides:
 from typing import Optional, Union
 
 from ..models import (
+    AwaySummaryMessage,
     HookInfo,
     HookSummaryMessage,
     SystemMessage,
@@ -43,19 +45,21 @@ def is_system_message(text_content: str) -> bool:
 
 def create_system_message(
     transcript: SystemTranscriptEntry,
-) -> Optional[Union[SystemMessage, HookSummaryMessage]]:
+) -> Optional[Union[SystemMessage, HookSummaryMessage, AwaySummaryMessage]]:
     """Create a MessageContent from a system transcript entry.
 
     Handles:
     - Hook summaries (subtype="stop_hook_summary")
+    - Recap entries (subtype="away_summary")
     - Regular system messages with level-specific styling (info, warning, error)
 
     Args:
         transcript: The system transcript entry to process
 
     Returns:
-        SystemMessage or HookSummaryMessage (with meta attached),
-        or None if the message should be skipped (e.g., silent hook successes)
+        SystemMessage, HookSummaryMessage, or AwaySummaryMessage
+        (with meta attached), or None if the message should be skipped
+        (e.g., silent hook successes).
 
     Note:
         Slash command messages (<command-name>, <local-command-stdout>) are user messages,
@@ -76,6 +80,26 @@ def create_system_message(
             hook_errors=transcript.hookErrors or [],
             hook_infos=hook_infos,
             meta=meta,
+        )
+
+    # Recap / "away_summary": Claude Code emits a narrative recap of recent
+    # activity (issue #111). Distinct enough from level-bearing system info
+    # to warrant its own content type — different visual treatment, and a
+    # natural seed for future activity-summary surfaces.
+    if transcript.subtype == "away_summary":
+        if not transcript.content:
+            return None
+        # Strip the trailing UI hint Claude Code appends ("… (disable recaps
+        # in /config)"). Boilerplate in a live TUI; pure noise in a rendered
+        # transcript. Matched as a suffix (not a global replace) so the
+        # phrase is still preserved if it appears mid-recap.
+        text = transcript.content
+        hint_suffix = " (disable recaps in /config)"
+        if text.endswith(hint_suffix):
+            text = text[: -len(hint_suffix)]
+        return AwaySummaryMessage(
+            text=text,
+            meta=create_meta(transcript),
         )
 
     if not transcript.content:

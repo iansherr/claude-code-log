@@ -36,6 +36,7 @@ from .models import (
     UsageInfo,
     # Structured content types
     AssistantTextMessage,
+    AwaySummaryMessage,
     BashInputMessage,
     BashOutputMessage,
     CommandOutputMessage,
@@ -1119,7 +1120,13 @@ def _fork_point_preview(fork_msg: "TemplateMessage", ctx: RenderingContext) -> s
     # Walk up past system hooks to find a meaningful message
     for _ in range(3):  # limit walk depth
         if not isinstance(
-            msg.content, (SystemMessage, HookSummaryMessage, SessionHeaderMessage)
+            msg.content,
+            (
+                SystemMessage,
+                HookSummaryMessage,
+                AwaySummaryMessage,
+                SessionHeaderMessage,
+            ),
         ):
             break
         # Find parent by looking at parent_uuid
@@ -2778,8 +2785,14 @@ _HIGH_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
     UnknownMessage,
 )
 
+# AwaySummaryMessage is intentionally absent from _HIGH_EXCLUDE_CLASSES:
+# recaps are narrative content (has_markdown=True, assistant-side visual
+# treatment), not noise. They're kept at HIGH and dropped from LOW down,
+# alongside bash/thinking. The pre-render `_filter_by_detail` carries a
+# matching whitelist for SystemTranscriptEntry with subtype="away_summary".
 _LOW_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
     *_HIGH_EXCLUDE_CLASSES,
+    AwaySummaryMessage,
     BashInputMessage,
     BashOutputMessage,
     ThinkingMessage,
@@ -2841,7 +2854,19 @@ def _filter_by_detail(
     filtered: list[TranscriptEntry] = []
     for message in messages:
         # HIGH/LOW/MINIMAL/USER_ONLY: drop system entries (factory creates SystemMessage)
+        # — except `away_summary` recaps at HIGH detail. Recaps are
+        # narrative content (Claude summarising recent activity); the
+        # post-render `_HIGH_EXCLUDE_CLASSES` keeps them by intentionally
+        # omitting AwaySummaryMessage, but they'd never reach that filter
+        # without this pre-render whitelist. At LOW and below, recaps are
+        # dropped along with bash/thinking via `_LOW_EXCLUDE_CLASSES`.
         if not isinstance(message, allowed_types):
+            if (
+                detail == DetailLevel.HIGH
+                and isinstance(message, SystemTranscriptEntry)
+                and message.subtype == "away_summary"
+            ):
+                filtered.append(message)
             continue
         # queue-operation entries don't have `.message` or `.isSidechain` —
         # they are appended verbatim for downstream conversion.
@@ -3771,6 +3796,11 @@ class Renderer:
         self, _content: HookSummaryMessage, _: TemplateMessage
     ) -> str:
         return "System Hook"
+
+    def title_AwaySummaryMessage(
+        self, _content: AwaySummaryMessage, _: TemplateMessage
+    ) -> str:
+        return "Recap"
 
     def title_SlashCommandMessage(
         self, content: SlashCommandMessage, _message: TemplateMessage
