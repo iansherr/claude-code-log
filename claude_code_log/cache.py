@@ -126,17 +126,24 @@ class ProjectCache(BaseModel):
 
 
 def _scrub_surrogates(s: Optional[str]) -> Optional[str]:
-    """Round-trip a string through UTF-8 with ``errors="replace"``.
+    """Replace lone surrogates (U+DC80…U+DCFF) with U+FFFD.
 
-    Strips lone surrogates (U+DC80…U+DCFF) that may have leaked in via
-    ``surrogateescape``-decoded JSONL data — sqlite3's text-binding path
-    raises ``UnicodeEncodeError`` on these the moment we try to persist
-    them. Same root cause as #139's HTML write-side fix; this is the
-    cache-DB-side companion.
+    Lone surrogates that leak in via ``surrogateescape``-decoded JSONL
+    data crash sqlite3's text-binding path with ``UnicodeEncodeError``
+    the moment we try to persist them. Same root-cause family as #139's
+    HTML write-side fix; this is the cache-DB-side companion.
+
+    Encoding via ``surrogateescape`` (which round-trips lone surrogates
+    back to their raw bytes — ``\\udcb2`` → ``b"\\xb2"``) followed by
+    decoding with ``errors="replace"`` substitutes the invalid byte
+    sequences with the canonical Unicode replacement character U+FFFD
+    (``\\ufffd``). The simpler ``encode(..., errors="replace")``
+    round-trip would emit ASCII ``?`` (U+003F) instead — also valid
+    UTF-8, but a less informative sentinel.
     """
     if s is None:
         return None
-    return s.encode("utf-8", errors="replace").decode("utf-8")
+    return s.encode("utf-8", errors="surrogateescape").decode("utf-8", errors="replace")
 
 
 def get_library_version() -> str:
