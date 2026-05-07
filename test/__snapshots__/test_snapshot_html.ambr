@@ -3331,7 +3331,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -9029,7 +9035,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -16774,7 +16786,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -22577,7 +22595,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -28611,7 +28635,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -34513,7 +34543,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
@@ -40474,7 +40510,13 @@
                   // Check for sidechain first (sub-assistant messages)
                   if (classList.includes('sidechain')) {
                       messageType = 'sidechain';
-                  } else if (classList.includes('system-warning') || classList.includes('system-error') || classList.includes('system-info')) {
+                  } else if (classList.some(c => c.startsWith('system-'))) {
+                      // Drift-proof: any `system-*` modifier (system-info,
+                      // system-warning, system-error, system-away-summary, …)
+                      // funnels into the timeline's `system` row, so a new
+                      // SystemMessage subclass added by renderer.py /
+                      // CSS_CLASS_REGISTRY shows up automatically without
+                      // touching this enumeration.
                       messageType = 'system';
                   } else if (classList.includes('slash-command')) {
                       messageType = 'slash-command';
