@@ -1012,6 +1012,78 @@ class TestFormatSystemContent:
         assert out.startswith("<strong>⚠️</strong>")
 
 
+class TestMarkdownFormatSystemMessage:
+    """Markdown mirror of the HTML ``format_system_content`` test.
+
+    Multi-line system content (``/context`` ASCII grid, etc.) wraps in
+    a fenced code block so CommonMark preserves whitespace and grid
+    alignment. Single-line content keeps inline rendering. The fence
+    widens adaptively past any backtick run in the body via the
+    existing ``_code_fence`` helper.
+    """
+
+    @staticmethod
+    def _render(text: str, level: str = "info") -> str:
+        from claude_code_log.markdown.renderer import MarkdownRenderer
+        from claude_code_log.models import MessageMeta, SystemMessage
+        from claude_code_log.renderer import TemplateMessage
+
+        msg = TemplateMessage(
+            SystemMessage(
+                level=level,
+                text=text,
+                meta=MessageMeta(
+                    session_id="s", timestamp="2026-04-28T10:00:00Z", uuid="u"
+                ),
+            )
+        )
+        renderer = MarkdownRenderer()
+        return renderer.format_SystemMessage(msg.content, msg)  # type: ignore[arg-type]
+
+    def test_single_line_renders_inline(self):
+        out = self._render("/status")
+        # Inline shape: icon + space + text. No fence, no newline at start.
+        assert "```" not in out
+        assert out == "ℹ️ /status"
+
+    def test_multiline_wraps_in_fenced_block(self):
+        text = "Context Usage\nline 1\nline 2\nline 3"
+        out = self._render(text)
+        # Default fence is 3 ticks (no backticks in payload).
+        assert "```\nContext Usage\nline 1\nline 2\nline 3\n```" in out
+        # Icon precedes the fence on its own line so CommonMark renders
+        # the icon as a paragraph above the code block.
+        assert out.startswith("ℹ️\n")
+
+    def test_multiline_warning_uses_warning_icon(self):
+        out = self._render("warn: line 1\nwarn: line 2", level="warning")
+        assert "```" in out
+        assert out.startswith("⚠️\n")
+
+    def test_multiline_with_backticks_widens_fence(self):
+        """Defensive: backticks in the body must not break the fence.
+
+        Unlikely for `/context` ASCII grids, but `_code_fence` widens
+        past any backtick run — pin the contract via a regression test.
+        """
+        text = "header\nuse `code` like ``this``\nfooter"
+        out = self._render(text)
+        # Longest tick run is 2; fence must be >= 3 (which is also the
+        # default minimum). Use 4 to robustly exceed the longest run.
+        # Either way, a literal ``\n```\n`` (3-tick) inside the payload
+        # would be ambiguous, but the body has no triple-tick run, so
+        # the default 3-tick fence is sufficient. Verify the body
+        # round-trips inside *some* fence pair.
+        assert text in out
+        # Sanity: the payload doesn't fragment — the body is bounded by
+        # matching opening and closing fences with the same width.
+        import re
+
+        m = re.search(r"(`{3,})\n(.*?)\n\1", out, re.DOTALL)
+        assert m is not None, f"Expected fenced block in: {out!r}"
+        assert m.group(2) == text
+
+
 class TestGetWarmupSessionIds:
     """Test bulk warmup session ID detection."""
 

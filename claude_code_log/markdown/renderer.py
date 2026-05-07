@@ -437,10 +437,23 @@ class MarkdownRenderer(Renderer):
     # -------------------------------------------------------------------------
 
     def format_SystemMessage(self, content: SystemMessage, _: TemplateMessage) -> str:
-        """Format → 'ℹ️ message text'."""
+        """Format → ``ℹ️ message text`` for one-liners; for multi-line
+        content (e.g. ``/context`` ASCII grid), wrap the body in an
+        adaptive fenced code block so CommonMark preserves whitespace
+        and grid alignment.
+
+        Mirrors the HTML side's ``<pre class='system-content'>`` shape.
+        Without the fence, CommonMark collapses internal newlines into
+        spaces unless every line ends with two trailing spaces — wrong
+        for grid content. ``_code_fence`` widens the fence past any
+        backtick run in the body (defensive — unlikely in `/context`
+        grids but free given the helper).
+        """
         level_prefix = {"info": "ℹ️", "warning": "⚠️", "error": "❌"}.get(
             content.level, ""
         )
+        if "\n" in content.text:
+            return f"{level_prefix}\n{self._code_fence(content.text)}"
         return f"{level_prefix} {content.text}"
 
     def format_HookSummaryMessage(
