@@ -116,16 +116,26 @@ just test-cov
 Snapshot tests detect unintended HTML output changes using [syrupy](https://github.com/syrupy-project/syrupy):
 
 ```bash
-# Run snapshot tests
+# Run snapshot tests (parallel mode is fine for read-only runs)
 uv run pytest -n auto test/test_snapshot_html.py -v
 
 # Update snapshots after intentional HTML changes
-uv run pytest -n auto test/test_snapshot_html.py --snapshot-update
+# IMPORTANT: run --snapshot-update WITHOUT -n auto (see warning below)
+uv run pytest test/test_snapshot_html.py --snapshot-update
 ```
+
+> **Warning — don't combine `--snapshot-update` with `-n auto`.** Syrupy
+> and pytest-xdist race when writing snapshot files in parallel: the
+> `.ambr` file ends up truncated (observed: ~6000 lines silently
+> deleted on a single run, leaving the file structurally broken but
+> still passing on next read). Run `--snapshot-update` serially. This
+> is also why pytest is **not** configured with a default `-n auto`
+> in `pyproject.toml`; the `just test` recipes opt in for read-only
+> runs where the race doesn't apply.
 
 When snapshot tests fail:
 1. Review the diff to verify changes are intentional
-2. If intentional, run `--snapshot-update` to accept new output
+2. If intentional, run `--snapshot-update` (serially) to accept new output
 3. If unintentional, fix your code and re-run tests
 
 ### Test Prerequisites

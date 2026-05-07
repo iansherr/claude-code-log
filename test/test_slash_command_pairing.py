@@ -428,11 +428,23 @@ class TestSystemMessageChainPairing:
 
     @staticmethod
     def _system_pair_classes(html: str) -> list[str]:
-        """Extract pair-role keywords from each system message div."""
+        """Extract pair-role keywords from each system message div.
+
+        The Jinja template currently emits single-quoted class
+        attributes, but accept either quote style so the helper does
+        not silently miss future template changes (and so the test
+        fails loudly if the template starts emitting nothing at all,
+        rather than fails noisily several layers downstream).
+        """
         import re
 
+        # Match either ``class='message system ...'`` or
+        # ``class="message system ..."`` — the quote at the start of
+        # the class attribute is captured and required to match at the
+        # close (back-reference).
+        pattern = re.compile(r"""<div class=(['"])message system [^'"]*\1""")
         roles: list[str] = []
-        for m in re.finditer(r"<div class='message system [^']*'", html):
+        for m in pattern.finditer(html):
             cls = m.group(0)
             for role in ("pair_first", "pair_middle", "pair_last"):
                 if role in cls:
@@ -440,6 +452,11 @@ class TestSystemMessageChainPairing:
                     break
             else:
                 roles.append("none")
+        # Defensive: every test in this class drives a fixture with at
+        # least one system message; an empty list almost certainly means
+        # the template stopped emitting the expected shape, not that
+        # the renderer's behaviour changed.
+        assert roles, "expected at least one system message div in rendered HTML"
         return roles
 
     def test_chain_of_four_pairs_into_two_doubles(self, tmp_path) -> None:
