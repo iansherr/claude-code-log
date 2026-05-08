@@ -469,16 +469,20 @@ class MarkdownRenderer(Renderer):
     def format_HookSummaryMessage(
         self, content: HookSummaryMessage, _: TemplateMessage
     ) -> str:
-        """Format → 'Hook produced output\\n❌ Error: ...'."""
+        """Format → command list + errors (no redundant "Hook produced output").
+
+        Mirrors the HTML side: the message title already carries the
+        🪝 + "System Hook" header, so the body drops the generic
+        subhead and only emits actual content (commands, errors).
+        Returns empty when there's nothing useful to show.
+        """
         parts: list[str] = []
-        if content.has_output:
-            parts.append("Hook produced output")
+        if content.hook_infos:
+            for info in content.hook_infos:
+                parts.append(f"`{info.command}`")
         if content.hook_errors:
             for error in content.hook_errors:
                 parts.append(f"❌ Error: {error}")
-        if content.hook_infos:
-            for info in content.hook_infos:
-                parts.append(f"ℹ️ {info}")
         return "\n\n".join(parts) if parts else ""
 
     def format_HookAttachmentMessage(

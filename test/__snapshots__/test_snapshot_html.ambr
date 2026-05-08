@@ -754,6 +754,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -6539,6 +6542,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -14371,6 +14377,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -20261,6 +20270,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -26382,6 +26394,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -32371,6 +32386,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of
@@ -38419,6 +38437,9 @@
   
   .hook-attachment-stderr {
       border-left: 3px solid var(--warning-dimmed);
+      /* Existing 0.5em padding-left butts text up against the warning
+         bar; bump it by 3px so the border breathes. */
+      padding-left: calc(0.5em + 3px);
   }
   
   /* Away-summary (recap) styling — assistant-authored narrative recap of

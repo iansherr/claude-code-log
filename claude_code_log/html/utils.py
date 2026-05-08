@@ -196,10 +196,11 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
         # title — see format_away_summary_content).
         if isinstance(msg.content, AwaySummaryMessage):
             return "📝"
-        # Hook attachments (issue #128) get a hook glyph so they're
-        # visually distinct from generic system info in long
-        # full-detail transcripts.
-        if isinstance(msg.content, HookAttachmentMessage):
+        # Hook entries (both the typed attachment from #128 and the
+        # legacy stop_hook_summary system entry) get a hook glyph at
+        # the title level so the body summary doesn't have to repeat
+        # "🪝 Hook output" as a redundant subheader.
+        if isinstance(msg.content, (HookAttachmentMessage, HookSummaryMessage)):
             return "🪝"
         return "⚙️"
     elif msg_type == "tool_use":

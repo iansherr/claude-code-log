@@ -252,7 +252,12 @@ class TestHookAttachmentFormatter:
         html = format_hook_attachment_content(msg)
         assert "Hook blocked" in html
         assert "ruff format failed" in html
-        assert "🚨" in html
+        # The body deliberately omits an icon — the message header
+        # already shows 🪝 / 🚨 via title_HookAttachmentMessage +
+        # get_message_emoji, and doubling it inside <summary> reads as
+        # visual noise.
+        assert "🚨" not in html
+        assert "🪝" not in html
 
     def test_format_additional_context_label(self) -> None:
         msg = self._meta_only(

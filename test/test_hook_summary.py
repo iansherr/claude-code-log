@@ -159,14 +159,16 @@ class TestHookSummaryRendering:
         parsed_messages = [create_transcript_entry(msg) for msg in messages]
         html = generate_html(parsed_messages)
 
-        # Should contain hook summary elements
+        # Should contain hook summary elements; the body deliberately
+        # drops the redundant "🪝 Hook failed" subhead the message
+        # header already conveys.
         assert "hook-summary" in html
-        assert "Hook failed" in html
         assert "pnpm lint" in html
         assert "Error: lint failed" in html
+        assert "Hook failed" not in html  # subhead removed
 
     def test_hook_with_output_but_no_errors_rendered(self):
-        """Test that hooks with output but no errors are rendered."""
+        """Test that hooks with commands but no errors render the command preview."""
         messages = [
             {
                 "parentUuid": None,
@@ -191,9 +193,11 @@ class TestHookSummaryRendering:
         parsed_messages = [create_transcript_entry(msg) for msg in messages]
         html = generate_html(parsed_messages)
 
-        # Should contain hook summary elements
+        # Should contain hook summary elements; body summary line is
+        # the command itself, not a generic "Hook output" label.
         assert "hook-summary" in html
-        assert "Hook output" in html  # Not "Hook failed" since no errors
+        assert "echo &#x27;formatted&#x27;" in html  # html-escaped command
+        assert "Hook output" not in html  # subhead removed
 
     def test_hook_with_ansi_errors_rendered(self):
         """Test that ANSI codes in hook errors are converted to HTML."""

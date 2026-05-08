@@ -50,49 +50,69 @@ def format_system_content(content: SystemMessage) -> str:
 
 
 def format_hook_summary_content(content: HookSummaryMessage) -> str:
-    """Format a hook summary as collapsible details.
+    """Format a hook summary as collapsible details (or empty).
 
-    Shows a compact summary with expandable hook commands and error output.
+    The message header already carries 🪝 + "System Hook" via
+    ``get_message_emoji`` + ``title_HookSummaryMessage``, so the body
+    deliberately omits the icon and the generic "Hook output" /
+    "Hook failed" label that used to live in ``<summary>``. Visible
+    body content is the actual signal: the hook command(s) on the
+    summary line, and any error output expanded inside.
+
+    Returns ``""`` when there's nothing useful to show (no commands
+    and no errors) — the title-only render is the user-facing signal
+    in that case. Matches the visual treatment HookAttachmentMessage
+    grew in #128.
 
     Args:
         content: HookSummaryMessage with execution details
 
     Returns:
-        HTML with collapsible details section
+        HTML with collapsible details section, or empty string.
     """
-    # Determine if this is a failure or just output
     has_errors = bool(content.hook_errors)
-    summary_icon = "🪝"
-    summary_text = "Hook failed" if has_errors else "Hook output"
+    commands = [info.command for info in (content.hook_infos or [])]
 
-    # Build the command section
-    command_html = ""
-    if content.hook_infos:
-        command_html = '<div class="hook-commands">'
-        for info in content.hook_infos:
-            # Truncate very long commands
-            cmd = info.command
+    if not commands and not has_errors:
+        # Nothing to surface beyond the title; render empty so the
+        # message reads as a single-line header rather than a card
+        # with a redundant "Hook output" subhead.
+        return ""
+
+    # Summary line: short preview of the first command (or a generic
+    # "errors" label when there's no command but we do have errors).
+    if commands:
+        first = commands[0]
+        display_first = first if len(first) <= 80 else first[:77] + "..."
+        summary = f"<code>{html.escape(display_first)}</code>"
+        if len(commands) > 1:
+            summary += (
+                f' <span class="hook-attachment-meta">'
+                f"(+{len(commands) - 1} more)</span>"
+            )
+    else:
+        summary = "<em>errors</em>"
+
+    # Body: full command list (only if more than one — single command
+    # is already in the summary) plus error output.
+    body_parts: list[str] = []
+    if len(commands) > 1:
+        body_parts.append('<div class="hook-commands">')
+        for cmd in commands:
             display_cmd = cmd if len(cmd) <= 100 else cmd[:97] + "..."
-            command_html += f"<code>{html.escape(display_cmd)}</code>"
-        command_html += "</div>"
-
-    # Build the error output section
-    error_html = ""
-    if content.hook_errors:
-        error_html = '<div class="hook-errors">'
+            body_parts.append(f"<code>{html.escape(display_cmd)}</code>")
+        body_parts.append("</div>")
+    if has_errors:
+        body_parts.append('<div class="hook-errors">')
         for err in content.hook_errors:
-            # Convert ANSI codes in error output
             formatted_err = convert_ansi_to_html(err)
-            error_html += f'<pre class="hook-error">{formatted_err}</pre>'
-        error_html += "</div>"
+            body_parts.append(f'<pre class="hook-error">{formatted_err}</pre>')
+        body_parts.append("</div>")
 
-    return f"""<details class="hook-summary">
-<summary><strong>{summary_icon}</strong> {summary_text}</summary>
-<div class="hook-details">
-{command_html}
-{error_html}
-</div>
-</details>"""
+    body = (
+        f'<div class="hook-details">{"".join(body_parts)}</div>' if body_parts else ""
+    )
+    return f'<details class="hook-summary"><summary>{summary}</summary>{body}</details>'
 
 
 def format_hook_attachment_content(content: HookAttachmentMessage) -> str:
@@ -109,9 +129,9 @@ def format_hook_attachment_content(content: HookAttachmentMessage) -> str:
     Returns:
         HTML for a ``<details>`` block with header summary and body.
     """
-    is_error = content.kind in ("blocking_error", "non_blocking_error")
-    summary_icon = "🚨" if is_error else "🪝"
-
+    # No body-level icon: the message header already carries 🪝 (or 🚨
+    # via the title pathway), and doubling it inside the <summary> reads
+    # as visual noise.
     if content.kind == "blocking_error":
         summary_label = "Hook blocked"
     elif content.kind == "non_blocking_error":
@@ -173,8 +193,7 @@ def format_hook_attachment_content(content: HookAttachmentMessage) -> str:
     )
     return (
         f'<details class="hook-attachment">'
-        f"<summary><strong>{summary_icon}</strong> "
-        f"{summary_label}{header_extra}</summary>"
+        f"<summary><strong>{summary_label}</strong>{header_extra}</summary>"
         f"{body}"
         "</details>"
     )
