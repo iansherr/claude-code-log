@@ -193,7 +193,7 @@ def format_hook_attachment_content(content: HookAttachmentMessage) -> str:
     )
     return (
         f'<details class="hook-attachment">'
-        f"<summary><strong>{summary_label}</strong>{header_extra}</summary>"
+        f"<summary>{summary_label}{header_extra}</summary>"
         f"{body}"
         "</details>"
     )

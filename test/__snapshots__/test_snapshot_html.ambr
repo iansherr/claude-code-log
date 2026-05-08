@@ -714,13 +714,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -6515,13 +6515,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -14363,13 +14363,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -20269,13 +20269,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -26406,13 +26406,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -32411,13 +32411,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
@@ -38475,13 +38475,13 @@
      reads as "secondary signal" without losing the affordance. */
   div.system-hook-attachment,
   div.system-hook {
-      font-size: 70%;
-      opacity: 0.9;
+      font-size: 75%;
+      opacity: 65%;
   }
   
   div.system-hook-attachment .header,
   div.system-hook .header {
-      font-weight: 400;
+      font-weight: 500;
   }
   
   .hook-attachment {
