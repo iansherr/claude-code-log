@@ -392,6 +392,45 @@ Run 3 (--output /tmp/A):  ~2.3s (same — A's existing files
 - **Archived projects with `--output`** — index links point to projected paths whose files won't exist until the user re-renders. Two plausible mitigations: exclude archived projects from the index in `--output` mode, or always link to the original on-disk location regardless of `--output` / `--expand-paths`. (Surfaced by monk; left for follow-up.)
 - **`_peek_jsonl_for_cwd` debug logging** — current shape is silent on tier-2→tier-3 fallthroughs; a `logger.debug(...)` would help when someone is debugging an unexpected naive-tier hit. Zero-noise default kept.
 
+### User-surfaced ergonomics gaps
+
+#### Absolute `--filter-path` without `--expand-paths` silently excludes everything
+
+Symmetric inverse of the footgun monk caught (relative `--filter-path` with `--expand-paths` excludes everything via `Path.relative_to`). Reproduced empirically:
+
+```
+$ uv run claude-code-log -o .examples/.../ccl --all-projects \
+      --filter-path /home/cboos/Workspace/github/daain \
+      --detail low --compact --format md
+Processed 665 projects in 1.3s
+  Index regenerated
+$ ls .examples/.../ccl
+index.md   # ← no per-project output
+```
+
+The Q2 resolution says: without `--expand-paths`, the filter matches against the encoded flat dir name (`-home-cboos-...`). An absolute path starting with `/` matches no encoded name, so all 665 projects filter out. No error, no warning — only the index lands.
+
+Two fixes to consider (same shape as the existing footgun guards):
+
+- **(A) Reject** at click parse time when `--filter-path.startswith("/")` and `--expand-paths` is unset. Symmetric with monk's relative-filter rejection.
+- **(B) Auto-imply `--expand-paths`** when `--filter-path` is absolute. Friendlier; encoded-form filtering is the niche case.
+
+Lean toward (B). Either is straightforward.
+
+#### `--filter-path` and `--expand-paths` should imply `--all-projects`
+
+Without `--all-projects`, both flags are no-ops (currently warned-about, but no auto-elevation). What would a user reasonably expect from `--filter-path /home/joe` other than "filter the projects under `/home/joe`"? There's nothing else to filter. Auto-imply rather than warn-and-ignore.
+
+#### `--expand-paths` for single-session / single-project mode
+
+Today `--expand-paths` is wired only through `process_projects_hierarchy`. Reasonable extension: when a single-session or single-project export is requested with `--output <dir>` and `--expand-paths`, project that one artefact into `<output>/<real-path>/<filename>` using the same path-projection helper. Same convention, same matrix shape — just narrower scope.
+
+#### `--dry-run` mode
+
+Show what would be generated (projected destinations, filter selections) without actually rendering or writing. Useful for sanity-checking a flag combination — especially with the path-projection logic where the destination depends on cache state and JSONL peek results. Pairs naturally with `--filter-path` + `--expand-paths` exploration.
+
+Implementation sketch: a top-level CLI flag that, when set, prints the per-project decision (`source -> dest` or `<source>: filter excluded`) and exits before any file I/O. Cheap to implement on top of `project_destination()` since the helper is already pure.
+
 ---
 
 ## Out of scope (mention for completeness)
