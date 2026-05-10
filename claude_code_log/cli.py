@@ -658,7 +658,13 @@ def main(
     # which raises ValueError for *any* mismatch including
     # "argument is relative" — so the silent failure mode is "every
     # project skipped". Reject up-front instead.
-    if filter_path and expand_paths and not Path(filter_path).is_absolute():
+    #
+    # `path_looks_absolute` is host-OS-agnostic (accepts POSIX `/`
+    # OR Windows `C:\` form), so a Linux-recorded `/home/joe`
+    # processed on Windows still passes the guard.
+    from .utils import path_looks_absolute as _path_looks_absolute
+
+    if filter_path and expand_paths and not _path_looks_absolute(filter_path):
         raise click.BadParameter(
             f"--filter-path must be an absolute path when --expand-paths is set; "
             f"got {filter_path!r}",

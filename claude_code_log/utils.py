@@ -155,7 +155,7 @@ def get_project_display_name(
         return display_name
 
 
-def _path_looks_absolute(s: str) -> bool:
+def path_looks_absolute(s: str) -> bool:
     """True if ``s`` looks like an absolute path on either POSIX or
     Windows. Decoupled from the host OS so JSONL-stored cwds don't
     silently mismatch when a Linux-recorded transcript is processed
@@ -243,7 +243,7 @@ def project_dir_to_real_path(
         real_dirs = [
             wd
             for wd in cached_working_directories
-            if not _is_temp_path(wd) and _path_looks_absolute(wd)
+            if not _is_temp_path(wd) and path_looks_absolute(wd)
         ]
         if real_dirs:
             return Path(real_dirs[0])
@@ -257,7 +257,7 @@ def project_dir_to_real_path(
             if jsonl_path.name.startswith("agent-"):
                 continue
             cwd_from_peek = _peek_jsonl_for_cwd(jsonl_path)
-            if cwd_from_peek and _path_looks_absolute(cwd_from_peek):
+            if cwd_from_peek and path_looks_absolute(cwd_from_peek):
                 return Path(cwd_from_peek)
             # First non-agent JSONL exhausted with no usable cwd —
             # bail out rather than scanning every file.
@@ -371,7 +371,12 @@ def project_destination(
         from pathlib import PurePosixPath, PureWindowsPath
 
         real_path = project_dir_to_real_path(project_dir, cached_working_directories)
-        real_str = str(real_path)
+        # `as_posix()` preserves the original form across platforms:
+        # POSIX-form paths stay `/home/...`, Windows-form paths stay
+        # `C:/Users/...`. The bare `str()` would convert `/home/joe`
+        # to `\home\joe` on Windows, which then mismatches our
+        # form-aware detection and joins to drive root.
+        real_str = real_path.as_posix()
         if filter_path:
             # Match using the same path-shape family as the real path
             # (POSIX-form `/home/joe` filters POSIX-form real paths;
