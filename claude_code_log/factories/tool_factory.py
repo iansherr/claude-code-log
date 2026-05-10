@@ -834,11 +834,20 @@ def parse_cronlist_output(
     text = _extract_tool_result_text(tool_result).strip()
     if not text:
         return None
+    # All-or-nothing: if any non-empty line fails to parse, bail out
+    # and let the renderer fall back to raw text. This avoids the
+    # partial-table failure mode where a 9-of-10-rows match would
+    # silently hide the 10th unparsed line behind a structured table.
+    # The renderer's ``if not output.jobs:`` branch already exists for
+    # the no-rows-at-all case; the same branch fires here when partial
+    # parsing happens. CR review on PR #152 (round 3).
     jobs: list[CronListItem] = []
     for line in text.splitlines():
+        if not line.strip():
+            continue  # Blank lines are noise, not data — skip without bailing.
         m = _CRON_LIST_LINE_RE.match(line)
         if not m:
-            continue
+            return CronListOutput(text=text, jobs=[])
         kind = m.group("kind")  # "recurring" or "one-shot"
         scope = (m.group("scope") or "").strip()  # "session-only" / "durable"
         jobs.append(

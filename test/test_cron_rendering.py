@@ -179,6 +179,40 @@ class TestSchedulingOutputParsers:
         assert out.jobs == []
         assert "free-form summary" in out.text
 
+    def test_cronlist_mixed_lines_falls_back_to_raw_text(self) -> None:
+        """Partial-parse safety: if ANY non-empty line fails the row
+        regex, return ``jobs=[]`` so the renderer falls back to raw
+        text. The alternative (partial table) silently hides the
+        unparsed lines behind a structured display, which is worse
+        than just showing the raw harness output. CR review nitpick
+        on PR #152 round 3.
+        """
+        text = "\n".join(
+            [
+                "abc — Daily at 9am (recurring) [durable]: /morning-checkin",
+                "unexpected trailer line that does not match cron row format",
+            ]
+        )
+        out = parse_cronlist_output(_result(text), None)
+        assert out is not None
+        assert out.jobs == []
+        assert "unexpected trailer line" in out.text
+
+    def test_cronlist_blank_lines_dont_bail_out(self) -> None:
+        """Blank lines between rows are noise, not data — the parser
+        must skip them without triggering the partial-parse bail-out.
+        """
+        text = "\n".join(
+            [
+                "abc — Daily at 9am (recurring) [durable]: /morning",
+                "",
+                "def — Hourly (recurring) [session-only]: /ping",
+            ]
+        )
+        out = parse_cronlist_output(_result(text), None)
+        assert out is not None
+        assert len(out.jobs) == 2
+
     def test_crondelete_captures_text(self) -> None:
         # Real harness format captured during the live experiment.
         out = parse_crondelete_output(_result("Cancelled job 337e67de."), None)
