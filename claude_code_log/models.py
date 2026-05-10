@@ -1542,10 +1542,19 @@ class CronCreateOutput:
 
 @dataclass
 class CronListItem:
-    """One row in a ``CronList`` result."""
+    """One row in a ``CronList`` result.
+
+    Field names match the harness's real ``CronList`` output
+    (captured during the #148 experiment):
+      ``<id> — <description> (<kind>) [<scope>]: <prompt>``
+
+    The harness echoes a *human-readable* schedule (``Every 2 minutes``
+    / ``Daily at 8:57``), not the original cron expression — recovered
+    from the originating ``CronCreate`` card upstream when needed.
+    """
 
     id: str
-    cron: str
+    description: str
     prompt: str
     recurring: Optional[bool] = None
     durable: Optional[bool] = None

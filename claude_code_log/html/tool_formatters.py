@@ -783,29 +783,16 @@ def _format_collapsible_prompt(prompt: str) -> str:
     return f"<pre class='cron-prompt'>{escaped}</pre>"
 
 
-def _row_html(key: str, value_html: str) -> str:
-    """One ``<tr>`` for the shared scheduling-tool params table."""
-    return (
-        f"<tr><td class='tool-param-key'>{escape_html(key)}</td>"
-        f"<td class='tool-param-value'>{value_html}</td></tr>"
-    )
-
-
 def format_schedulewakeup_input(inp: ScheduleWakeupInput) -> str:
-    """Format ScheduleWakeup tool use as a 3-row grid.
+    """Format ScheduleWakeup tool use as the prompt only.
 
-    ``delaySeconds`` and ``reason`` render as plain values; ``prompt``
-    uses the adaptive collapsibility treatment because it's often the
-    full re-entry text for a ``/loop`` invocation.
+    ``delaySeconds`` and ``reason`` already appear in the title
+    (``⏰ ScheduleWakeup +<delay>s — <reason>``); duplicating them in
+    the body adds noise without information. The prompt is the only
+    field that doesn't fit in the title, so render it directly as
+    collapsible code rather than wrapped in a generic params table.
     """
-    rows = [
-        _row_html("delaySeconds", escape_html(str(inp.delaySeconds))),
-        _row_html("reason", escape_html(inp.reason)),
-        _row_html("prompt", _format_collapsible_prompt(inp.prompt)),
-    ]
-    return (
-        f"<table class='tool-params-table schedulewakeup-input'>{''.join(rows)}</table>"
-    )
+    return f"<div class='schedulewakeup-input'>{_format_collapsible_prompt(inp.prompt)}</div>"
 
 
 def format_schedulewakeup_output(output: ScheduleWakeupOutput) -> str:
@@ -814,20 +801,18 @@ def format_schedulewakeup_output(output: ScheduleWakeupOutput) -> str:
 
 
 def format_croncreate_input(inp: CronCreateInput) -> str:
-    """Format CronCreate tool use as a key-value grid.
+    """Format CronCreate tool use as the prompt only.
 
-    ``cron`` is the spec-shaped 5-field expression (rendered inline);
-    ``recurring`` / ``durable`` only appear when explicitly set, since
-    the harness's defaults (``recurring=true``, ``durable=false``) are
-    near-universal and showing them on every row is noise.
+    ``cron`` is already in the title (``⏰ CronCreate <cron>``) and
+    the harness's confirmation echoes back ``recurring`` / ``durable``
+    in human-readable form (``Scheduled recurring job <id> ...
+    Session-only ...``) so the body doesn't need to repeat any of
+    the input scalars. Just render the prompt as collapsible code —
+    the only field that doesn't fit elsewhere.
     """
-    rows = [_row_html("cron", f"<code>{escape_html(inp.cron)}</code>")]
-    if inp.recurring is not None:
-        rows.append(_row_html("recurring", escape_html(str(inp.recurring))))
-    if inp.durable is not None:
-        rows.append(_row_html("durable", escape_html(str(inp.durable))))
-    rows.append(_row_html("prompt", _format_collapsible_prompt(inp.prompt)))
-    return f"<table class='tool-params-table croncreate-input'>{''.join(rows)}</table>"
+    return (
+        f"<div class='croncreate-input'>{_format_collapsible_prompt(inp.prompt)}</div>"
+    )
 
 
 def format_croncreate_output(output: CronCreateOutput) -> str:
@@ -853,18 +838,20 @@ def format_cronlist_output(output: CronListOutput) -> str:
         return f"<pre class='cronlist-output'>{escape_html(output.text)}</pre>"
 
     rows = [
-        "<thead><tr><th>id</th><th>cron</th><th>prompt</th></tr></thead>",
+        "<thead><tr><th>id</th><th>schedule</th><th>prompt</th></tr></thead>",
         "<tbody>",
     ]
     for job in output.jobs:
         # Truncate prompt at table width — full prompt is in the
         # original CronCreate card upstream, so the list view favours
-        # density over completeness.
+        # density over completeness. The harness already truncates at
+        # output time (with a trailing ``…``), so the input is already
+        # short in practice.
         preview = job.prompt if len(job.prompt) <= 80 else job.prompt[:77] + "…"
         rows.append(
             f"<tr>"
             f"<td><code>{escape_html(job.id)}</code></td>"
-            f"<td><code>{escape_html(job.cron)}</code></td>"
+            f"<td>{escape_html(job.description)}</td>"
             f"<td>{escape_html(preview)}</td>"
             f"</tr>"
         )

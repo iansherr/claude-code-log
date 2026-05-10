@@ -114,12 +114,25 @@ class TestSchedulingOutputParsers:
     def test_schedulewakeup_empty_returns_none(self) -> None:
         assert parse_schedulewakeup_output(_result(""), None) is None
 
-    def test_croncreate_extracts_job_id(self) -> None:
+    def test_croncreate_extracts_job_id_recurring(self) -> None:
+        # Real harness output captured during the live #148 experiment.
         out = parse_croncreate_output(
-            _result("Scheduled cron job cj_abc-123. Will fire daily."), None
+            _result(
+                "Scheduled recurring job 337e67de (Every 2 minutes). "
+                "Session-only (not written to disk, dies when Claude exits). "
+                "Auto-expires after 7 days. Use CronDelete to cancel sooner."
+            ),
+            None,
         )
         assert isinstance(out, CronCreateOutput)
-        assert out.job_id == "cj_abc-123"
+        assert out.job_id == "337e67de"
+
+    def test_croncreate_extracts_job_id_oneshot(self) -> None:
+        out = parse_croncreate_output(
+            _result("Scheduled one-shot job abc-123 (at 14:30 today)."), None
+        )
+        assert isinstance(out, CronCreateOutput)
+        assert out.job_id == "abc-123"
 
     def test_croncreate_falls_back_when_format_unknown(self) -> None:
         out = parse_croncreate_output(_result("OK."), None)
@@ -127,21 +140,36 @@ class TestSchedulingOutputParsers:
         assert out.job_id is None
         assert out.text == "OK."
 
-    def test_cronlist_parses_structured_rows(self) -> None:
+    def test_cronlist_parses_real_format(self) -> None:
+        # Real harness output captured during the live experiment.
         text = (
-            "Active cron jobs:\n"
-            "- cj_abc: 57 8 * * * => /morning [recurring]\n"
-            "- cj_def: */30 * * * * => /ping [recurring, durable]"
+            "337e67de — Every 2 minutes (recurring) [session-only]: "
+            "Cron tick — fixture-generation experiment for issue #148."
         )
         out = parse_cronlist_output(_result(text), None)
         assert isinstance(out, CronListOutput)
-        assert len(out.jobs) == 2
-        assert out.jobs[0].id == "cj_abc"
-        assert out.jobs[0].cron == "57 8 * * *"
-        assert out.jobs[0].prompt == "/morning"
-        assert out.jobs[0].recurring is True
-        assert out.jobs[0].durable is None
-        assert out.jobs[1].durable is True
+        assert len(out.jobs) == 1
+        job = out.jobs[0]
+        assert job.id == "337e67de"
+        assert job.description == "Every 2 minutes"
+        assert job.prompt.startswith("Cron tick")
+        assert job.recurring is True
+        assert job.durable is None
+
+    def test_cronlist_durable_scope_sets_durable_flag(self) -> None:
+        text = "abc — Daily at 9am (recurring) [durable]: /morning-checkin"
+        out = parse_cronlist_output(_result(text), None)
+        assert out is not None
+        assert len(out.jobs) == 1
+        assert out.jobs[0].durable is True
+
+    def test_cronlist_oneshot_kind_unsets_recurring(self) -> None:
+        # One-shot jobs render as kind=one-shot, recurring=None.
+        text = "xyz — at 14:30 (one-shot) [session-only]: /reminder"
+        out = parse_cronlist_output(_result(text), None)
+        assert out is not None
+        assert len(out.jobs) == 1
+        assert out.jobs[0].recurring is None
 
     def test_cronlist_falls_back_on_unrecognised_format(self) -> None:
         out = parse_cronlist_output(
@@ -151,56 +179,11 @@ class TestSchedulingOutputParsers:
         assert out.jobs == []
         assert "free-form summary" in out.text
 
-    def test_cronlist_preserves_bracketed_prompt_suffix(self) -> None:
-        """A prompt ending in ``[bracket]`` whose contents are NOT a
-        known flag must not be silently stripped (CR finding on
-        PR #152).
-
-        Pre-fix: the optional ``[flags]`` group at the end of the row
-        regex greedily captured any trailing ``[...]``, so a prompt
-        like ``/loop tick [important context]`` parsed with
-        ``prompt='/loop tick'`` and ``flags='important context'`` —
-        silently dropping the suffix from the rendered prompt and
-        producing nonsense recurring/durable values.
-
-        Post-fix: the parser validates the captured flags against the
-        known-flags whitelist (``{recurring, durable}``); if no token
-        matches, the bracketed suffix is restored to the prompt and
-        the row renders as flag-less.
-        """
-        text = (
-            "Active cron jobs:\n- cj_xyz: 0 9 * * * => /loop tick [important context]"
-        )
-        out = parse_cronlist_output(_result(text), None)
-        assert out is not None
-        assert len(out.jobs) == 1
-        job = out.jobs[0]
-        assert job.id == "cj_xyz"
-        assert job.cron == "0 9 * * *"
-        assert job.prompt == "/loop tick [important context]"
-        # Neither flag should be set — the bracket wasn't a real flag.
-        assert job.recurring is None
-        assert job.durable is None
-
-    def test_cronlist_keeps_real_flags_alongside_known_tokens(self) -> None:
-        """When the bracket DOES contain known flags, parse normally —
-        even if the prompt body itself contains other punctuation.
-        """
-        text = (
-            "Active cron jobs:\n- cj_a: */5 * * * * => /loop tick [recurring, durable]"
-        )
-        out = parse_cronlist_output(_result(text), None)
-        assert out is not None
-        assert len(out.jobs) == 1
-        job = out.jobs[0]
-        assert job.prompt == "/loop tick"
-        assert job.recurring is True
-        assert job.durable is True
-
     def test_crondelete_captures_text(self) -> None:
-        out = parse_crondelete_output(_result("Deleted cron job cj_abc."), None)
+        # Real harness format captured during the live experiment.
+        out = parse_crondelete_output(_result("Cancelled job 337e67de."), None)
         assert isinstance(out, CronDeleteOutput)
-        assert "Deleted" in out.text
+        assert "Cancelled" in out.text
 
 
 # -----------------------------------------------------------------------------
@@ -209,16 +192,20 @@ class TestSchedulingOutputParsers:
 
 
 class TestSchedulingHtmlFormatters:
-    def test_schedulewakeup_grid_includes_all_three_fields(self) -> None:
+    def test_schedulewakeup_input_renders_only_prompt(self) -> None:
+        """Body is the collapsible prompt; ``delaySeconds`` and
+        ``reason`` already live in the title and aren't repeated here.
+        """
         m = ScheduleWakeupInput(
             delaySeconds=300, reason="watch deploy", prompt="/loop bar"
         )
         html = format_schedulewakeup_input(m)
-        for key in ("delaySeconds", "reason", "prompt"):
-            assert key in html
-        assert "300" in html
-        assert "watch deploy" in html
         assert "/loop bar" in html
+        # Scalar fields don't appear in the body — no labels, no values.
+        assert "delaySeconds" not in html
+        assert "300" not in html
+        assert "reason" not in html
+        assert "watch deploy" not in html
 
     def test_schedulewakeup_long_prompt_collapses(self) -> None:
         prompt = "\n".join(f"line {i}" for i in range(20))
@@ -227,36 +214,36 @@ class TestSchedulingHtmlFormatters:
         assert "collapsible-code" in html
         assert "20 lines" in html
 
-    def test_croncreate_omits_optional_flags_when_none(self) -> None:
-        m = CronCreateInput(cron="0 * * * *", prompt="/hourly")
-        html = format_croncreate_input(m)
-        assert "cron" in html
-        assert "0 * * * *" in html
-        # Optional flags absent.
-        assert "recurring" not in html
-        assert "durable" not in html
-
-    def test_croncreate_includes_explicit_flags(self) -> None:
+    def test_croncreate_input_renders_only_prompt(self) -> None:
+        """Body is the collapsible prompt; ``cron`` is in the title
+        and the harness echoes back recurring/durable in human form.
+        """
         m = CronCreateInput(
-            cron="0 9 * * *", prompt="/morning", recurring=True, durable=True
+            cron="0 * * * *", prompt="/hourly", recurring=True, durable=True
         )
         html = format_croncreate_input(m)
-        assert "recurring" in html
-        assert "durable" in html
+        assert "/hourly" in html
+        # Cron expression and flag scalars don't appear in the body.
+        assert "0 * * * *" not in html
+        assert "recurring" not in html
+        assert "durable" not in html
 
     def test_cronlist_structured_jobs_render_as_table(self) -> None:
         out = CronListOutput(
             text="raw",
             jobs=[
-                CronListItem(id="cj_a", cron="0 * * * *", prompt="/a"),
-                CronListItem(id="cj_b", cron="*/5 * * * *", prompt="/b"),
+                CronListItem(id="cj_a", description="Hourly", prompt="/a"),
+                CronListItem(id="cj_b", description="Every 5 minutes", prompt="/b"),
             ],
         )
         html = format_cronlist_output(out)
         assert "<table class='cronlist-output-table'>" in html
         assert "cj_a" in html
-        assert "0 * * * *" in html
+        assert "Hourly" in html
+        assert "Every 5 minutes" in html
         assert "/b" in html
+        # Header reflects the new field name.
+        assert "<th>schedule</th>" in html
 
     def test_cronlist_falls_back_to_raw_text_when_no_jobs(self) -> None:
         out = CronListOutput(text="No jobs scheduled.", jobs=[])
@@ -296,40 +283,55 @@ class TestSchedulingFixtureRendering:
         # ScheduleWakeup title carries the +<delay>s shape.
         assert "+240s" in html
         # CronCreate title carries the cron expression.
-        assert "57 8 * * *" in html
+        assert "*/2 * * * *" in html
         # CronList renders the static title literal — pinned to a
         # single occurrence so a regression of monk's #148 finding
         # (``_tool_title`` rendering both the tool name and a
-        # tool-name-shaped summary) fails loudly. The other three
-        # tools in the family pass distinct summaries, so they don't
-        # trigger the duplication; this guard is specifically for the
-        # zero-input-tool shape.
+        # tool-name-shaped summary) fails loudly.
         assert html.count("CronList") == 1, (
             f"Expected exactly one 'CronList' occurrence; got {html.count('CronList')}"
         )
         assert "<span class='tool-summary'>CronList" not in html
         # CronDelete title carries the id.
-        assert "cj_def456" in html
+        assert "337e67de" in html
 
-    def test_html_schedulewakeup_grid_present(self) -> None:
+    def test_html_no_redundant_wrench_prefix_on_scheduling_titles(self) -> None:
+        """Tool-use titles starting with ⏰ must NOT have the template's
+        default 🛠️ prepended (regression for the ``starts_with_emoji``
+        gap that missed the Misc Technical Unicode block).
+        """
         html = self._html()
-        for key in ("delaySeconds", "reason", "prompt"):
-            assert key in html
-        # Result paragraph rendered verbatim.
+        # No ``🛠️ ⏰`` co-occurrence anywhere.
+        assert "🛠️ ⏰" not in html, (
+            "Found redundant 🛠️ prefix on a ⏰-prefixed title — "
+            "starts_with_emoji needs to recognise the Misc Technical block."
+        )
+
+    def test_html_schedulewakeup_body_is_just_the_prompt(self) -> None:
+        """Body shouldn't repeat ``delaySeconds`` / ``reason`` (already in
+        the title). The prompt is the only content; result paragraph
+        renders verbatim below.
+        """
+        html = self._html()
+        # No labelled rows for the redundant scalars.
+        assert ">delaySeconds<" not in html
+        assert ">reason<" not in html
+        # Prompt body present (collapsible-code wrapper or inline pre).
+        assert "/loop Tick the experiment-supervision loop" in html
+        # Result paragraph renders verbatim.
         assert "Next wakeup scheduled for 10:04:00" in html
 
     def test_html_cronlist_renders_structured_table(self) -> None:
         html = self._html()
-        # Both jobs surfaced in the rendered table.
-        assert "cj_abc123" in html
-        assert "cj_def456" in html
-        # Cron expressions visible.
-        assert "57 8 * * *" in html
-        assert "*/30 * * * *" in html
+        # Real-format job surfaced in the rendered table.
+        assert "337e67de" in html
+        # Human-readable schedule (not the cron expression — the
+        # harness's CronList output uses the description form).
+        assert "Every 2 minutes" in html
 
     def test_html_crondelete_result_paragraph(self) -> None:
         html = self._html()
-        assert "Deleted cron job cj_def456" in html
+        assert "Cancelled job 337e67de" in html
 
     def test_markdown_titles_use_inline_code_for_values(self) -> None:
         md = self._md()
@@ -339,15 +341,17 @@ class TestSchedulingFixtureRendering:
             in md
         )
         # Cron expression wrapped in inline code.
-        assert "⏰ CronCreate `57 8 * * *`" in md
+        assert "⏰ CronCreate `*/2 * * * *`" in md
         # CronDelete id wrapped in inline code.
-        assert "⏰ CronDelete `cj_def456`" in md
+        assert "⏰ CronDelete `337e67de`" in md
 
-    def test_markdown_schedulewakeup_prompt_in_fenced_block(self) -> None:
+    def test_markdown_schedulewakeup_body_is_just_fenced_prompt(self) -> None:
         md = self._md()
-        assert "**delaySeconds:** 240" in md
-        # Prompt block opens a fenced code region.
-        assert "**prompt:**" in md
+        # No bullet rows for the redundant scalars.
+        assert "**delaySeconds:**" not in md
+        assert "**reason:**" not in md
+        # Prompt content present inside a fenced block.
+        assert "/loop Tick the experiment-supervision loop" in md
         assert "```" in md
 
 

@@ -260,6 +260,32 @@ def title_WebSearchInput(self, input: WebSearchInput, message: TemplateMessage) 
     return self._tool_title(message, "🔎", f'"{input.query}"')
 ```
 
+### Watch out: the template's wrench-suppression is emoji-range-gated
+
+Tool-use messages get a default `🛠️` prefix prepended by
+`templates/transcript.html` *unless* the title already starts with
+an emoji that `html/utils.py::starts_with_emoji` recognises. That
+function whitelists specific Unicode ranges:
+
+- `0x2300-0x23FF` Misc Technical (`⏰ ⏳ ⏱️ ⏲️ ⏸ ⏹ ⏺ ⏏` …)
+- `0x2600-0x26FF` Misc Symbols
+- `0x2700-0x27BF` Dingbats
+- `0x1F300-0x1F5FF` Misc Symbols and Pictographs
+- `0x1F600-0x1F64F` Emoticons
+- `0x1F680-0x1F6FF` Transport and Map Symbols
+- `0x1F900-0x1F9FF` Supplemental Symbols
+
+If the icon you pass to `_tool_title` falls **outside** these
+ranges, the template will helpfully add a `🛠️` in front of it,
+producing a redundant double-icon title like
+`🛠️ <your-icon> <ToolName>`. Verify by rendering a fixture and
+grepping for `🛠️` co-occurring with your icon, or by checking
+`ord(your_icon)` against the ranges above.
+
+If your icon is a real emoji that lives in a Unicode range not
+listed there, **add the range** to `starts_with_emoji` rather than
+picking a different icon.
+
 ## Step 5: Implement Markdown Renderer
 
 In `markdown/renderer.py`:

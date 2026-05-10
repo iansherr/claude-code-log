@@ -541,12 +541,21 @@ def starts_with_emoji(text: str) -> bool:
     """Check if a string starts with an emoji character.
 
     Checks common emoji Unicode ranges:
-    - Emoticons: U+1F600 - U+1F64F
-    - Misc Symbols and Pictographs: U+1F300 - U+1F5FF
-    - Transport and Map Symbols: U+1F680 - U+1F6FF
-    - Supplemental Symbols: U+1F900 - U+1F9FF
+    - Misc Technical: U+2300 - U+23FF (⏰ ⏳ ⏱️ ⏲️ ⏸ ⏹ ⏺ ⏏ ↩ etc.)
     - Misc Symbols: U+2600 - U+26FF
     - Dingbats: U+2700 - U+27BF
+    - Misc Symbols and Pictographs: U+1F300 - U+1F5FF
+    - Emoticons: U+1F600 - U+1F64F
+    - Transport and Map Symbols: U+1F680 - U+1F6FF
+    - Supplemental Symbols: U+1F900 - U+1F9FF
+
+    Used by the transcript template to suppress the default ``🛠️``
+    emoji prefix when a tool title already starts with its own icon.
+    Misses here cause a redundant wrench to appear in front of an
+    otherwise-iconified title (e.g. ``🛠️ ⏰ ScheduleWakeup ...``);
+    Misc Technical (U+2300-U+23FF) is included because the alarm
+    clock and other time/control glyphs live there but are real
+    emoji in practice.
     """
     if not text:
         return False
@@ -555,12 +564,13 @@ def starts_with_emoji(text: str) -> bool:
     code_point = ord(first_char)
 
     return (
-        0x1F600 <= code_point <= 0x1F64F  # Emoticons
-        or 0x1F300 <= code_point <= 0x1F5FF  # Misc Symbols and Pictographs
-        or 0x1F680 <= code_point <= 0x1F6FF  # Transport and Map Symbols
-        or 0x1F900 <= code_point <= 0x1F9FF  # Supplemental Symbols
+        0x2300 <= code_point <= 0x23FF  # Misc Technical (⏰ ⏳ ⏱️ ...)
         or 0x2600 <= code_point <= 0x26FF  # Misc Symbols
         or 0x2700 <= code_point <= 0x27BF  # Dingbats
+        or 0x1F300 <= code_point <= 0x1F5FF  # Misc Symbols and Pictographs
+        or 0x1F600 <= code_point <= 0x1F64F  # Emoticons
+        or 0x1F680 <= code_point <= 0x1F6FF  # Transport and Map Symbols
+        or 0x1F900 <= code_point <= 0x1F9FF  # Supplemental Symbols
     )
 
 

@@ -774,10 +774,13 @@ def parse_schedulewakeup_output(
     return ScheduleWakeupOutput(text=text)
 
 
-# ``Scheduled cron job <id>`` — id is short alphanumeric. Conservative
-# char class with hyphen/underscore tolerance per the same lesson
-# from PR #147 (monk's nit on _MONITOR_TASK_ID_RE).
-_CRON_CREATE_ID_RE = re.compile(r"Scheduled cron job ([\w-]+)")
+# ``Scheduled <kind> job <id> (...)`` where kind is "recurring" or
+# "one-shot". Real harness output captured during the #148 experiment:
+#   "Scheduled recurring job 337e67de (Every 2 minutes). Session-only
+#    (not written to disk, dies when Claude exits). ..."
+# Char class kept tolerant ([\w-]+) per the lesson from PR #147
+# (monk's nit on _MONITOR_TASK_ID_RE).
+_CRON_CREATE_ID_RE = re.compile(r"Scheduled (?:recurring|one-shot) job ([\w-]+)")
 
 
 def parse_croncreate_output(
@@ -796,24 +799,25 @@ def parse_croncreate_output(
     )
 
 
-# ``- <id>: <cron> => <prompt>`` style row, with optional
-# ``[durable]`` / ``[recurring]`` markers. Tolerant: any line that
-# starts with a hyphen and has the colon-arrow shape parses; lines
-# that don't match are quietly skipped (the raw text is always
-# preserved as fallback).
+# Real harness CronList row format (captured during the #148
+# experiment):
+#   "337e67de — Every 2 minutes (recurring) [session-only]: Cron tick — ..."
+# Shape: ``<id> — <description> (<kind>) [<scope>]: <prompt>``
+# Where:
+#   - id        : short alphanumeric job id ([\w-]+)
+#   - description: human-readable schedule ("Every 2 minutes", etc.)
+#   - kind      : "recurring" or "one-shot" (in parentheses)
+#   - scope     : "session-only" or "durable" (in brackets)
+#   - prompt    : remainder of the line, often truncated with "…"
+#
+# The em-dash separator and parenthesised kind are stable; the
+# bracketed scope is optional. Lines that don't match are quietly
+# skipped (raw text always preserved as fallback).
 _CRON_LIST_LINE_RE = re.compile(
-    r"^\s*-\s+(?P<id>[\w-]+):\s+(?P<cron>\S.+?\S)\s+=>\s+(?P<prompt>.+?)"
-    r"(?:\s+\[(?P<flags>[^\]]+)\])?\s*$"
+    r"^\s*(?P<id>[\w-]+)\s+—\s+(?P<description>[^()]+?)\s+"
+    r"\((?P<kind>recurring|one-shot)\)"
+    r"(?:\s+\[(?P<scope>[^\]]+)\])?:\s+(?P<prompt>.+?)\s*$"
 )
-
-# Tokens we recognise inside the trailing ``[...]`` flags group.
-# Validating captured flags against this whitelist keeps prompt
-# suffixes that *happen* to end in brackets (e.g. ``/loop tick
-# [important context]``) from being silently stripped — see CR
-# review on PR #152. When none of the captured tokens match a
-# known flag, we restore the original ``[bracket]`` to the prompt
-# and treat the row as flag-less.
-_KNOWN_CRON_FLAGS: frozenset[str] = frozenset({"recurring", "durable"})
 
 
 def parse_cronlist_output(
@@ -835,26 +839,15 @@ def parse_cronlist_output(
         m = _CRON_LIST_LINE_RE.match(line)
         if not m:
             continue
-        prompt = m.group("prompt").strip()
-        flags_raw = m.group("flags") or ""
-        flag_tokens = {f.strip() for f in flags_raw.split(",") if f.strip()}
-        # Validate captured flags against the known-flags whitelist:
-        # if NONE of the captured tokens match a real flag, treat the
-        # trailing ``[...]`` as part of the prompt body rather than as
-        # flags. Without this, the optional flags group greedily
-        # swallows any trailing bracketed text — including legitimate
-        # prompt suffixes like ``/loop tick [important context]`` —
-        # and silently drops it from the prompt.
-        if flag_tokens and not (flag_tokens & _KNOWN_CRON_FLAGS):
-            prompt = f"{prompt} [{flags_raw}]"
-            flag_tokens = set[str]()
+        kind = m.group("kind")  # "recurring" or "one-shot"
+        scope = (m.group("scope") or "").strip()  # "session-only" / "durable"
         jobs.append(
             CronListItem(
                 id=m.group("id"),
-                cron=m.group("cron"),
-                prompt=prompt,
-                recurring=True if "recurring" in flag_tokens else None,
-                durable=True if "durable" in flag_tokens else None,
+                description=m.group("description").strip(),
+                prompt=m.group("prompt").strip(),
+                recurring=True if kind == "recurring" else None,
+                durable=True if scope == "durable" else None,
             )
         )
     return CronListOutput(text=text, jobs=jobs)

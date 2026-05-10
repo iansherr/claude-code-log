@@ -874,21 +874,14 @@ class MarkdownRenderer(Renderer):
     def format_ScheduleWakeupInput(
         self, input: ScheduleWakeupInput, _: TemplateMessage
     ) -> str:
-        """Format → bullet list + fenced prompt block.
+        """Format → fenced prompt block only.
 
-        Mirrors the HTML 3-row grid in plain Markdown; ``prompt`` lands
-        in a fenced block via ``_code_fence`` so the adaptive width
-        handles backticks and multi-line bodies cleanly.
+        ``delaySeconds`` and ``reason`` are already in the title
+        (``⏰ ScheduleWakeup +<delay>s — <reason>``); duplicating them
+        in the body adds noise without information. The prompt is the
+        only field that doesn't fit in the title.
         """
-        lines = [
-            f"- **delaySeconds:** {input.delaySeconds}",
-            f"- **reason:** {input.reason}",
-            "",
-            "**prompt:**",
-            "",
-            self._code_fence(input.prompt),
-        ]
-        return "\n".join(lines)
+        return self._code_fence(input.prompt)
 
     def format_ScheduleWakeupOutput(
         self, output: ScheduleWakeupOutput, _: TemplateMessage
@@ -897,26 +890,14 @@ class MarkdownRenderer(Renderer):
         return output.text
 
     def format_CronCreateInput(self, input: CronCreateInput, _: TemplateMessage) -> str:
-        """Format → bullet list + fenced prompt block.
+        """Format → fenced prompt block only.
 
-        ``recurring`` / ``durable`` only appear when explicitly set —
-        the harness's defaults are near-universal and showing them
-        every row would be noise.
+        ``cron`` is already in the title (``⏰ CronCreate <cron>``)
+        and the harness's confirmation echoes back ``recurring`` /
+        ``durable`` in human-readable form, so the body doesn't need
+        to repeat any input scalars.
         """
-        lines = [f"- **cron:** `{input.cron}`"]
-        if input.recurring is not None:
-            lines.append(f"- **recurring:** {input.recurring}")
-        if input.durable is not None:
-            lines.append(f"- **durable:** {input.durable}")
-        lines.extend(
-            [
-                "",
-                "**prompt:**",
-                "",
-                self._code_fence(input.prompt),
-            ]
-        )
-        return "\n".join(lines)
+        return self._code_fence(input.prompt)
 
     def format_CronCreateOutput(
         self, output: CronCreateOutput, _: TemplateMessage
@@ -935,7 +916,7 @@ class MarkdownRenderer(Renderer):
         lines: list[str] = []
         for job in output.jobs:
             preview = job.prompt if len(job.prompt) <= 80 else job.prompt[:77] + "…"
-            lines.append(f"- `{job.id}`: `{job.cron}` — {preview}")
+            lines.append(f"- `{job.id}` — {job.description} — {preview}")
         return "\n".join(lines)
 
     def format_CronDeleteInput(
