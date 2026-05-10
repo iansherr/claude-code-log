@@ -369,6 +369,31 @@ output destination changes, not the rendered content.
 
 ---
 
+## Follow-up / Open points
+
+### Cache-freshness checks resolve against `project_path` (source), not the output destination
+
+`cache.is_html_stale(html_path, ...)` and `cache.is_page_stale(...)` both compute their `actual_file` check as `self.project_path / html_path` — the **source** project dir under `~/.claude/projects/`, not the actual output destination (`dest_dir`). With the legacy in-place behaviour the two are identical, so the check works as intended. With `--output` projecting to a different tree, the source path never has a `combined_transcripts.html`, so `is_html_stale` returns "file_missing" / "stale" on every run.
+
+**Practical implication** — both runs of the same source against two different `--output` dirs both produce correct output (the `not output_path.exists()` term in `process_projects_hierarchy`'s `needs_work` and the per-session-file existence checks force regeneration). But every `--output` switch always re-renders, even when the destination is already up-to-date. JSONL parsing is still cache-hit ("X sessions" instead of "X files updated"), only rendering re-runs.
+
+```
+Run 1 (--output /tmp/A):  4.4s  (8 projects updated)
+Run 2 (--output /tmp/B):  2.3s  (cache-hit on JSONL parse,
+                                  but rendering re-ran)
+Run 3 (--output /tmp/A):  ~2.3s (same — A's existing files
+                                  are not consulted)
+```
+
+**Future optimisation** — make the html-cache row's freshness check destination-aware (e.g. record the absolute destination path when writing, compare against it on next run). Bounded value: only matters when users alternate between several `--output` destinations on the same source. Not worth the complexity until someone hits the slowdown in practice.
+
+### Other follow-ups (already noted in the implementation)
+
+- **Archived projects with `--output`** — index links point to projected paths whose files won't exist until the user re-renders. Two plausible mitigations: exclude archived projects from the index in `--output` mode, or always link to the original on-disk location regardless of `--output` / `--expand-paths`. (Surfaced by monk; left for follow-up.)
+- **`_peek_jsonl_for_cwd` debug logging** — current shape is silent on tier-2→tier-3 fallthroughs; a `logger.debug(...)` would help when someone is debugging an unexpected naive-tier hit. Zero-noise default kept.
+
+---
+
 ## Out of scope (mention for completeness)
 
 - Obsidian-specific frontmatter (YAML at top of each `.md` for tags /
