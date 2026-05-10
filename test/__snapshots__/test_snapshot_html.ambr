@@ -1841,6 +1841,10 @@
       border-width: 2px;
   }
   
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
+  }
+  
   .filter-actions {
       display: flex;
       gap: 6px;
@@ -7611,6 +7615,10 @@
   .filter-toggle[data-type="thinking"] {
       border-color: var(--assistant-dimmed);
       border-width: 2px;
+  }
+  
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
   }
   
   .filter-actions {
@@ -15432,6 +15440,10 @@
       border-width: 2px;
   }
   
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
+  }
+  
   .filter-actions {
       display: flex;
       gap: 6px;
@@ -21307,6 +21319,10 @@
   .filter-toggle[data-type="thinking"] {
       border-color: var(--assistant-dimmed);
       border-width: 2px;
+  }
+  
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
   }
   
   .filter-actions {
@@ -27417,6 +27433,10 @@
       border-width: 2px;
   }
   
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
+  }
+  
   .filter-actions {
       display: flex;
       gap: 6px;
@@ -33391,6 +33411,10 @@
   .filter-toggle[data-type="thinking"] {
       border-color: var(--assistant-dimmed);
       border-width: 2px;
+  }
+  
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
   }
   
   .filter-actions {
@@ -39426,6 +39450,10 @@
   .filter-toggle[data-type="thinking"] {
       border-color: var(--assistant-dimmed);
       border-width: 2px;
+  }
+  
+  .filter-toggle[data-type="sidechain"] {
+      border: dashed 2px #aaa;
   }
   
   .filter-actions {
