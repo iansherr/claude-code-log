@@ -271,6 +271,77 @@ class TestHookAttachmentFormatter:
         assert "extra context" in html
 
 
+class TestHookAttachmentMarkdownInlineCode:
+    """Regression for the CodeRabbit review on PR #149: hook inline
+    fields must go through ``_inline_code`` so values containing
+    backticks don't break the surrounding span."""
+
+    def _meta_only(self, **kw: Any) -> HookAttachmentMessage:
+        from claude_code_log.models import MessageMeta
+
+        return HookAttachmentMessage(meta=MessageMeta.empty(), **kw)
+
+    def test_markdown_hook_attachment_handles_backticks_in_name(self) -> None:
+        from claude_code_log.markdown.renderer import MarkdownRenderer
+        from claude_code_log.renderer import TemplateMessage
+
+        # Hook name with an embedded backtick: a naive ``f"`{name}`"``
+        # would close the span at the inner tick, producing broken
+        # Markdown like `` `foo`bar` ``. ``_inline_code`` widens the
+        # fence past the run.
+        msg = self._meta_only(
+            kind="success",
+            hook_event="PostToolUse",
+            hook_name="PostToolUse:`weird`",
+            command="echo `pwd`",
+            stdout="",
+            stderr="",
+            exit_code=0,
+            duration_ms=5,
+        )
+        rendered = MarkdownRenderer().format_HookAttachmentMessage(
+            msg, TemplateMessage(msg)
+        )
+        # ``_inline_code`` widens the fence to a run longer than the
+        # longest internal backtick run, and pads with a space when the
+        # value starts/ends with a backtick. The hook name's trailing
+        # backtick triggers the space pad — without it, the trailing
+        # tick would fuse with the fence.
+        assert "`` PostToolUse:`weird` ``" in rendered
+        # Command body uses adaptive code fence too — verify the inner
+        # backtick run survived.
+        assert "echo `pwd`" in rendered
+
+    def test_markdown_hook_summary_handles_backticks_in_command(self) -> None:
+        from claude_code_log.factories.system_factory import create_system_message
+        from claude_code_log.markdown.renderer import MarkdownRenderer
+        from claude_code_log.models import HookSummaryMessage, SystemTranscriptEntry
+        from claude_code_log.renderer import TemplateMessage
+
+        entry = SystemTranscriptEntry.model_validate(
+            {
+                **_BASE_FIELDS,
+                "type": "system",
+                "uuid": "sum-1",
+                "parentUuid": None,
+                "timestamp": "2026-01-01T00:00:00.000Z",
+                "subtype": "stop_hook_summary",
+                "hasOutput": True,
+                "hookErrors": [],
+                "hookInfos": [{"command": "echo `pwd`"}],
+            }
+        )
+        content = create_system_message(entry)
+        assert isinstance(content, HookSummaryMessage)
+        rendered = MarkdownRenderer().format_HookSummaryMessage(
+            content, TemplateMessage(content)
+        )
+        # The command's inner backticks force ``_inline_code`` to widen
+        # the fence; the trailing tick also triggers the space pad so
+        # the inner tick doesn't fuse with the fence.
+        assert "`` echo `pwd` ``" in rendered
+
+
 # ---------------------------------------------------------------------------
 # End-to-end: full pipeline through generate_template_messages
 

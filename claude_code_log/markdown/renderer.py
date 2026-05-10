@@ -479,7 +479,10 @@ class MarkdownRenderer(Renderer):
         parts: list[str] = []
         if content.hook_infos:
             for info in content.hook_infos:
-                parts.append(f"`{info.command}`")
+                # ``_inline_code`` widens its fence past any backtick run
+                # in the value, so a hook command like ``echo `pwd``` stays
+                # legible instead of breaking the surrounding span.
+                parts.append(_inline_code(info.command))
         if content.hook_errors:
             for error in content.hook_errors:
                 parts.append(f"❌ Error: {error}")
@@ -496,13 +499,13 @@ class MarkdownRenderer(Renderer):
         """
         header_pieces: list[str] = []
         if content.hook_name:
-            header_pieces.append(f"`{content.hook_name}`")
+            header_pieces.append(_inline_code(content.hook_name))
         elif content.hook_event:
-            header_pieces.append(f"`{content.hook_event}`")
+            header_pieces.append(_inline_code(content.hook_event))
         if content.exit_code is not None:
-            header_pieces.append(f"exit `{content.exit_code}`")
+            header_pieces.append(f"exit {_inline_code(str(content.exit_code))}")
         if content.duration_ms is not None:
-            header_pieces.append(f"`{content.duration_ms}` ms")
+            header_pieces.append(f"{_inline_code(str(content.duration_ms))} ms")
         prefix = (
             "🚨" if content.kind in ("blocking_error", "non_blocking_error") else "🪝"
         )
