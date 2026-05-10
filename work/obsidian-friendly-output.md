@@ -433,6 +433,84 @@ Show what would be generated (projected destinations, filter selections) without
 
 Implementation sketch: a top-level CLI flag that, when set, prints the per-project decision (`source -> dest` or `<source>: filter excluded`) and exits before any file I/O. Cheap to implement on top of `project_destination()` since the helper is already pure.
 
+#### `--combined yes/no/only` (or `both/none/only`) — suppress combined transcripts
+
+For Obsidian usage, having *both* the combined `combined_transcripts.md` and the per-session `session-{id}.md` files is pointless duplication — Obsidian discovers sessions individually via the file tree, and the combined file is just dead weight that confuses graph view. The current default emits both.
+
+Proposed flag: `--combined yes|no|only` (or equivalent `both|none|only`):
+
+| Value | Combined | Per-session | Default for |
+|---|---|---|---|
+| `yes` / `both` | ✓ | ✓ | Current behaviour (HTML / non-Obsidian flow) |
+| `no` / `none` | ✗ | ✓ | **Recommended default for `--expand-paths`** |
+| `only` | ✓ | ✗ | When the user explicitly wants the rollup-only view |
+
+When combined is suppressed, the index page must link **directly to each `session-{id}.md`** rather than to `combined_transcripts*.md`. The `html_file` field in `project_summaries` would become a list of session links instead of one combined link.
+
+#### Markdown index: bullet-list directory hierarchy under `--expand-paths`
+
+In Markdown + `--expand-paths` mode, the natural index shape is a nested bullet list mirroring the directory tree:
+
+```markdown
+- home/joe
+  - project/A
+    - [session-aabbccdd](home/joe/project/A/session-aabbccdd.md) — 2026-03-21 *14 messages*
+    - [session-eeff0011](home/joe/project/A/session-eeff0011.md) — 2026-03-22 *9 messages*
+  - project/B
+    - [session-22334455](home/joe/project/B/session-22334455.md) — 2026-03-23 *31 messages*
+- home/jane
+  - project/C
+    - [session-66778899](home/jane/project/C/session-66778899.md) — 2026-03-20 *5 messages*
+```
+
+Each directory appears as a parent bullet with its sessions (or sub-dirs) as nested children. Walks the same path-projection tree the file system was projected into, but at the index level. Renders nicely in Obsidian's preview AND in plain Markdown viewers. Especially good when combined with the no-combined-transcripts mode (above), since each leaf bullet then directly points to the session file the user wants to open.
+
+#### **CRITICAL**: Markdown renderer must emit per-message timestamps
+
+This is "absolutely need" tier, not a nice-to-have — it's what enables a cross-session narrative / episodic-memory layer in Obsidian. Without per-message timestamps in the Markdown output, the user can't reconstruct *when* something happened, which kills the whole "transcript as Obsidian note" workflow.
+
+**Current Markdown output (with `--compact`):**
+
+```markdown
+## 🤷 User: *Nice! Please commit and reply to bob that…*
+
+Nice! Please commit and reply to bob that you did it.
+
+### 🤖 Assistant: *Done! I've:*
+
+> Done! I've:
+>
+> 1. **Committed** the WebFetch tool renderer implementation (commit `da363b8`) …
+> 2. **Replied** to bob (mail #250) …
+
+> No response requested.
+```
+
+**Required:**
+
+```markdown
+## 🤷 User: *Nice! Please commit and reply to bob that…*
+*2026-03-21 18:40:44*
+
+Nice! Please commit and reply to bob that you did it.
+
+### 🤖 Assistant: *Done! I've:*
+*2026-03-21 18:44:22*
+
+> Done! I've:
+>
+> 1. **Committed** the WebFetch tool renderer implementation (commit `da363b8`) …
+> 2. **Replied** to bob (mail #250) …
+
+> No response requested.
+```
+
+One italics line per message, immediately after the heading. Format: `*YYYY-MM-DD HH:MM:SS*` (matches the existing HTML timestamp rendering at the message level).
+
+The HTML renderer already emits timestamps; this is purely a Markdown-side omission to fix. Should be a small change in `claude_code_log/markdown/renderer.py` at the per-message header emission point.
+
+Considered out of scope for #151 (the path-projection PR), but should land **before** anyone seriously uses the Obsidian-friendly output for narrative work. Worth its own issue.
+
 ---
 
 ## Out of scope (mention for completeness)
