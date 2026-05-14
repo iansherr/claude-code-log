@@ -461,6 +461,53 @@ class TestCombinedFlag:
         # shape must NOT appear in tree mode.
         assert "## [home/joe/project/A]" not in index_md
 
+    def test_bullet_tree_normalises_backslash_separators(self):
+        """Regression: on Windows, `str(Path("home/joe"))` is
+        `home\\joe`, so any leaked native-separator URL would land
+        in the bullet-tree as a single un-split leaf line. The
+        builder must fold backslashes to `/` before splitting."""
+        from types import SimpleNamespace
+
+        from claude_code_log.markdown.renderer import _render_expand_paths_tree
+
+        project_backslash = SimpleNamespace(
+            combined_suppressed=True,
+            html_file="ignored.html",
+            display_name="proj",
+            formatted_time_range="2026-05-10 10:00:00",
+            sessions=[
+                {
+                    "id": "abcdef1234",
+                    "summary": "S1",
+                    "timestamp_range": "2026-05-10 10:00:00",
+                    "file": r"home\joe\project\B\session-abcdef1234.md",
+                }
+            ],
+        )
+        project_forward = SimpleNamespace(
+            combined_suppressed=True,
+            html_file="ignored.html",
+            display_name="proj",
+            formatted_time_range="2026-05-10 10:00:00",
+            sessions=[
+                {
+                    "id": "deadbeef99",
+                    "summary": "S2",
+                    "timestamp_range": "2026-05-10 11:00:00",
+                    "file": "home/joe/project/A/session-deadbeef99.md",
+                }
+            ],
+        )
+        lines = _render_expand_paths_tree([project_backslash, project_forward])
+        joined = "\n".join(lines)
+        assert "- **home/**" in joined
+        assert "- **joe/**" in joined
+        assert "- **project/**" in joined
+        # Both leaf links must be present, with forward slashes only.
+        assert "(home/joe/project/B/session-abcdef1234.md)" in joined
+        assert "(home/joe/project/A/session-deadbeef99.md)" in joined
+        assert "\\" not in joined
+
     def test_cli_combined_only_alias_with_no_individual_sessions(
         self, fake_projects: Path, isolated_cache: Path, tmp_path: Path
     ):

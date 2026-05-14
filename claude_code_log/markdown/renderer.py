@@ -288,6 +288,13 @@ def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
             node = node[part]
         node.setdefault("_links", []).append((label, url, ts))
 
+    def _to_posix(s: str) -> str:
+        """Defensive normalisation: split on `/` only after folding
+        any backslashes the upstream may have produced (Windows
+        `Path` stringification, historical regressions, callers that
+        construct URLs from native paths)."""
+        return s.replace("\\", "/")
+
     for project in template_projects:
         if project.combined_suppressed and project.sessions:
             # Use the per-session links — each session becomes a leaf
@@ -296,6 +303,7 @@ def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
                 url = session.get("file")
                 if not url:
                     continue
+                url = _to_posix(url)
                 summary = session.get("summary")
                 short_id = (session.get("id") or "")[:8]
                 label = summary if summary else f"session {short_id}"
@@ -305,7 +313,7 @@ def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
             # Combined-link mode: use the project's html_file as the
             # single leaf under its parent dir. Translate `.html`
             # filenames so the Markdown index links land at `.md` peers.
-            url = project.html_file.replace(".html", ".md")
+            url = _to_posix(project.html_file).replace(".html", ".md")
             ts = project.formatted_time_range or ""
             _insert(url.split("/"), project.display_name, url, ts)
 

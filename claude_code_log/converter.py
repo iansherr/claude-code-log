@@ -2578,19 +2578,24 @@ def process_projects_hierarchy(
     # tree). Per-project `html_file` entries are relative to this root.
     index_root = output_dir if output_dir is not None else projects_path
 
-    def _rel_to_index(p: Path) -> Path:
-        """Path of `p` relative to the index root.
+    def _rel_to_index(p: Path) -> str:
+        """Posix-form path of `p` relative to the index root.
 
-        Unreachable under the documented flag matrix: every
+        Returned as a forward-slash string so downstream f-strings
+        (`f"{rel_dest}/..."`) embed cleanly in Markdown links and
+        HTML hrefs on Windows too — `str(Path("home/joe"))` is
+        `home\\joe` there, which broke the Markdown bullet-tree
+        index that splits on `/`.
+
+        The `relative_to` fallback is a paranoia rail: every
         ``project_destination`` shape produces a ``dest_dir`` that
         lives under ``index_root`` (legacy → ``projects_path``;
-        ``--output`` modes → ``output_dir``). Kept as a paranoia rail
-        for future code paths that might inject an unexpected
-        absolute ``dest_dir`` (e.g. via a test seam)."""
+        ``--output`` modes → ``output_dir``)."""
         try:
-            return p.relative_to(index_root)
+            rel = p.relative_to(index_root)
         except ValueError:
-            return p
+            rel = p
+        return rel.as_posix()
 
     for project_dir in sorted(project_dirs):
         project_start_time = time.time()
