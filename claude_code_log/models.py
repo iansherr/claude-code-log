@@ -1327,6 +1327,14 @@ class TaskUpdateInput(BaseModel):
     owner: Optional[str] = None
     status: Optional[str] = None
 
+    # Renderer-set: message_index of the originating ``TaskCreate``
+    # whose tool_result minted this taskId. Wired by
+    # ``_link_task_id_consumers`` so the title formatter can wrap
+    # ``#<taskId>`` in an anchor pointing back to the create card
+    # (#154). Optional because the create call may live outside the
+    # loaded slice (multi-session loads, partial fixtures).
+    creating_call_message_index: Optional[int] = None
+
     model_config = {"extra": "allow"}
 
 
@@ -1352,11 +1360,26 @@ class TaskOutputInput(BaseModel):
     Async-spawned ``Task`` agents return their result later via a
     ``<task-notification>`` user message; the assistant can also poll
     explicitly with ``TaskOutput`` between launch and notification.
+
+    The same tool also polls ``run_in_background=true`` Bash calls
+    (``taskType: local_bash``) — both shapes share the
+    ``task_id`` → originating-call cross-link wired by
+    ``_link_task_id_consumers``.
     """
 
     task_id: str = ""
     block: bool = False
     timeout: Optional[int] = None
+
+    # Renderer-set: message_index of the originating tool_use whose
+    # result minted this task_id (a ``Bash`` with ``run_in_background``
+    # for ``local_bash`` taskType, or a ``Task`` with
+    # ``run_in_background`` for ``local_agent`` taskType). Wired by
+    # ``_link_task_id_consumers`` so the title formatter can wrap
+    # ``#<task_id>`` in an anchor pointing back to the spawn card
+    # (#154). Optional because the spawn may live outside the loaded
+    # slice or use a synchronous shape that doesn't echo the id back.
+    creating_call_message_index: Optional[int] = None
 
     model_config = {"extra": "allow"}
 
@@ -1459,10 +1482,18 @@ class BashOutput:
 
     Symmetric with BashInput for tool_use → tool_result pairing.
     Contains the output with ANSI flag for terminal formatting.
+
+    ``background_task_id`` is the short alphanumeric id the harness
+    mints when ``run_in_background=true`` is set on the call. The
+    structured ``backgroundTaskId`` field is more reliable than text-
+    parsing the confirmation paragraph; we capture it for the
+    cross-link from later ``TaskOutput`` polling cards back to the
+    spawning Bash call (#154).
     """
 
     content: str  # Output content (stdout/stderr combined)
     has_ansi: bool  # True if content contains ANSI escape sequences
+    background_task_id: Optional[str] = None
 
 
 @dataclass

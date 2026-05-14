@@ -430,24 +430,37 @@ def _looks_like_bash_output(content: str) -> bool:
 
 
 def parse_bash_output(
-    tool_result: ToolResultContent, file_path: Optional[str]
+    tool_result: ToolResultContent,
+    file_path: Optional[str],
+    tool_use_result: Optional[ToolUseResult] = None,
 ) -> Optional[BashOutput]:
     """Parse Bash tool result into structured content.
 
-    Detects ANSI escape sequences for terminal formatting.
+    Detects ANSI escape sequences for terminal formatting. When the
+    structured ``toolUseResult`` carries a ``backgroundTaskId`` (set
+    by the harness for ``run_in_background=true`` calls), surface it
+    so a later ``TaskOutput`` polling card can backlink to this
+    spawning Bash call (#154).
 
     Args:
         tool_result: The tool result content
         file_path: Unused for Bash tool
+        tool_use_result: Structured toolUseResult; ``backgroundTaskId``
+            is the relevant key.
 
     Returns:
-        BashOutput with content and ANSI flag
+        BashOutput with content + ANSI flag + optional background task id.
     """
     del file_path  # Unused
     if not (content := _extract_tool_result_text(tool_result)):
         return None
     has_ansi = _looks_like_bash_output(content)
-    return BashOutput(content=content, has_ansi=has_ansi)
+    bg_task_id: Optional[str] = None
+    if isinstance(tool_use_result, dict):
+        raw = tool_use_result.get("backgroundTaskId")
+        if isinstance(raw, str) and raw:
+            bg_task_id = raw
+    return BashOutput(content=content, has_ansi=has_ansi, background_task_id=bg_task_id)
 
 
 def parse_askuserquestion_output(
@@ -1203,7 +1216,7 @@ TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
 }
 
 # Parsers that accept the extended signature with tool_use_result
-PARSERS_WITH_TOOL_USE_RESULT: set[str] = {"WebSearch", "WebFetch"}
+PARSERS_WITH_TOOL_USE_RESULT: set[str] = {"WebSearch", "WebFetch", "Bash"}
 
 
 def create_tool_output(

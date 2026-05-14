@@ -818,7 +818,12 @@ class HtmlRenderer(Renderer):
         return self._tool_title(message, "💡", input.skill)
 
     def _task_title(
-        self, message: TemplateMessage, action: str, subject: str, task_id: str
+        self,
+        message: TemplateMessage,
+        action: str,
+        subject: str,
+        task_id: str,
+        linked_creating_call_index: Optional[int] = None,
     ) -> str:
         """Compose the compact ``Task #N <subject> [action]`` tool title.
 
@@ -827,10 +832,21 @@ class HtmlRenderer(Renderer):
         (TaskCreate before its tool_result has been observed); the ``#N``
         segment is then dropped. ``subject`` is escaped here, so callers
         pass the raw value. The leading emoji comes from the template.
+
+        ``linked_creating_call_index`` is the message_index of the
+        originating ``TaskCreate`` call, set by
+        ``_link_task_id_consumers`` for ``TaskUpdate`` titles. When
+        present, the ``#N`` segment wraps in an anchor pointing back
+        to the create card (#154).
         """
+        del message  # Reserved for future per-message hints.
         parts: list[str] = ["Task"]
         if task_id:
-            parts.append(f"<code>#{escape_html(task_id)}</code>")
+            id_html = f"<code>#{escape_html(task_id)}</code>"
+            if linked_creating_call_index is not None:
+                anchor = f"msg-d-{linked_creating_call_index}"
+                id_html = f"<a class='task-id-backlink' href='#{anchor}'>{id_html}</a>"
+            parts.append(id_html)
         if subject:
             parts.append(f"<span class='tool-summary'>{escape_html(subject)}</span>")
         parts.append(f"<span class='task-action'>[{action}]</span>")
@@ -859,10 +875,21 @@ class HtmlRenderer(Renderer):
         populated from earlier TaskCreate tool_results (or TaskList
         snapshots). Empty when not found — the title degrades to the
         bare ``#N``.
+
+        ``#N`` wraps in a backlink anchor pointing at the originating
+        ``TaskCreate`` card when ``_link_task_id_consumers`` matched
+        the ``taskId`` to a create call earlier in the transcript
+        (#154).
         """
         sid = message.meta.session_id if message.meta else ""
         subject = self._task_subjects_by_session.get(sid, {}).get(input.taskId, "")
-        return self._task_title(message, "updated", subject, input.taskId)
+        return self._task_title(
+            message,
+            "updated",
+            subject,
+            input.taskId,
+            linked_creating_call_index=input.creating_call_message_index,
+        )
 
     def title_SendMessageInput(
         self, input: SendMessageInput, message: TemplateMessage
@@ -892,10 +919,20 @@ class HtmlRenderer(Renderer):
         spawning ``🔧 Task`` so the visual scan separates spawn from
         poll. The leading emoji also short-circuits the template's
         default ``🛠️`` prepend.
+
+        ``#<task_id>`` wraps in a backlink anchor pointing at the
+        originating spawn (a ``Bash`` with ``run_in_background`` for
+        ``local_bash`` taskType, or a ``Task`` async-agent launch for
+        ``local_agent`` taskType) when ``_link_task_id_consumers``
+        matched the id (#154).
         """
-        if input.task_id:
-            return f"🔍 TaskOutput <code>#{escape_html(input.task_id)}</code>"
-        return "🔍 TaskOutput"
+        if not input.task_id:
+            return "🔍 TaskOutput"
+        id_html = f"<code>#{escape_html(input.task_id)}</code>"
+        if input.creating_call_message_index is not None:
+            anchor = f"msg-d-{input.creating_call_message_index}"
+            id_html = f"<a class='task-id-backlink' href='#{anchor}'>{id_html}</a>"
+        return f"🔍 TaskOutput {id_html}"
 
     def title_TaskNotificationMessage(
         self, content: TaskNotificationMessage, _: TemplateMessage

@@ -917,6 +917,19 @@
       border-bottom-style: solid;
   }
   
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
   .command-output-content td {
       border-left: 1px dotted #bbb;
       padding: 0 1em;
@@ -4131,7 +4144,7 @@
       
       <div class='message tool_use pair_first d-0 d-1' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
-              <span title="ID: tu_TaskOutput_001">🔍 TaskOutput <code>#cccc333</code></span>
+              <span title="ID: tu_TaskOutput_001">🔍 TaskOutput <a class='task-id-backlink' href='#msg-d-2'><code>#cccc333</code></a></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:04:00.000Z'>2026-04-19 10:04:00</span>
@@ -6762,6 +6775,19 @@
       border-bottom: 1px dotted currentcolor;
   }
   .cron-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
       color: var(--user-color);
       border-bottom-style: solid;
   }
@@ -14662,6 +14688,19 @@
       border-bottom-style: solid;
   }
   
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
   .command-output-content td {
       border-left: 1px dotted #bbb;
       padding: 0 1em;
@@ -20616,6 +20655,19 @@
       border-bottom-style: solid;
   }
   
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
   .command-output-content td {
       border-left: 1px dotted #bbb;
       padding: 0 1em;
@@ -23833,7 +23885,7 @@
       
       <div class='message tool_use d-0 d-1' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
-              <span title="ID: tu_TaskUpdate_001">🛠️ Task <code>#1</code> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[updated]</span></span>
+              <span title="ID: tu_TaskUpdate_001">🛠️ Task <a class='task-id-backlink' href='#msg-d-4'><code>#1</code></a> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[updated]</span></span>
               <div class='header-info'>
                   <div class='timestamp-row'>
                       <span class='timestamp' data-timestamp='2026-04-19T10:08:00.000Z'>2026-04-19 10:08:00</span>
@@ -26797,6 +26849,19 @@
       border-bottom: 1px dotted currentcolor;
   }
   .cron-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
       color: var(--user-color);
       border-bottom-style: solid;
   }
@@ -32850,6 +32915,19 @@
       border-bottom: 1px dotted currentcolor;
   }
   .cron-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
       color: var(--user-color);
       border-bottom-style: solid;
   }
@@ -38962,6 +39040,19 @@
       border-bottom: 1px dotted currentcolor;
   }
   .cron-id-backlink:hover {
+      color: var(--user-color);
+      border-bottom-style: solid;
+  }
+  
+  /* Cross-link from a TaskOutput / TaskUpdate header's task_id back to
+   * the originating spawn (Bash run_in_background, async Task launch,
+   * or TaskCreate). Same visual affordance as .cron-id-backlink (#154). */
+  .task-id-backlink {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentcolor;
+  }
+  .task-id-backlink:hover {
       color: var(--user-color);
       border-bottom-style: solid;
   }

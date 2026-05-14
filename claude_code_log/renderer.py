@@ -881,6 +881,16 @@ def generate_template_messages(
     with log_timing("Link cron jobs by id", t_start):
         _link_cron_jobs_by_id(ctx)
 
+    # Independent pass: cross-link TaskOutput polls back to the
+    # originating Bash (run_in_background) or Task (async-agent) call,
+    # and TaskUpdate calls back to the originating TaskCreate (#154).
+    # Two id spaces share the pass — background-process ids
+    # (alphanumeric, e.g. ``bcc00rq51``) and todo-list ids
+    # (``"1"``-style); the consumer's input model carries the right
+    # shape unambiguously.
+    with log_timing("Link task_id consumers", t_start):
+        _link_task_id_consumers(ctx)
+
     return root_messages, session_nav, ctx
 
 
@@ -2411,6 +2421,82 @@ def _link_cron_jobs_by_id(ctx: RenderingContext) -> None:
                 target = job_id_to_call_index.get(output.job_id)
                 if target is not None:
                     output.creating_call_message_index = target
+
+
+def _link_task_id_consumers(ctx: RenderingContext) -> None:
+    """Cross-link ``TaskOutput`` polls and ``TaskUpdate`` calls back to
+    the originating tool_use that minted their task_id (#154).
+
+    Two parallel id spaces share the same shape:
+
+    1. **Background-process ids** (alphanumeric, e.g. ``bcc00rq51``).
+       Source: ``Bash`` tool_results carrying
+       ``BashOutput.background_task_id`` (set when ``run_in_background=true``)
+       OR ``Task`` tool_results' parsed ``agentId`` (the async-agent
+       launch confirmation). Consumer: ``TaskOutputInput.task_id``.
+    2. **Todo-list ids** (``"1"`` / ``"2"`` / …). Source:
+       ``TaskCreate`` tool_results' ``TaskCreateOutput.task_id``.
+       Consumer: ``TaskUpdateInput.taskId``.
+
+    For each consumer with a matching id, stamp
+    ``creating_call_message_index`` on the input model so the title
+    formatter can wrap ``#<id>`` in an anchor pointing back to the
+    spawn card. Same backlink shape as PR #142 / #147 (Monitor) and
+    #148 / #152 (Cron*); no fold or dedup, just affordance.
+    """
+    from .models import (
+        BashOutput,
+        TaskCreateOutput,
+        TaskOutputInput,
+        TaskUpdateInput,
+        ToolResultMessage,
+        ToolUseMessage,
+    )
+
+    # Step 1: index originating tool_uses by id.
+    bg_task_id_to_call_index: dict[str, int] = {}
+    todo_task_id_to_call_index: dict[str, int] = {}
+    for tm in ctx.messages:
+        if not isinstance(tm.content, ToolResultMessage):
+            continue
+        # The CALL we want to link to is the tool_use, not the result —
+        # readers expect the click to land on the spawn card. pair_first
+        # holds the matching tool_use's message_index after standard
+        # pairing; fall back to the tool_result's own index defensively.
+        target_idx = tm.pair_first if tm.pair_first is not None else tm.message_index
+        if target_idx is None:
+            continue
+        output = tm.content.output
+        # Background-process ids — Bash structured field OR async-agent
+        # launch confirmation (recovered by the existing helper).
+        if isinstance(output, BashOutput) and output.background_task_id:
+            bg_task_id_to_call_index.setdefault(output.background_task_id, target_idx)
+        else:
+            agent_id = _async_agent_id_from_tool_result(tm.content)
+            if agent_id is not None:
+                bg_task_id_to_call_index.setdefault(agent_id, target_idx)
+        # Todo-list ids — TaskCreate's backend-assigned id.
+        if isinstance(output, TaskCreateOutput) and output.task_id:
+            todo_task_id_to_call_index.setdefault(output.task_id, target_idx)
+
+    if not bg_task_id_to_call_index and not todo_task_id_to_call_index:
+        return
+
+    # Step 2: stamp consumer call sites.
+    for tm in ctx.messages:
+        if not isinstance(tm.content, ToolUseMessage):
+            continue
+        input_model = tm.content.input
+        if isinstance(input_model, TaskOutputInput):
+            if input_model.creating_call_message_index is None and input_model.task_id:
+                target = bg_task_id_to_call_index.get(input_model.task_id)
+                if target is not None:
+                    input_model.creating_call_message_index = target
+        elif isinstance(input_model, TaskUpdateInput):
+            if input_model.creating_call_message_index is None and input_model.taskId:
+                target = todo_task_id_to_call_index.get(input_model.taskId)
+                if target is not None:
+                    input_model.creating_call_message_index = target
 
 
 def _link_tool_use_notifications(ctx: RenderingContext) -> None:
