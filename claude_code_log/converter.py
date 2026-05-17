@@ -1781,6 +1781,7 @@ def convert_jsonl_to(
             session_tree=session_tree,
             detail=detail,
             compact=compact,
+            write_combined=write_combined,
         )
 
     return output_path
@@ -2167,6 +2168,7 @@ def _generate_individual_session_files(
     session_tree: Optional[SessionTree] = None,
     detail: DetailLevel = DetailLevel.FULL,
     compact: bool = False,
+    write_combined: bool = True,
 ) -> int:
     """Generate individual files for each session in the specified format.
 
@@ -2258,7 +2260,9 @@ def _generate_individual_session_files(
             )
 
         if should_regenerate_session:
-            # Generate session content
+            # Generate session content. Under `--combined no` the
+            # combined file is never written, so the per-session
+            # back-link would 404 — suppress it.
             session_content = renderer.generate_session(
                 messages,
                 session_id,
@@ -2266,6 +2270,7 @@ def _generate_individual_session_files(
                 cache_manager,
                 output_dir,
                 session_tree=session_tree,
+                suppress_combined_link=not write_combined,
             )
             assert session_content is not None
             # Write session file

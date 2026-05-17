@@ -1867,6 +1867,7 @@ class MarkdownRenderer(Renderer):
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> str:
         """Generate Markdown for a single session."""
         # Include subagent entries whose sessionId was rewritten to
@@ -1881,8 +1882,9 @@ class MarkdownRenderer(Renderer):
             or (msg.sessionId or "").startswith(agent_prefix)
         ]
         # Back-link points at the same variant's combined file so users
-        # don't bounce between detail levels when navigating.
-        if cache_manager is not None:
+        # don't bounce between detail levels when navigating. Suppressed
+        # under `--combined no` where the combined file is never written.
+        if cache_manager is not None and not suppress_combined_link:
             from ..utils import variant_suffix as _variant_suffix
 
             suffix = _variant_suffix(self.detail, self.compact, "md")

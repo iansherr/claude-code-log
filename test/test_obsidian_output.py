@@ -502,6 +502,44 @@ class TestCombinedFlag:
         assert "(← open combined transcript)" not in index_html
         assert "combined_transcripts.html" not in index_html
 
+    def test_per_session_files_omit_combined_back_link_under_combined_no(
+        self, fake_projects: Path, isolated_cache: Path, tmp_path: Path
+    ):
+        """Under `--combined no` (the implicit default with
+        `--expand-paths`), per-session Markdown files must NOT carry
+        a `[← Back to combined transcript](combined_transcripts.md)`
+        line — the target was never written, so the link would 404."""
+        from click.testing import CliRunner
+
+        from claude_code_log.cli import main
+
+        out = tmp_path / "out-backlink"
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                str(fake_projects),
+                "--all-projects",
+                "--output",
+                str(out),
+                "--expand-paths",
+                "--format",
+                "md",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        session_files = list(out.rglob("session-*.md"))
+        assert session_files, "expected per-session files under --combined no"
+        for session_file in session_files:
+            content = session_file.read_text(encoding="utf-8")
+            assert "Back to combined transcript" not in content, (
+                f"{session_file} still carries a back-link to the "
+                f"(non-existent) combined transcript"
+            )
+            assert "combined_transcripts.md" not in content, (
+                f"{session_file} still references combined_transcripts.md"
+            )
+
     def test_bullet_tree_normalises_backslash_separators(self):
         """Regression: on Windows, `str(Path("home/joe"))` is
         `home\\joe`, so any leaked native-separator URL would land

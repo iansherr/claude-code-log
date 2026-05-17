@@ -1127,6 +1127,7 @@ class HtmlRenderer(Renderer):
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> str:
         """Generate HTML for a single session."""
         # Filter messages for this session (SummaryTranscriptEntry.sessionId is always None).
@@ -1146,8 +1147,10 @@ class HtmlRenderer(Renderer):
         # The back-link must point at the combined file of the *same*
         # variant this session is being rendered at — mixing variants
         # would land the user on a different detail/compact rendering.
+        # Suppressed under `--combined no` where the combined file is
+        # never written.
         combined_link = None
-        if cache_manager is not None:
+        if cache_manager is not None and not suppress_combined_link:
             try:
                 project_cache = cache_manager.get_cached_project_data()
                 if project_cache and project_cache.sessions:

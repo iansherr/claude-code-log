@@ -4217,6 +4217,7 @@ class Renderer:
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> Optional[str]:
         """Generate output for a single session.
 
@@ -4227,6 +4228,10 @@ class Renderer:
             cache_manager: Optional cache manager.
             output_dir: Optional output directory for referenced images.
             session_tree: Optional pre-built SessionTree (avoids rebuilding DAG).
+            suppress_combined_link: When True, omit the per-session
+                "Back to combined transcript" affordance (used under
+                `--combined no` where the combined file is not written
+                and the back-link would 404).
 
         Returns None by default; subclasses override to return formatted output.
         """

@@ -126,6 +126,7 @@ class JsonRenderer(Renderer):
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> str:
         """Generate JSON for a single session."""
         from ..utils import get_parent_session_id
@@ -138,8 +139,10 @@ class JsonRenderer(Renderer):
             if get_parent_session_id(getattr(msg, "sessionId", "") or "") == session_id
         ]
 
+        # Suppress the back-link under `--combined no` where the
+        # combined transcript file is never written.
         combined_link: Optional[str] = None
-        if cache_manager is not None:
+        if cache_manager is not None and not suppress_combined_link:
             from ..utils import variant_suffix as _variant_suffix
 
             suffix = _variant_suffix(self.detail, self.compact, "json")
