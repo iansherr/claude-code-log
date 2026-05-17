@@ -3096,11 +3096,13 @@ def process_projects_hierarchy(
     renderer = get_renderer(output_format, image_export_mode)
     index_regenerated = False
     if renderer.is_outdated(index_path) or from_date or to_date or any_cache_updated:
-        # Markdown index renders as a nested bullet-list directory
-        # tree under `--expand-paths` (the natural Obsidian-vault
-        # shape). HTML and JSON renderers ignore the kwarg.
+        # Under `--expand-paths` (Obsidian mode), both Markdown and
+        # HTML render the index as a nested directory hierarchy that
+        # mirrors the projected folder tree. JSON keeps a flat list
+        # (structured data — tree shape isn't meaningful) so it does
+        # not accept the kwarg.
         index_kwargs: dict[str, Any] = {}
-        if output_format in ("md", "markdown") and expand_paths:
+        if expand_paths and output_format in ("md", "markdown", "html"):
             index_kwargs["expand_paths_tree"] = True
         index_content = renderer.generate_projects_index(
             project_summaries, from_date, to_date, **index_kwargs

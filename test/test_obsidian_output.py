@@ -461,6 +461,47 @@ class TestCombinedFlag:
         # shape must NOT appear in tree mode.
         assert "## [home/joe/project/A]" not in index_md
 
+    def test_cli_expand_paths_yields_html_tree_index(
+        self, fake_projects: Path, isolated_cache: Path, tmp_path: Path
+    ):
+        """HTML index under `--expand-paths` renders as a nested
+        folder tree (`<ul class='project-tree'>` with `project-tree-dir`
+        and `project-tree-leaf` items), and project-name links to the
+        non-existent combined file are suppressed."""
+        from click.testing import CliRunner
+
+        from claude_code_log.cli import main
+
+        out = tmp_path / "out-html-tree"
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                str(fake_projects),
+                "--all-projects",
+                "--output",
+                str(out),
+                "--expand-paths",
+                # HTML is the default format; left explicit for clarity.
+                "--format",
+                "html",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        index_html = (out / "index.html").read_text(encoding="utf-8")
+        # Folder hierarchy markers — directory <li>s with bold names
+        # carrying a trailing slash.
+        assert "project-tree-dir" in index_html
+        assert "<strong>home/</strong>" in index_html
+        assert "<strong>joe/</strong>" in index_html
+        # At least one leaf project card is wrapped in the tree.
+        assert "project-tree-leaf" in index_html
+        # Under `--combined no` (the default with `--expand-paths`),
+        # the index must NOT render a hyperlink to combined files that
+        # were never written, nor the "open combined transcript" hint.
+        assert "(← open combined transcript)" not in index_html
+        assert "combined_transcripts.html" not in index_html
+
     def test_bullet_tree_normalises_backslash_separators(self):
         """Regression: on Windows, `str(Path("home/joe"))` is
         `home\\joe`, so any leaked native-separator URL would land

@@ -218,6 +218,45 @@ def check_html_version(html_file_path: Path) -> Optional[str]:
     return None
 
 
+def _build_html_project_tree(template_projects: list[Any]) -> dict[str, Any]:
+    """Build a nested directory tree from project paths for the HTML index.
+
+    Each project lands at the directory level of its ``html_file``'s
+    parent (i.e. the rel-dest directory under the index root). The
+    returned shape is a recursive dict:
+
+    ::
+
+        {
+          "_projects": [TemplateProject, ...],   # leaves at this level
+          "<subdir-name>": <subtree>,
+        }
+
+    Directories are sorted alphabetically by the recursive template
+    macro; the ``_projects`` lists keep their insertion order (which
+    is the by-last-modified order set in ``prepare_projects_index``).
+    """
+
+    def _to_posix(s: str) -> str:
+        return s.replace("\\", "/")
+
+    root: dict[str, Any] = {}
+    for project in template_projects:
+        # Use html_file's parent path components as the directory chain.
+        url = _to_posix(project.html_file)
+        parts = url.split("/")
+        node = root
+        # All but the last component are directories.
+        for part in parts[:-1]:
+            if not part:
+                continue
+            if part not in node or not isinstance(node[part], dict):
+                node[part] = {}
+            node = node[part]
+        node.setdefault("_projects", []).append(project)
+    return root
+
+
 class HtmlRenderer(Renderer):
     """HTML renderer for Claude Code transcripts."""
 
@@ -1132,10 +1171,24 @@ class HtmlRenderer(Renderer):
         project_summaries: list[dict[str, Any]],
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
+        expand_paths_tree: bool = False,
     ) -> str:
-        """Generate an HTML projects index page."""
+        """Generate an HTML projects index page.
+
+        Args:
+            project_summaries: Per-project summary dicts.
+            from_date / to_date: Date-filter labels for the title.
+            expand_paths_tree: When True (Obsidian mode — `--expand-paths`),
+                render the project list as a nested folder hierarchy that
+                mirrors the projected directory tree, instead of a flat
+                grid of cards.
+        """
         title = title_for_projects_index(project_summaries, from_date, to_date)
         template_projects, template_summary = prepare_projects_index(project_summaries)
+
+        project_tree: Optional[dict[str, Any]] = None
+        if expand_paths_tree:
+            project_tree = _build_html_project_tree(template_projects)
 
         env = get_template_environment()
         template = env.get_template("index.html")
@@ -1143,6 +1196,7 @@ class HtmlRenderer(Renderer):
             template.render(
                 title=title,
                 projects=template_projects,
+                project_tree=project_tree,
                 summary=template_summary,
                 library_version=get_library_version(),
             )
