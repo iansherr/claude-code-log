@@ -2424,10 +2424,11 @@ def _link_cron_jobs_by_id(ctx: RenderingContext) -> None:
 
 
 def _link_task_id_consumers(ctx: RenderingContext) -> None:
-    """Cross-link ``TaskOutput`` polls and ``TaskUpdate`` calls back to
-    the originating tool_use that minted their task_id (#154; PR #158
-    follow-up extends the pass with a forward link from the spawn card
-    to its first consumer).
+    """Cross-link ``TaskOutput`` / ``TaskStop`` calls and ``TaskUpdate``
+    calls back to the originating tool_use that minted their task_id
+    (#154; PR #158 follow-up adds ``TaskStop`` as a second background-id
+    consumer and extends the pass with a forward link from the spawn
+    card to its first consumer).
 
     Two parallel id spaces share the same shape:
 
@@ -2435,7 +2436,8 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
        Source: ``Bash`` tool_results carrying
        ``BashOutput.background_task_id`` (set when ``run_in_background=true``)
        OR ``Task`` tool_results' parsed ``agentId`` (the async-agent
-       launch confirmation). Consumer: ``TaskOutputInput.task_id``.
+       launch confirmation). Consumers: ``TaskOutputInput.task_id``
+       and ``TaskStopInput.task_id`` (both poll/terminate by id).
     2. **Todo-list ids** (``"1"`` / ``"2"`` / …). Source:
        ``TaskCreate`` tool_results' ``TaskCreateOutput.task_id``.
        Consumer: ``TaskUpdateInput.taskId``.
@@ -2467,6 +2469,7 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
         TaskCreateOutput,
         TaskInput,
         TaskOutputInput,
+        TaskStopInput,
         TaskUpdateInput,
         ToolResultMessage,
         ToolUseMessage,
@@ -2531,7 +2534,7 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
             continue
         session_key = tm.session_id or ""
         input_model = tm.content.input
-        if isinstance(input_model, TaskOutputInput):
+        if isinstance(input_model, (TaskOutputInput, TaskStopInput)):
             if input_model.task_id:
                 key = (session_key, input_model.task_id)
                 if input_model.creating_call_message_index is None:

@@ -46,6 +46,7 @@ from ..models import (
     TaskInput,
     TaskListInput,
     TaskOutputInput,
+    TaskStopInput,
     TaskUpdateInput,
     TeamCreateInput,
     TeamDeleteInput,
@@ -76,6 +77,7 @@ from ..models import (
     TaskListOutput,
     TaskOutput,
     TaskOutputResult,
+    TaskStopOutput,
     TaskUpdateOutput,
     TeamCreateOutput,
     TeamDeleteOutput,
@@ -155,6 +157,8 @@ from .tool_formatters import (
     format_read_output,
     format_task_input,
     format_task_output,
+    format_taskstop_input,
+    format_taskstop_output,
     format_todowrite_input,
     format_tool_result_content_raw,
     format_grep_input,
@@ -491,6 +495,10 @@ class HtmlRenderer(Renderer):
         """Format → minimal TaskOutput input card (block / timeout if set)."""
         return _format_taskoutput_input(input)
 
+    def format_TaskStopInput(self, input: TaskStopInput, _: TemplateMessage) -> str:
+        """Format → empty (id lives in the title, no further params)."""
+        return format_taskstop_input(input)
+
     def format_ToolUseContent(self, content: ToolUseContent, _: TemplateMessage) -> str:
         """Format → <table class='params'>key | value rows</table>."""
         return render_params_table(content.input)
@@ -601,6 +609,10 @@ class HtmlRenderer(Renderer):
     ) -> str:
         """Format → minimal TaskOutput result card (metadata only, no transcript)."""
         return _format_taskoutput_output(output)
+
+    def format_TaskStopOutput(self, output: TaskStopOutput, _: TemplateMessage) -> str:
+        """Format → ``Stopped`` / ``Not stopped`` badge + message body."""
+        return format_taskstop_output(output)
 
     def format_ToolResultContent(
         self, output: ToolResultContent, _: TemplateMessage
@@ -988,6 +1000,25 @@ class HtmlRenderer(Renderer):
             anchor = f"msg-d-{input.creating_call_message_index}"
             id_html = f"<a class='task-id-backlink' href='#{anchor}'>{id_html}</a>"
         return f"🔍 TaskOutput {id_html}"
+
+    def title_TaskStopInput(self, input: TaskStopInput, _: TemplateMessage) -> str:
+        """Title → '🛑 TaskStop #<task_id>' for the background-task
+        termination tool (PR #158 follow-up — was rendered as a generic
+        tool block before).
+
+        ``🛑`` reads as "halt", visually distinct from the ``🔍``
+        TaskOutput poll. The same backlink machinery as
+        ``TaskOutputInput`` applies: ``#<task_id>`` wraps in an anchor
+        pointing back at the originating spawn when
+        ``_link_task_id_consumers`` matched the id.
+        """
+        if not input.task_id:
+            return "🛑 TaskStop"
+        id_html = f"<code>#{escape_html(input.task_id)}</code>"
+        if input.creating_call_message_index is not None:
+            anchor = f"msg-d-{input.creating_call_message_index}"
+            id_html = f"<a class='task-id-backlink' href='#{anchor}'>{id_html}</a>"
+        return f"🛑 TaskStop {id_html}"
 
     def title_TaskNotificationMessage(
         self, content: TaskNotificationMessage, _: TemplateMessage

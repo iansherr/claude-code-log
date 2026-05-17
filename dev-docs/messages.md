@@ -368,6 +368,7 @@ Tool results appear as `ToolResultContent` items in user messages, linked to the
 | Bash | `BashOutput` | content, has_ansi | [tool_result](messages/tools/Bash-tool_result.json) |
 | Task | `TaskOutput` *(see note)* | result, metadata, async_final_answer | [tool_result](messages/tools/Task-tool_result.json) |
 | TaskOutput | `TaskOutputResult` *(see note)* | retrieval_status, task_id, task_type, status, output_truncated, output_file | (async-agent polling tool — issue #90) |
+| TaskStop | `TaskStopOutput` | stopped, message | (kills a background task by id — PR #158 follow-up) |
 | AskUserQuestion | `AskUserQuestionOutput` | answers, raw_message | [tool_result](messages/tools/AskUserQuestion-tool_result.json) |
 | ExitPlanMode | `ExitPlanModeOutput` | message, approved | [tool_result](messages/tools/ExitPlanMode-tool_result.json) |
 | Glob | `GlobOutput` *(TODO)* | pattern, files, truncated | [tool_result](messages/tools/Glob-tool_result.json) |
@@ -929,6 +930,7 @@ Sub-agent messages (from `Task` tool):
 |------|------------|---------------|-------------|--------------|
 | Task | [tool_use](messages/tools/Task-tool_use.json) | [tool_result](messages/tools/Task-tool_result.json) | `TaskInput` | `TaskOutput` |
 | TaskOutput *(async-agent polling)* | — | — | `TaskOutputInput` | `TaskOutputResult` |
+| TaskStop *(kill background task)* | — | — | `TaskStopInput` | `TaskStopOutput` |
 | TodoWrite | [tool_use](messages/tools/TodoWrite-tool_use.json) | [tool_result](messages/tools/TodoWrite-tool_result.json) | `TodoWriteInput` | — |
 | AskUserQuestion | [tool_use](messages/tools/AskUserQuestion-tool_use.json) | [tool_result](messages/tools/AskUserQuestion-tool_result.json) | `AskUserQuestionInput` | — |
 | ExitPlanMode | [tool_use](messages/tools/ExitPlanMode-tool_use.json) | [tool_result](messages/tools/ExitPlanMode-tool_result.json) | `ExitPlanModeInput` | — |

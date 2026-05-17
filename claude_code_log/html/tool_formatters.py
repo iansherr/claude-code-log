@@ -53,6 +53,8 @@ from ..models import (
     ReadOutput,
     TaskInput,
     TaskOutput,
+    TaskStopInput,
+    TaskStopOutput,
     TodoWriteInput,
     ToolResultContent,
     WebSearchInput,
@@ -452,6 +454,44 @@ def format_bash_output(output: BashOutput) -> str:
         </div>
     </details>
     """
+
+
+def format_taskstop_input(_taskstop_input: TaskStopInput) -> str:
+    """Format TaskStop tool_use body — empty.
+
+    The id lives in the title (with backlink), and there's nothing
+    else useful to render: ``TaskStopInput.task_id`` is the only
+    field. Returning empty keeps the spawn card compact.
+    """
+    return ""
+
+
+def format_taskstop_output(output: TaskStopOutput) -> str:
+    """Format TaskStop tool_result as HTML.
+
+    Two states:
+    - ``stopped=True`` (success): muted ``Stopped`` badge followed
+      by the harness message in a ``<pre>`` (often echoes the
+      original command — useful context for the reader).
+    - ``stopped=False`` (not-found / error): error-styled badge plus
+      the message. This is the common case in practice; the polled
+      task often completes naturally before the stop lands.
+
+    No markdown rendering — the message is plain text from the
+    harness.
+    """
+    badge_class = "taskstop-ok" if output.stopped else "taskstop-err"
+    badge_label = "Stopped" if output.stopped else "Not stopped"
+    parts: list[str] = [
+        f"<div class='taskstop-result'>"
+        f"<span class='taskstop-badge {badge_class}'>{badge_label}</span>"
+    ]
+    if output.message:
+        parts.append(
+            f"<pre class='taskstop-message'>{escape_html(output.message)}</pre>"
+        )
+    parts.append("</div>")
+    return "".join(parts)
 
 
 def format_task_output(output: TaskOutput) -> str:
@@ -1074,6 +1114,7 @@ __all__ = [
     "format_multiedit_input",
     "format_bash_input",
     "format_task_input",
+    "format_taskstop_input",
     "format_grep_input",
     "format_websearch_input",
     "format_webfetch_input",
@@ -1088,6 +1129,7 @@ __all__ = [
     "format_edit_output",
     "format_bash_output",
     "format_task_output",
+    "format_taskstop_output",
     "format_askuserquestion_output",
     "format_exitplanmode_output",
     "format_websearch_output",

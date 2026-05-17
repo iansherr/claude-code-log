@@ -52,6 +52,8 @@ from ..models import (
     SendMessageInput,
     TaskCreateInput,
     TaskInput,
+    TaskStopInput,
+    TaskStopOutput,
     TaskListInput,
     TaskOutputInput,
     TaskUpdateInput,
@@ -1058,6 +1060,19 @@ class MarkdownRenderer(Renderer):
             parts.append(f"**timeout:** `{input.timeout} ms`")
         return " · ".join(parts)
 
+    def format_TaskStopInput(self, _input: TaskStopInput, _: TemplateMessage) -> str:
+        """Format → empty (id lives in the title, no further params)."""
+        return ""
+
+    def format_TaskStopOutput(self, output: TaskStopOutput, _: TemplateMessage) -> str:
+        """Format → ``Stopped`` / ``Not stopped`` badge + verbatim message
+        (PR #158 follow-up; same intent as the HTML formatter but plain text).
+        """
+        badge = "**Stopped**" if output.stopped else "**Not stopped**"
+        if output.message:
+            return f"{badge}\n\n```\n{output.message}\n```"
+        return badge
+
     def format_TaskOutputResult(
         self, output: TaskOutputResult, _: TemplateMessage
     ) -> str:
@@ -1530,6 +1545,13 @@ class MarkdownRenderer(Renderer):
         if input.task_id:
             return f"🔍 TaskOutput `#{input.task_id}`"
         return "🔍 TaskOutput"
+
+    def title_TaskStopInput(self, input: TaskStopInput, _: TemplateMessage) -> str:
+        """Title → '🛑 TaskStop `#<task_id>`' (PR #158 follow-up — was
+        rendered as a generic tool block before)."""
+        if input.task_id:
+            return f"🛑 TaskStop `#{input.task_id}`"
+        return "🛑 TaskStop"
 
     def title_TaskNotificationMessage(
         self, content: TaskNotificationMessage, _: TemplateMessage

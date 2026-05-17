@@ -35,6 +35,7 @@ from ..models import (
     TaskInput,
     TaskListInput,
     TaskOutputInput,
+    TaskStopInput,
     TaskUpdateInput,
     TeamCreateInput,
     TeamDeleteInput,
@@ -73,6 +74,7 @@ from ..models import (
     TaskListOutput,
     TaskOutput,
     TaskOutputResult,
+    TaskStopOutput,
     TaskUpdateOutput,
     TeamCreateOutput,
     TeamDeleteOutput,
@@ -127,6 +129,9 @@ TOOL_INPUT_MODELS: dict[str, type[BaseModel]] = {
     # ``<task-notification>`` user entry that delivers the actual
     # result.
     "TaskOutput": TaskOutputInput,
+    # TaskStop kills a background task. Same ``task_id`` shape /
+    # id space as TaskOutput (PR #158 follow-up).
+    "TaskStop": TaskStopInput,
 }
 
 
@@ -1180,6 +1185,44 @@ def parse_taskoutput_output(
     )
 
 
+_TASKSTOP_SUCCESS_RE = re.compile(r"successfully stopped task", re.IGNORECASE)
+
+
+def parse_taskstop_output(
+    tool_result: ToolResultContent,
+    file_path: Optional[str],
+    tool_use_result: Optional[ToolUseResult] = None,
+) -> Optional[TaskStopOutput]:
+    """Parse the TaskStop tool result (PR #158 follow-up).
+
+    Two real-world shapes:
+
+    - Success: ``toolUseResult = {"message": "Successfully stopped
+      task: <id> (<echoed command>); ..."}`` — structured dict.
+    - Error: ``toolUseResult = "Error: No task found with ID: <id>"``
+      — plain string. Also the common ``is_error: true`` case.
+
+    Falls back to text-from-content when ``toolUseResult`` is absent
+    so older transcripts still produce a typed output.
+    """
+    del file_path
+    # Prefer structured ``toolUseResult`` when available.
+    if isinstance(tool_use_result, dict):
+        message = str(tool_use_result.get("message", "")).strip()
+        stopped = bool(message) and bool(_TASKSTOP_SUCCESS_RE.search(message))
+        return TaskStopOutput(stopped=stopped, message=message)
+    if isinstance(tool_use_result, str) and tool_use_result.strip():
+        message = tool_use_result.strip()
+        stopped = bool(_TASKSTOP_SUCCESS_RE.search(message))
+        return TaskStopOutput(stopped=stopped, message=message)
+    # Fallback: parse from the tool_result text directly.
+    text = _extract_tool_result_text(tool_result)
+    if not text:
+        return TaskStopOutput(stopped=False, message="")
+    stopped = bool(_TASKSTOP_SUCCESS_RE.search(text)) and not tool_result.is_error
+    return TaskStopOutput(stopped=stopped, message=text.strip())
+
+
 # Type alias for tool output parsers
 # Standard signature: (tool_result, file_path) -> Optional[ToolOutput]
 # Extended signature: (tool_result, file_path, tool_use_result) -> Optional[ToolOutput]
@@ -1213,10 +1256,17 @@ TOOL_OUTPUT_PARSERS: dict[str, ToolOutputParser] = {
     "SendMessage": parse_sendmessage_output,
     # Async-agents (issue #90)
     "TaskOutput": parse_taskoutput_output,
+    # PR #158 follow-up — typed renderer for TaskStop (was generic).
+    "TaskStop": parse_taskstop_output,
 }
 
 # Parsers that accept the extended signature with tool_use_result
-PARSERS_WITH_TOOL_USE_RESULT: set[str] = {"WebSearch", "WebFetch", "Bash"}
+PARSERS_WITH_TOOL_USE_RESULT: set[str] = {
+    "WebSearch",
+    "WebFetch",
+    "Bash",
+    "TaskStop",
+}
 
 
 def create_tool_output(

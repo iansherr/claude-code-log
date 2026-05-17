@@ -1056,9 +1056,9 @@ class BashInput(BaseModel):
     # visually prominent (PR #158 follow-up).
     minted_background_task_id: Optional[str] = None
     # Renderer-set: ``message_index`` of the first ``TaskOutput`` poll
-    # that consumed our minted id. Forward counterpart to
-    # ``creating_call_message_index`` on the consumer side — wraps the
-    # spawn's ``#<id>`` in a forward-link anchor when set.
+    # (or ``TaskStop``) that consumed our minted id. Forward counterpart
+    # to ``creating_call_message_index`` on the consumer side — wraps
+    # the spawn's ``#<id>`` in a forward-link anchor when set.
     linked_consumer_message_index: Optional[int] = None
 
 
@@ -1405,6 +1405,28 @@ class TaskOutputInput(BaseModel):
     model_config = {"extra": "allow"}
 
 
+class TaskStopInput(BaseModel):
+    """Input parameters for the TaskStop tool (kill a background task).
+
+    Counterpart to ``TaskOutput``: same ``task_id`` shape, same id
+    space (background-process ids minted by ``Bash`` with
+    ``run_in_background=true`` or async-agent ``Task`` launches). The
+    only field is the id of the background task to terminate.
+
+    Cross-links to the spawn card the same way ``TaskOutputInput``
+    does (PR #158 follow-up) — shares ``_link_task_id_consumers``.
+    """
+
+    task_id: str = ""
+
+    # Renderer-set: same role as ``TaskOutputInput.creating_call_message_index``
+    # — message_index of the originating spawn card so the formatter
+    # can wrap ``#<task_id>`` in a backlink anchor.
+    creating_call_message_index: Optional[int] = None
+
+    model_config = {"extra": "allow"}
+
+
 # Union of all typed tool inputs
 ToolInput = Union[
     BashInput,
@@ -1433,6 +1455,7 @@ ToolInput = Union[
     TaskListInput,
     SendMessageInput,
     TaskOutputInput,
+    TaskStopInput,
     ToolUseContent,  # Generic fallback when no specialized parser
 ]
 
@@ -1883,6 +1906,29 @@ class TaskOutputResult:
     raw_text: Optional[str] = None
 
 
+@dataclass
+class TaskStopOutput:
+    """Parsed TaskStop tool result.
+
+    Two real-world shapes observed:
+
+    - **Success** — ``toolUseResult = {"message": "Successfully stopped
+      task: <id> (<echoed command>); ..."}``. We surface the success
+      flag and the message verbatim; the message body usually echoes
+      back the original command which is itself informative.
+    - **Error** — ``toolUseResult = "Error: No task found with ID:
+      <id>"`` (plain string). The common case in practice — the task
+      already completed naturally before the stop landed. We capture
+      the error text and set ``stopped=False``.
+
+    Symmetric with ``TaskStopInput``. The renderer reads ``stopped``
+    to choose between success and error styling.
+    """
+
+    stopped: bool  # True on success, False on error / not-found
+    message: str = ""  # Human-readable message from the harness
+
+
 # Union of all specialized output types + ToolResultContent as generic fallback
 ToolOutput = Union[
     ReadOutput,
@@ -1906,6 +1952,7 @@ ToolOutput = Union[
     TaskListOutput,
     SendMessageOutput,
     TaskOutputResult,
+    TaskStopOutput,
     # TODO: Add as parsers are implemented:
     # GlobOutput, GrepOutput
     ToolResultContent,  # Generic fallback for unparsed results
