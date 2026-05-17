@@ -465,7 +465,7 @@ In Markdown + `--expand-paths` mode, the natural index shape is a nested bullet 
 
 Each directory appears as a parent bullet with its sessions (or sub-dirs) as nested children. Walks the same path-projection tree the file system was projected into, but at the index level. Renders nicely in Obsidian's preview AND in plain Markdown viewers. Especially good when combined with the no-combined-transcripts mode (above), since each leaf bullet then directly points to the session file the user wants to open.
 
-#### **CRITICAL**: Markdown renderer must emit per-message timestamps
+#### **CRITICAL**: Markdown renderer must emit per-message timestamps — tracked as [issue #160](https://github.com/daaain/claude-code-log/issues/160)
 
 This is "absolutely need" tier, not a nice-to-have — it's what enables a cross-session narrative / episodic-memory layer in Obsidian. Without per-message timestamps in the Markdown output, the user can't reconstruct *when* something happened, which kills the whole "transcript as Obsidian note" workflow.
 
@@ -486,30 +486,37 @@ Nice! Please commit and reply to bob that you did it.
 > No response requested.
 ```
 
-**Required:**
+**Required (refined 2026-05-17):**
 
 ```markdown
-## 🤷 User: *Nice! Please commit and reply to bob that…*
-*2026-03-21 18:40:44*
+## 🤷 User: *except there's no need to fetch...*
+**`2026-02-03`** `21:21:20`
 
-Nice! Please commit and reply to bob that you did it.
+except there's no need to fetch... git worktree...
 
-### 🤖 Assistant: *Done! I've:*
-*2026-03-21 18:44:22*
+### 🤖 Assistant: *Right, in a git worktree setup all branches…*
+`21:22:18`
 
-> Done! I've:
->
-> 1. **Committed** the WebFetch tool renderer implementation (commit `da363b8`) …
-> 2. **Replied** to bob (mail #250) …
+> Right, in a git worktree setup all branches are already available locally. I'll skip the fetch next time …
 
-> No response requested.
+### 🤖 Assistant: *next-day continuation...*
+**`2026-02-04`** `00:01:45`
 ```
 
-One italics line per message, immediately after the heading. Format: `*YYYY-MM-DD HH:MM:SS*` (matches the existing HTML timestamp rendering at the message level).
+**Format spec:**
 
-The HTML renderer already emits timestamps; this is purely a Markdown-side omission to fix. Should be a small change in `claude_code_log/markdown/renderer.py` at the per-message header emission point.
+- One timestamp line immediately after each message heading.
+- **Date-on-change rule.** Track `last_date_seen` across the current generate() call (a single session or a combined paginated page). When the current message's date differs from `last_date_seen`, emit `` **`YYYY-MM-DD`** `HH:MM:SS` `` (bold date + space + plain time, both in inline-code backticks). When the date matches, emit `` `HH:MM:SS` `` only. This keeps the typical case (same-day messages) tight while making day boundaries visually obvious for cross-session narrative.
+- Reset `last_date_seen` to `None` on `SessionHeaderMessage` so the first message of every session always emits its full date.
+- HTML output is unchanged — it already has per-message timestamps via the `.timestamp` span. JSON `timestamp` field is structured data and stays as-is.
 
-Considered out of scope for #151 (the path-projection PR), but should land **before** anyone seriously uses the Obsidian-friendly output for narrative work. Worth its own issue.
+**CLI flag:** `--no-timestamps`, Markdown-only. When set, suppress the per-message timestamp line entirely. Emit a warning (not an error) when combined with `--format html` / `--format json` — same shape as the existing `--expand-paths` / `--filter-path` warnings (this is the established pattern in `cli.py`).
+
+**Implementation hint:** the change lives in `claude_code_log/markdown/renderer.py::_render_message` right after `parts.append(f"{'#' * heading_level} {title}")`. The timestamp source is `msg.meta.timestamp` (raw ISO string). Use `format_timestamp` from `claude_code_log/utils.py` to derive the display form, then split into date / time components. Reset state in the same branch that already resets `_last_heading_category` on session headers.
+
+The HTML renderer already emits timestamps; this is purely a Markdown-side omission to fix.
+
+Considered out of scope for #151 (the path-projection PR) to keep the diff reviewable — should ship as a follow-up PR **before** anyone seriously uses the Obsidian-friendly output for narrative work.
 
 ---
 
