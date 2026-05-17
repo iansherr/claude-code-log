@@ -31,7 +31,7 @@
 .diff-line {
     padding: 2px 4px 2px 2px;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .diff-marker {

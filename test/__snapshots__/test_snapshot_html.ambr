@@ -134,8 +134,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -428,6 +427,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -759,7 +766,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -822,7 +829,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -844,7 +851,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -1202,7 +1209,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -1356,7 +1363,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -1462,7 +1469,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -2752,7 +2759,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -6043,8 +6050,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -6337,6 +6343,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -6668,7 +6682,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -6731,7 +6745,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -6753,7 +6767,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -7111,7 +7125,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -7265,7 +7279,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -7371,7 +7385,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -8661,7 +8675,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -11861,8 +11875,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -13999,8 +14012,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -14293,6 +14305,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -14624,7 +14644,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -14687,7 +14707,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -14709,7 +14729,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -15067,7 +15087,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -15221,7 +15241,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -15327,7 +15347,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -16617,7 +16637,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -20013,8 +20033,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -20307,6 +20326,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -20638,7 +20665,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -20701,7 +20728,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -20723,7 +20750,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -21081,7 +21108,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -21235,7 +21262,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -21341,7 +21368,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -22631,7 +22658,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -26258,8 +26285,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -26552,6 +26578,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -26883,7 +26917,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -26946,7 +26980,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -26968,7 +27002,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -27326,7 +27360,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -27480,7 +27514,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -27586,7 +27620,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -28876,7 +28910,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -32371,8 +32405,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -32665,6 +32698,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -32996,7 +33037,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -33059,7 +33100,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -33081,7 +33122,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -33439,7 +33480,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -33593,7 +33634,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -33699,7 +33740,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -34989,7 +35030,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
@@ -38543,8 +38584,7 @@
       padding: 10px;
       border-radius: 5px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
+      overflow-wrap: break-word;
       font-family: var(--font-monospace);
       line-height: 1.5;
   }
@@ -38837,6 +38877,14 @@
       font-size: 1.1em;
       line-height: 1;
       color: var(--fold-color);
+      /* Tighten the gap between the two glyphs in ``▼▼`` / ``▶▶`` —
+         Chrome renders default kerning much wider than Firefox does,
+         leaving an awkward gap. The pulled-in -0.2em compromise reads
+         cleanly in Chrome without crowding the glyphs in Firefox
+         (issue #73 / #153). No visible effect on single-glyph ``▼``
+         since letter-spacing only matters when two characters are
+         adjacent. */
+      letter-spacing: -.2em;
   }
   
   .fold-count {
@@ -39168,7 +39216,7 @@
       border-radius: 4px;
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -39231,7 +39279,7 @@
       border-left: 3px solid var(--system-error-color);
       font-size: 0.85em;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       overflow-x: auto;
       max-height: 300px;
       overflow-y: auto;
@@ -39253,7 +39301,7 @@
       font-size: 0.9em;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: var(--text-primary);
       overflow-x: auto;
   }
@@ -39611,7 +39659,7 @@
   
   /* Content styling */
   .content {
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .content>pre {
@@ -39765,7 +39813,7 @@
   .thinking-text {
       font-family: var(--font-ui);
       font-size: 90%;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
       color: #555;
   }
   
@@ -39871,7 +39919,7 @@
       color: #555;
       line-height: 1.3;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   /* Message filtering */
@@ -41161,7 +41209,7 @@
   .diff-line {
       padding: 2px 4px 2px 2px;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      overflow-wrap: break-word;
   }
   
   .diff-marker {
