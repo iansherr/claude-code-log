@@ -2457,11 +2457,14 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
     is the first "renderer-set input field driven by tool_result data"
     pattern — see dev-docs/implementing-a-tool-renderer.md.
 
-    Keys are ``(session_id, task_id)`` tuples so todo ids like ``#1``
-    don't cross-link between sessions in combined-transcripts
-    renders (CodeRabbit #158). Background ids are random alphanumeric
-    and unlikely to collide across sessions in practice, but they
-    ride the same shape for symmetry.
+    Keys are ``(render_session_id, task_id)`` tuples so todo ids like
+    ``#1`` don't cross-link between sessions in combined-transcripts
+    renders, AND so within-session forks (which share the underlying
+    ``session_id`` but each carry a distinct ``render_session_id``)
+    don't cross-link between branches either (CodeRabbit on
+    ff16eb3 / #158). Background ids are random alphanumeric and
+    unlikely to collide across sessions in practice, but they ride
+    the same shape for symmetry.
     """
     from .models import (
         BashInput,
@@ -2491,7 +2494,7 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
         target_idx = tm.pair_first if tm.pair_first is not None else tm.message_index
         if target_idx is None:
             continue
-        session_key = tm.session_id or ""
+        session_key = tm.render_session_id or ""
         output = tm.content.output
         # Background-process ids — Bash structured field OR async-agent
         # launch confirmation (recovered by the existing helper).
@@ -2544,7 +2547,7 @@ def _link_task_id_consumers(ctx: RenderingContext) -> None:
     for tm in ctx.messages:
         if not isinstance(tm.content, ToolUseMessage):
             continue
-        session_key = tm.session_id or ""
+        session_key = tm.render_session_id or ""
         input_model = tm.content.input
         if isinstance(input_model, (TaskOutputInput, TaskStopInput)):
             if input_model.task_id:
