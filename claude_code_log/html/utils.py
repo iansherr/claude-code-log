@@ -274,6 +274,9 @@ def _create_pygments_plugin() -> Any:
 @functools.lru_cache(maxsize=1)
 def _get_markdown_renderer() -> mistune.Markdown:
     """Get cached Mistune markdown renderer with Pygments syntax highlighting."""
+    from ..markdown_plugins import make_codespan_sha_plugin, make_sha_plugin
+    from ..git_remote import resolve_sha_for_current_render
+
     return mistune.create_markdown(
         plugins=[
             "strikethrough",
@@ -283,6 +286,15 @@ def _get_markdown_renderer() -> mistune.Markdown:
             "task_lists",
             "def_list",
             _create_pygments_plugin(),
+            # SHA → commit-URL linkifier (issue #156). Resolver reads
+            # the per-render cwd from a ContextVar, so the cached
+            # singleton renderer keeps working unchanged across
+            # transcripts from different repos.
+            make_sha_plugin(resolve_sha_for_current_render),
+            # Codespan-wrapped variant: `5baac35` → <a><code>…</code></a>.
+            # Registers with before="codespan" so it fires before
+            # mistune's built-in rule consumes the backticks.
+            make_codespan_sha_plugin(resolve_sha_for_current_render),
         ],
         escape=False,  # Don't escape HTML since we want to render markdown properly
         hard_wrap=True,  # Line break for newlines (checklists in Assistant messages)
@@ -307,6 +319,9 @@ def _get_user_markdown_renderer() -> mistune.Markdown:
     content uses ``escape=False`` deliberately (tool output renders
     pre-formed HTML); user content must not bypass escaping.
     """
+    from ..markdown_plugins import make_codespan_sha_plugin, make_sha_plugin
+    from ..git_remote import resolve_sha_for_current_render
+
     return mistune.create_markdown(
         plugins=[
             "strikethrough",
@@ -316,6 +331,11 @@ def _get_user_markdown_renderer() -> mistune.Markdown:
             "task_lists",
             "def_list",
             _create_pygments_plugin(),
+            # See _get_markdown_renderer for the SHA-link plugins'
+            # contract; identical here — escape=True only affects
+            # HTML in user text bodies, not link emission.
+            make_sha_plugin(resolve_sha_for_current_render),
+            make_codespan_sha_plugin(resolve_sha_for_current_render),
         ],
         escape=True,
         hard_wrap=True,

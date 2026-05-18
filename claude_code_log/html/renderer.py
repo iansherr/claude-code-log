@@ -1152,6 +1152,37 @@ class HtmlRenderer(Renderer):
             page_stats: Optional page statistics (message_count, date_range, token_summary).
             session_tree: Optional pre-built SessionTree (avoids rebuilding DAG).
         """
+
+        from ..git_remote import canonical_cwd_from_messages, render_with_repo_context
+
+        # Bind the per-render canonical repo cwd for the SHA-link
+        # plugin (issue #156). The mistune renderers themselves are
+        # cached singletons; the resolver reads the cwd from a
+        # ContextVar so different transcripts can scope to different
+        # repos without cache invalidation.
+        repo_cwd = canonical_cwd_from_messages(messages)
+        with render_with_repo_context(repo_cwd):
+            return self._generate_inner(
+                messages,
+                title=title,
+                combined_transcript_link=combined_transcript_link,
+                output_dir=output_dir,
+                session_tree=session_tree,
+                page_info=page_info,
+                page_stats=page_stats,
+            )
+
+    def _generate_inner(
+        self,
+        messages: list[TranscriptEntry],
+        title: Optional[str] = None,
+        combined_transcript_link: Optional[str] = None,
+        output_dir: Optional[Path] = None,
+        session_tree: Optional["SessionTree"] = None,
+        page_info: Optional[dict[str, Any]] = None,
+        page_stats: Optional[dict[str, Any]] = None,
+    ) -> str:
+        """Body of ``generate`` running inside the SHA-resolver context."""
         import time
 
         t_start = time.time()

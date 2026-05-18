@@ -20,6 +20,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        # Full history so test/test_commit_linkifier.py's
+        # TestIntegrationLocalRepo can resolve SHAs older than the
+        # current tip (`git branch -r --contains` reads local refs
+        # only and needs the commits in the object DB).
+        fetch-depth: 0
 
     - name: Install uv
       uses: astral-sh/setup-uv@v4
