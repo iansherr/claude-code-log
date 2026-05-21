@@ -474,7 +474,40 @@ def _clear_output_files(
     "-o",
     "--output",
     type=click.Path(path_type=Path),
-    help="Output file path (default: input file with format extension, or combined_transcripts.{html,md} for directories)",
+    help=(
+        "Output destination. With a recognised file suffix "
+        "(.html/.md/.markdown/.json) treated as a single output file; "
+        "otherwise treated as a directory root (and now also honoured "
+        "for --all-projects, where outputs land at "
+        "<output>/<project>/...). Pair with --expand-paths to project "
+        "back to the real on-disk tree."
+    ),
+)
+@click.option(
+    "--expand-paths",
+    is_flag=True,
+    help=(
+        "When set with --output and --all-projects, expand each "
+        "project's flat encoded dir name (e.g. '-home-joe-project-A') "
+        "back to its real path under <output>/. Resolves the encoded "
+        "name via the cache's recorded `cwd`, falling back to a peek "
+        "of the first JSONL when the cache is empty. Useful for "
+        "projecting transcripts into Obsidian-style Markdown vaults."
+    ),
+)
+@click.option(
+    "--filter-path",
+    type=str,
+    default=None,
+    help=(
+        "Restrict --all-projects to projects matching a path prefix. "
+        "With --expand-paths, the prefix is matched against the "
+        "expanded real path AND truncated from the destination "
+        "(`/home/joe/project/A` with --filter-path /home/joe lands at "
+        "<output>/project/A/). Without --expand-paths, matches the "
+        "flat encoded dir name (e.g. '-home-joe' selects projects "
+        "starting with '-home-joe-')."
+    ),
 )
 @click.option(
     "--open-browser",
@@ -499,7 +532,25 @@ def _clear_output_files(
 @click.option(
     "--no-individual-sessions",
     is_flag=True,
-    help="Skip generating individual session HTML files (only create combined transcript)",
+    help=(
+        "Skip generating individual session files (combined transcript only). "
+        "Back-compat alias for --combined only."
+    ),
+)
+@click.option(
+    "--combined",
+    "combined",
+    type=click.Choice(["yes", "no", "only"], case_sensitive=False),
+    default=None,
+    help=(
+        "Control combined-vs-individual transcript generation: "
+        "'yes' = both combined and per-session files (default for --all-projects); "
+        "'no' = only per-session files (recommended for Obsidian / vault use — "
+        "combined is dead weight); "
+        "'only' = only the combined file (= --no-individual-sessions). "
+        "When unset, defaults to 'no' under --expand-paths (Obsidian mode), "
+        "else 'yes'."
+    ),
 )
 @click.option(
     "--no-cache",
@@ -587,6 +638,9 @@ def _clear_output_files(
 def main(
     input_path: Optional[Path],
     output: Optional[Path],
+    expand_paths: bool,
+    filter_path: Optional[str],
+    combined: Optional[str],
     open_browser: bool,
     from_date: Optional[str],
     to_date: Optional[str],
@@ -615,6 +669,79 @@ def main(
 
     # Configure logging to show warnings and above
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+
+    # Resolve --combined default and back-compat with --no-individual-sessions.
+    # `--combined` semantics:
+    #   yes  → write combined transcript AND per-session files
+    #   no   → write per-session files only (Obsidian-friendly)
+    #   only → write combined transcript only (= --no-individual-sessions)
+    # Default: yes, except when --expand-paths is set (Obsidian mode → no).
+    if combined is None:
+        combined = "no" if expand_paths else "yes"
+    else:
+        combined = combined.lower()
+    if no_individual_sessions:
+        if combined == "no":
+            raise click.BadParameter(
+                "--no-individual-sessions conflicts with --combined no "
+                "(both attempt to skip per-session files but --no-individual-sessions "
+                "implies combined-only). Pick one.",
+                param_hint="--no-individual-sessions",
+            )
+        # `--no-individual-sessions` is a strict alias for `--combined only`;
+        # honour it for back-compat (and prefer this over an unset --combined).
+        combined = "only"
+    # Derived flags actually consumed downstream.
+    write_combined = combined in ("yes", "only")
+    write_individual = combined in ("yes", "no")
+
+    # Loud rejection of relative `--filter-path` when paired with
+    # `--expand-paths` (#151). Without this, a user typing
+    # `--filter-path home/joe` (forgetting the leading `/`) would
+    # match against an absolute resolved path via `Path.relative_to`,
+    # which raises ValueError for *any* mismatch including
+    # "argument is relative" — so the silent failure mode is "every
+    # project skipped". Reject up-front instead.
+    #
+    # `path_looks_absolute` is host-OS-agnostic (accepts POSIX `/`
+    # OR Windows `C:\` form), so a Linux-recorded `/home/joe`
+    # processed on Windows still passes the guard.
+    from .utils import path_looks_absolute as _path_looks_absolute
+
+    if filter_path and expand_paths and not _path_looks_absolute(filter_path):
+        raise click.BadParameter(
+            f"--filter-path must be an absolute path when --expand-paths is set; "
+            f"got {filter_path!r}",
+            param_hint="--filter-path",
+        )
+
+    # Warn early if Obsidian-friendly flags (#151) were passed in a
+    # context where they're no-ops. `--all-projects` (explicit or
+    # implicit via no input_path) is the only mode that consumes them;
+    # `--output` must be a directory (file-suffixed output goes
+    # through the single-file path which doesn't honour these flags).
+    from .utils import output_path_is_file as _output_path_is_file
+
+    will_run_all_projects = all_projects or input_path is None
+    if (expand_paths or filter_path) and tui:
+        click.echo(
+            "Warning: --expand-paths / --filter-path are ignored in --tui mode.",
+            err=True,
+        )
+    elif (expand_paths or filter_path) and not will_run_all_projects:
+        click.echo(
+            "Warning: --expand-paths / --filter-path require --all-projects "
+            "(or omitting INPUT_PATH); ignoring.",
+            err=True,
+        )
+    elif (expand_paths or filter_path) and (
+        output is None or _output_path_is_file(output)
+    ):
+        click.echo(
+            "Warning: --expand-paths / --filter-path require --output to be a "
+            "directory (no recognised file suffix); ignoring.",
+            err=True,
+        )
 
     from .models import DetailLevel
 
@@ -813,17 +940,31 @@ def main(
                 raise FileNotFoundError(f"Projects directory not found: {input_path}")
 
             click.echo(f"Processing all projects in {input_path}...")
+            # `--output` for `--all-projects` (#151): pass a *directory*
+            # to project per-project outputs into. File-suffixed values
+            # are routed to the single-file path elsewhere; here we
+            # only honour directory-shaped `--output`.
+            from .utils import output_path_is_file
+
+            output_dir_for_projects: Optional[Path] = None
+            if output is not None and not output_path_is_file(output):
+                output_dir_for_projects = output
+
             output_path = process_projects_hierarchy(
                 input_path,
                 from_date,
                 to_date,
                 not no_cache,
-                not no_individual_sessions,
+                write_individual,
                 output_format,
                 image_export_mode,
                 page_size=page_size,
                 detail=detail_level,
                 compact=compact,
+                output_dir=output_dir_for_projects,
+                expand_paths=expand_paths,
+                filter_path=filter_path,
+                write_combined=write_combined,
             )
 
             # Count processed projects
@@ -872,7 +1013,7 @@ def main(
             output,
             from_date,
             to_date,
-            not no_individual_sessions,
+            write_individual,
             not no_cache,
             image_export_mode=image_export_mode,
             page_size=page_size,
@@ -881,12 +1022,13 @@ def main(
             # User's `-o` path is a one-off export, not a cached artifact:
             # don't occupy a cache slot keyed by an arbitrary destination.
             update_cache=output is None,
+            write_combined=write_combined,
         )
         if input_path.is_file():
             click.echo(f"Successfully converted {input_path} to {output_path}")
         else:
             jsonl_count = len(list(input_path.glob("*.jsonl")))
-            if not no_individual_sessions:
+            if write_individual:
                 ext = get_file_extension(output_format)
                 session_files = list(input_path.glob(f"session-*.{ext}"))
                 click.echo(

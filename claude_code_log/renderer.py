@@ -479,6 +479,12 @@ class TemplateProject:
         self.earliest_timestamp = project_data.get("earliest_timestamp", "")
         self.sessions = project_data.get("sessions", [])
         self.working_directories = project_data.get("working_directories", [])
+        # `--combined no` (#151 follow-up): when set, the index should
+        # link directly to per-session files (`session["file"]`) rather
+        # than the (skipped) combined-transcript file.
+        self.combined_suppressed: bool = bool(
+            project_data.get("combined_suppressed", False)
+        )
         # Teammates feature — distinct team names across this project's
         # sessions. Computed in get_all_cached_projects from each
         # SessionCacheData.team_name.
@@ -4389,6 +4395,7 @@ class Renderer:
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> Optional[str]:
         """Generate output for a single session.
 
@@ -4399,6 +4406,10 @@ class Renderer:
             cache_manager: Optional cache manager.
             output_dir: Optional output directory for referenced images.
             session_tree: Optional pre-built SessionTree (avoids rebuilding DAG).
+            suppress_combined_link: When True, omit the per-session
+                "Back to combined transcript" affordance (used under
+                `--combined no` where the combined file is not written
+                and the back-link would 404).
 
         Returns None by default; subclasses override to return formatted output.
         """

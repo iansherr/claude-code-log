@@ -12313,6 +12313,38 @@
       gap: 15px;
   }
   
+  /* --expand-paths (Obsidian) mode: nested folder hierarchy. */
+  .project-list-tree {
+      display: block;
+  }
+  
+  .project-tree {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+  }
+  
+  .project-tree .project-tree {
+      padding-left: 1.5em;
+      border-left: 1px dashed #00000022;
+      margin-left: 0.4em;
+  }
+  
+  .project-tree-dir > details > summary {
+      cursor: pointer;
+      padding: 4px 0;
+      font-size: 1.05em;
+      color: #555;
+  }
+  
+  .project-tree-dir > details > summary strong {
+      font-weight: 600;
+  }
+  
+  .project-tree-leaf {
+      margin: 10px 0;
+  }
+  
   .project-card {
       background-color: #ffffff66;
       border-radius: 8px;
@@ -13663,54 +13695,67 @@
           </div>
       </div>
   
+      
+  
+      
+      
+  
       <div class='project-list'>
           
-          <div class='project-card'>
-              <div class='project-name'>
-                  <a href='-Users-test-project-beta/combined_transcripts.html'>Users/test/project/beta</a>
-                  
-                  <span class="transcript-link-hint">(← open combined transcript)</span>
-                  
-              </div>
+          
+          
+      <div class='project-card'>
+          <div class='project-name'>
               
-              <div class='project-stats'>
-                  <div class='stat'>📁 3 transcript files</div>
-                  <div class='stat'>💬 25 messages</div>
-                  
-                  <div class='stat'>🕒 [LAST_MODIFIED]</div>
-                  
-                  
-                  
-              </div>
-  
+              <a href='-Users-test-project-beta/combined_transcripts.html'>Users/test/project/beta</a>
+              
+              
+              <span class="transcript-link-hint">(← open combined transcript)</span>
               
           </div>
           
-          <div class='project-card'>
-              <div class='project-name'>
-                  <a href='-Users-test-project-alpha/combined_transcripts.html'>alpha</a>
-                  
-                  <span class="transcript-link-hint">(← open combined transcript)</span>
-                  
-              </div>
+          <div class='project-stats'>
+              <div class='stat'>📁 3 transcript files</div>
+              <div class='stat'>💬 25 messages</div>
               
-              <div class='project-stats'>
-                  <div class='stat'>📁 5 transcript files</div>
-                  <div class='stat'>💬 42 messages</div>
-                  
-                  <div class='stat'>🕒 <span class="timestamp" data-timestamp="2025-01-01T09:00:00Z" data-timestamp-end="2025-01-15T10:00:00Z">2025-01-01 09:00:00 to 2025-01-15 10:00:00</span></div>
-                  
-                  
-                  <div class='stat'>🪙 Input: 1000 | Output: 2000 | Cache Creation: 500 | Cache Read: 1500</div>
-                  
-                  
-              </div>
+              <div class='stat'>🕒 [LAST_MODIFIED]</div>
+              
+              
+              
+          </div>
   
+          
+      </div>
+      
+          
+          
+      <div class='project-card'>
+          <div class='project-name'>
               
-              <div class='project-sessions'>
-                  <details>
-                      <summary>Sessions (1)</summary>
-                      
+              <a href='-Users-test-project-alpha/combined_transcripts.html'>alpha</a>
+              
+              
+              <span class="transcript-link-hint">(← open combined transcript)</span>
+              
+          </div>
+          
+          <div class='project-stats'>
+              <div class='stat'>📁 5 transcript files</div>
+              <div class='stat'>💬 42 messages</div>
+              
+              <div class='stat'>🕒 <span class="timestamp" data-timestamp="2025-01-01T09:00:00Z" data-timestamp-end="2025-01-15T10:00:00Z">2025-01-01 09:00:00 to 2025-01-15 10:00:00</span></div>
+              
+              
+              <div class='stat'>🪙 Input: 1000 | Output: 2000 | Cache Creation: 500 | Cache Read: 1500</div>
+              
+              
+          </div>
+  
+          
+          <div class='project-sessions'>
+              <details>
+                  <summary>Sessions (1)</summary>
+                  
   
   <div class='navigation'>
       
@@ -13723,7 +13768,6 @@
           
           <div class='session-nav-item'
               >
-              
               <a href='-Users-test-project-alpha/session-session-abc12345.html'
                   class='session-link'>
                   <div class='session-link-title'>
@@ -13747,10 +13791,12 @@
   </div>
   
   
-                  </details>
-              </div>
-              
+              </details>
           </div>
+          
+      </div>
+      
+          
           
       </div>
   
@@ -36342,7 +36388,6 @@
           
           <div class='session-nav-item'
               >
-              
               <a href='#msg-d-0'
                   class='session-link'>
                   <div class='session-link-title'>
@@ -36365,7 +36410,6 @@
           
           <div class='session-nav-item'
               >
-              
               <a href='#msg-d-4'
                   class='session-link'>
                   <div class='session-link-title'>

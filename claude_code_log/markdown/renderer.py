@@ -258,6 +258,86 @@ def _protect_html_tags(text: str) -> str:
     return str(rendered).rstrip("\n")
 
 
+def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
+    """Render `--expand-paths` Markdown index as a nested bullet-list
+    directory tree.
+
+    Each unique path-component along the way becomes a bullet at its
+    nesting depth; sessions are leaf bullets under their parent dir.
+    The path is derived from `project.html_file` (the combined-link
+    relative path) — when ``combined_suppressed`` is set the per-session
+    `file` entries replace the project-level combined link.
+
+    Returns a list of Markdown lines (joined by `\\n` by the caller),
+    or an empty list when no tree-shapable data is present (signal to
+    fall back to the flat layout).
+    """
+    # Tree node:
+    #   {"_links": list[(label, url, timestamp_range)],  # at this level
+    #    "<child-name>": <subtree-node>}
+    root: dict[str, Any] = {}
+
+    def _insert(path_parts: list[str], label: str, url: str, ts: str) -> None:
+        """Walk `path_parts` down the tree; record the link at the leaf
+        directory. The leaf is the second-to-last path component (the
+        last is the filename itself)."""
+        node = root
+        # The last part of path_parts is the filename; walk up to its
+        # parent directory.
+        for part in path_parts[:-1]:
+            if part not in node or not isinstance(node[part], dict):
+                node[part] = {}
+            node = node[part]
+        node.setdefault("_links", []).append((label, url, ts))
+
+    def _to_posix(s: str) -> str:
+        """Defensive normalisation: split on `/` only after folding
+        any backslashes the upstream may have produced (Windows
+        `Path` stringification, historical regressions, callers that
+        construct URLs from native paths)."""
+        return s.replace("\\", "/")
+
+    for project in template_projects:
+        if project.combined_suppressed and project.sessions:
+            # Use the per-session links — each session becomes a leaf
+            # under its parent dir.
+            for session in project.sessions:
+                url = session.get("file")
+                if not url:
+                    continue
+                url = _to_posix(url)
+                summary = session.get("summary")
+                short_id = (session.get("id") or "")[:8]
+                label = summary if summary else f"session {short_id}"
+                ts = session.get("timestamp_range") or ""
+                _insert(url.split("/"), label, url, ts)
+        else:
+            # Combined-link mode: use the project's html_file as the
+            # single leaf under its parent dir. Translate `.html`
+            # filenames so the Markdown index links land at `.md` peers.
+            url = _to_posix(project.html_file).replace(".html", ".md")
+            ts = project.formatted_time_range or ""
+            _insert(url.split("/"), project.display_name, url, ts)
+
+    if not root:
+        return []
+
+    lines: list[str] = []
+
+    def _emit(node: dict[str, Any], depth: int) -> None:
+        indent = "  " * depth
+        # Directories first (alphabetical), then leaf-link entries.
+        for name in sorted(k for k in node if k != "_links"):
+            lines.append(f"{indent}- **{name}/**")
+            _emit(node[name], depth + 1)
+        for label, url, ts in node.get("_links", []):
+            ts_suffix = f" — *{ts}*" if ts else ""
+            lines.append(f"{indent}- [{label}]({url}){ts_suffix}")
+
+    _emit(root, 0)
+    return lines
+
+
 class MarkdownRenderer(Renderer):
     """Markdown renderer for Claude Code transcripts."""
 
@@ -1899,6 +1979,7 @@ class MarkdownRenderer(Renderer):
         cache_manager: Optional["CacheManager"] = None,
         output_dir: Optional[Path] = None,
         session_tree: Optional["SessionTree"] = None,
+        suppress_combined_link: bool = False,
     ) -> str:
         """Generate Markdown for a single session."""
         # Include subagent entries whose sessionId was rewritten to
@@ -1913,8 +1994,9 @@ class MarkdownRenderer(Renderer):
             or (msg.sessionId or "").startswith(agent_prefix)
         ]
         # Back-link points at the same variant's combined file so users
-        # don't bounce between detail levels when navigating.
-        if cache_manager is not None:
+        # don't bounce between detail levels when navigating. Suppressed
+        # under `--combined no` where the combined file is never written.
+        if cache_manager is not None and not suppress_combined_link:
             from ..utils import variant_suffix as _variant_suffix
 
             suffix = _variant_suffix(self.detail, self.compact, "md")
@@ -1934,8 +2016,20 @@ class MarkdownRenderer(Renderer):
         project_summaries: list[dict[str, Any]],
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
+        expand_paths_tree: bool = False,
     ) -> str:
-        """Generate a Markdown projects index page."""
+        """Generate a Markdown projects index page.
+
+        Args:
+            project_summaries: Per-project summary dicts.
+            from_date / to_date: Date-filter labels for the title.
+            expand_paths_tree: When True (Obsidian mode — `--expand-paths`),
+                render the index as a nested bullet-list directory tree
+                derived from each project's `html_file` (or per-session
+                `file`) path. Each directory level becomes a bullet,
+                with sessions as nested leaf bullets. Falls back to the
+                flat per-project layout otherwise.
+        """
         title = title_for_projects_index(project_summaries, from_date, to_date)
         template_projects, template_summary = prepare_projects_index(project_summaries)
 
@@ -1950,11 +2044,28 @@ class MarkdownRenderer(Renderer):
         )
         parts.append("")
 
+        # `--expand-paths` Obsidian mode: render the index as a nested
+        # bullet-list mirroring the projected directory tree. Each path
+        # component becomes a bullet; per-session files are the leaves.
+        # The flat per-project listing remains the default for HTML and
+        # for non-expand-paths Markdown.
+        if expand_paths_tree:
+            tree_lines = _render_expand_paths_tree(template_projects)
+            if tree_lines:
+                parts.extend(tree_lines)
+                return "\n".join(parts)
+
         # Project list
         for project in template_projects:
-            # Derive markdown link from html_file path
-            md_link = project.html_file.replace(".html", ".md")
-            parts.append(f"## [{project.display_name}]({md_link})")
+            if project.combined_suppressed:
+                # `--combined no` mode: header is a plain heading (no
+                # link to the non-existent combined file); per-session
+                # bullets link directly to `session-{id}.md` files.
+                parts.append(f"## {project.display_name}")
+            else:
+                # Derive markdown link from html_file path
+                md_link = project.html_file.replace(".html", ".md")
+                parts.append(f"## [{project.display_name}]({md_link})")
             # Use actual session count (filtered) like HTML does
             session_count = (
                 len(project.sessions) if project.sessions else project.jsonl_count
@@ -1963,6 +2074,26 @@ class MarkdownRenderer(Renderer):
             parts.append(f"- Messages: {project.message_count}")
             if project.formatted_time_range:
                 parts.append(f"- Date range: {project.formatted_time_range}")
+            # Per-session bullet links (only when combined is
+            # suppressed — otherwise the combined-link header already
+            # serves as the project's single entry point).
+            if project.combined_suppressed and project.sessions:
+                parts.append("")
+                parts.append("### Sessions")
+                for session in project.sessions:
+                    file_link = session.get("file")
+                    if not file_link:
+                        continue
+                    # Derive label: prefer summary / title, fall back
+                    # to the short session-id prefix.
+                    summary = session.get("summary")
+                    short_id = (session.get("id") or "")[:8]
+                    label = summary if summary else f"session {short_id}"
+                    timestamp_range = session.get("timestamp_range") or ""
+                    timestamp_suffix = (
+                        f" — *{timestamp_range}*" if timestamp_range else ""
+                    )
+                    parts.append(f"- [{label}]({file_link}){timestamp_suffix}")
             parts.append("")
 
         return "\n".join(parts)
