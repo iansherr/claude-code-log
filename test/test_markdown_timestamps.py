@@ -8,6 +8,7 @@ and the `--no-timestamps` CLI flag.
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 from pathlib import Path
 
@@ -61,7 +62,11 @@ def _assistant_msg(uuid: str, session_id: str, timestamp: str, text: str) -> dic
     }
 
 
-def _render(entries: list[dict], no_timestamps: bool = False) -> str:
+def _render(
+    entries: list[dict],
+    no_timestamps: bool = False,
+    compact: bool = False,
+) -> str:
     """Write ``entries`` to a temp JSONL, load, render to Markdown."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
         for e in entries:
@@ -69,8 +74,8 @@ def _render(entries: list[dict], no_timestamps: bool = False) -> str:
         path = Path(f.name)
     try:
         messages = load_transcript(path)
-        renderer = MarkdownRenderer()
-        renderer.no_timestamps = no_timestamps
+        renderer = MarkdownRenderer(no_timestamps=no_timestamps)
+        renderer.compact = compact
         return renderer.generate(messages, title="t")
     finally:
         path.unlink()
@@ -111,6 +116,85 @@ def test_day_rollover_re_emits_full_date():
     )
     assert "**`2026-02-03`** `23:59:50`" in out
     assert "**`2026-02-04`** `00:01:45`" in out
+
+
+def test_compact_suppresses_timestamp_along_with_heading():
+    """When `--compact` collapses a same-category heading, the
+    timestamp line under it must collapse too — otherwise a body
+    dangles behind a stray timestamp.
+
+    Renders three same-category user messages; expects exactly one
+    heading and exactly one timestamp (the first message's).
+    """
+    out = _render(
+        [
+            _user_msg("u1", "s1", "2026-02-03T10:00:00.000Z", "first"),
+            _user_msg("u2", "s1", "2026-02-03T10:05:00.000Z", "second"),
+            _user_msg("u3", "s1", "2026-02-03T10:10:00.000Z", "third"),
+        ],
+        compact=True,
+    )
+    # Exactly one user-heading line.
+    user_heading_re = re.compile(r"^## .*User:", re.MULTILINE)
+    assert len(user_heading_re.findall(out)) == 1
+    # Exactly one per-message timestamp line — the first message's.
+    # Bold-date line.
+    assert out.count("**`2026-02-03`** `10:00:00`") == 1
+    # No bare-time lines for the suppressed messages.
+    assert "`10:05:00`" not in out
+    assert "`10:10:00`" not in out
+
+
+def test_compact_date_rollover_across_suppressed_messages():
+    """When `--compact` suppresses several headings and the calendar
+    date rolls over in the meantime, the next *unsuppressed* heading
+    must carry the new date (not the stale one from before the
+    rollover)."""
+    out = _render(
+        [
+            _user_msg("u1", "s1", "2026-02-03T23:55:00.000Z", "pre-midnight"),
+            # Same-category, suppressed; date rolls over here.
+            _user_msg("u2", "s1", "2026-02-04T00:00:30.000Z", "rollover-suppressed"),
+            _user_msg("u3", "s1", "2026-02-04T00:05:00.000Z", "rollover-suppressed-2"),
+            # Different category breaks the compact run, so this
+            # heading is emitted.
+            _assistant_msg("u4", "s1", "2026-02-04T00:10:00.000Z", "next-day reply"),
+        ],
+        compact=True,
+    )
+    # First message keeps its pre-midnight date.
+    assert "**`2026-02-03`** `23:55:00`" in out
+    # The assistant heading after the rollover must carry the new
+    # date — `_last_date_seen` should still reflect the *last
+    # rendered* date (2026-02-03), so the rollover IS detected.
+    assert "**`2026-02-04`** `00:10:00`" in out
+    # Suppressed messages emit nothing.
+    assert "`00:00:30`" not in out
+    assert "`00:05:00`" not in out
+
+
+def test_session_header_resets_last_date_seen_end_to_end():
+    """A new session inside the same generate() must re-emit its
+    first message's full date even when the calendar date is
+    unchanged. Exercises the ``_render_message`` reset path that the
+    helper unit test simulates with a manual ``_last_date_seen = None``.
+    """
+    out = _render(
+        [
+            _user_msg("u1", "s1", "2026-02-03T10:00:00.000Z", "s1-first"),
+            _assistant_msg("u2", "s1", "2026-02-03T10:01:00.000Z", "s1-reply"),
+            # New session, same calendar day — the first message of
+            # session 2 must re-emit the date.
+            _user_msg("u3", "s2", "2026-02-03T10:02:00.000Z", "s2-first"),
+            _assistant_msg("u4", "s2", "2026-02-03T10:03:00.000Z", "s2-reply"),
+        ]
+    )
+    # The same date appears twice in bold-backtick form — once per
+    # session — even though both sessions are on the same calendar day.
+    assert out.count("**`2026-02-03`**") == 2
+    # And the in-session continuations are time-only.
+    assert "`10:01:00`" in out
+    assert "`10:03:00`" in out
 
 
 def test_no_timestamps_suppresses_all_lines():
@@ -186,6 +270,12 @@ def test_format_message_timestamp_returns_empty_on_missing_or_unparseable():
     # without a space, the helper must bail out instead of producing
     # malformed output.
     assert r._format_message_timestamp(stub("not-a-timestamp")) == ""
+    # Regression for monk's review on #165: a raw fallback string
+    # that happens to contain a space (e.g. ``"not a timestamp"``)
+    # used to slip past the presence-of-space check and produce
+    # garbage like ``**`not`** `a timestamp` ``. The shape-validating
+    # regex rejects it.
+    assert r._format_message_timestamp(stub("not a timestamp")) == ""
 
 
 @pytest.mark.parametrize("fmt", ["html", "json"])

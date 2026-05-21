@@ -4471,9 +4471,7 @@ def get_renderer(
 
         # For Markdown, default to referenced mode
         mode = image_export_mode or "referenced"
-        md_renderer = MarkdownRenderer(image_export_mode=mode)
-        md_renderer.no_timestamps = no_timestamps
-        renderer = md_renderer
+        renderer = MarkdownRenderer(image_export_mode=mode, no_timestamps=no_timestamps)
     elif format == "json":
         from .json.renderer import JsonRenderer
 

@@ -128,6 +128,13 @@ _COLOR_CIRCLE: dict[str, str] = {
 }
 
 
+# Matches the display form ``format_timestamp`` returns on success
+# (``YYYY-MM-DD HH:MM:SS``). The function falls back to its raw input
+# on parse failure, so we validate the rendered shape rather than
+# presence-of-space — see ``_format_message_timestamp``.
+_TIMESTAMP_DISPLAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+
+
 def _inline_code(value: str) -> str:
     """Wrap *value* in a CommonMark inline code span that survives backticks.
 
@@ -341,11 +348,18 @@ def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
 class MarkdownRenderer(Renderer):
     """Markdown renderer for Claude Code transcripts."""
 
-    def __init__(self, image_export_mode: str = "referenced"):
+    def __init__(
+        self,
+        image_export_mode: str = "referenced",
+        *,
+        no_timestamps: bool = False,
+    ):
         """Initialize the Markdown renderer.
 
         Args:
             image_export_mode: Image export mode - "placeholder", "embedded", or "referenced"
+            no_timestamps: When True, suppress the per-message timestamp
+                line emitted after each heading (issue #160).
         """
         super().__init__()
         self.image_export_mode = image_export_mode
@@ -358,11 +372,10 @@ class MarkdownRenderer(Renderer):
         self._teammate_colors_by_session: dict[str, dict[str, str]] = {}
         # Per-message timestamp emission (issue #160): emit a line
         # immediately after each heading using a date-on-change rule.
-        # Suppressed entirely under `--no-timestamps` (set via
-        # ``get_renderer``). Last-date-seen state lives here so the
-        # rule observes the actual rendered order, including any
-        # `compact`-mode heading suppression.
-        self.no_timestamps: bool = False
+        # Last-date-seen state lives here so the rule observes the
+        # actual rendered order, including any `compact`-mode heading
+        # suppression.
+        self.no_timestamps: bool = no_timestamps
         self._last_date_seen: Optional[str] = None
 
     # -------------------------------------------------------------------------
@@ -1858,8 +1871,12 @@ class MarkdownRenderer(Renderer):
             return ""
         formatted = format_timestamp(raw)
         # ``format_timestamp`` returns ``"YYYY-MM-DD HH:MM:SS"`` on
-        # success, the raw string on parse failure, or "" for None.
-        if " " not in formatted:
+        # success and (per its contract) the raw input unchanged on
+        # parse failure. A raw string with an embedded space would
+        # otherwise pass a naive presence-of-space check and produce
+        # garbage like ``**`not`** `a timestamp` ``; validate the
+        # rendered shape instead.
+        if not _TIMESTAMP_DISPLAY_RE.match(formatted):
             return ""
         date_part, _, time_part = formatted.partition(" ")
         if date_part != self._last_date_seen:
