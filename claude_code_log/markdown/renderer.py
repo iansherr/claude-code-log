@@ -37,6 +37,7 @@ from ..models import (
     ToolUseMessage,
     TranscriptEntry,
     UnknownMessage,
+    UserHookNotificationMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserTextMessage,
@@ -853,6 +854,18 @@ class MarkdownRenderer(Renderer):
     ) -> str:
         """Format → fenced code block."""
         return self._code_fence(content.memory_text)
+
+    def format_UserHookNotificationMessage(
+        self, content: UserHookNotificationMessage, _: TemplateMessage
+    ) -> str:
+        """Format → single italic line, e.g. ``*[monitor] alice idle*``.
+
+        Hook-injected synthetic user turns are dropped entirely at
+        ``DetailLevel.HIGH`` and below by ``_HIGH_EXCLUDE_CLASSES``;
+        only ``FULL`` reaches this formatter. Rendered as a compact
+        marker rather than a full user heading.
+        """
+        return f"*[{content.source}] {content.text}*"
 
     def format_TeammateMessage(
         self, content: TeammateMessage, message: TemplateMessage
@@ -1942,6 +1955,13 @@ class MarkdownRenderer(Renderer):
             # Format content (if not already output above)
             if content:
                 parts.append(content)
+        elif content:
+            # Headless content (e.g. UserHookNotificationMessage at FULL).
+            # Standalone messages with an empty title used to drop their
+            # body silently — paired partners short-circuit earlier
+            # (``is_middle_in_pair``/``is_last_in_pair``), so anything
+            # reaching here is a real content carrier.
+            parts.append(content)
 
         # Format paired message bodies (middle then last, when present).
         # Triples (slash-command META → CMD → OUT) deliver three bodies

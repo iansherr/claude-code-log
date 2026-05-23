@@ -657,6 +657,36 @@ class UserSlashCommandMessage(MessageContent):
 
 
 @dataclass
+class UserHookNotificationMessage(MessageContent):
+    """Content for hook-injected synthetic user turns (e.g. clmail / monitor).
+
+    External tooling (``clmail``, ``clmail-monitor``, ...) uses Claude
+    Code's ``UserPromptSubmit`` hook to inject single-line notifications
+    that arrive in the JSONL as full ``type: user`` entries — for
+    example::
+
+        [monitor] alice idle
+        [clmail] You've got a new mail (#3017)
+
+    These are not human-typed prompts: they're system-internal signals
+    that pollute the rendered transcript (one full ``## 🤷 User`` heading
+    per signal). The renderer detects them via the bracketed-prefix
+    pattern, wraps them in this typed content, renders a compact
+    inline marker at ``DetailLevel.FULL``, and drops them entirely at
+    ``HIGH`` and below (matching the existing "no system/hook noise"
+    semantics already applied to ``HookSummaryMessage`` /
+    ``HookAttachmentMessage``).
+    """
+
+    source: str  # e.g. "monitor", "clmail"
+    text: str  # The full notification line, e.g. "alice idle"
+
+    @property
+    def message_type(self) -> str:
+        return "user"
+
+
+@dataclass
 class IdeOpenedFile:
     """IDE notification for an opened file."""
 

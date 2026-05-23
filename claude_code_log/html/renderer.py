@@ -29,6 +29,7 @@ from ..models import (
     ToolUseMessage,
     TranscriptEntry,
     UnknownMessage,
+    UserHookNotificationMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserTextMessage,
@@ -113,6 +114,7 @@ from .user_formatters import (
     format_command_output_content,
     format_compacted_summary_content,
     format_slash_command_content,
+    format_user_hook_notification_content,
     format_user_memory_content,
     format_user_slash_command_content,
     format_user_text_model_content,
@@ -394,6 +396,11 @@ class HtmlRenderer(Renderer):
         self, content: UserMemoryMessage, _: TemplateMessage
     ) -> str:
         return format_user_memory_content(content)
+
+    def format_UserHookNotificationMessage(
+        self, content: UserHookNotificationMessage, _: TemplateMessage
+    ) -> str:
+        return format_user_hook_notification_content(content)
 
     def format_TeammateMessage(
         self, content: TeammateMessage, _: TemplateMessage

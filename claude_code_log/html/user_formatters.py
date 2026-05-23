@@ -22,6 +22,7 @@ from ..models import (
     IdeSelection,
     ImageContent,
     SlashCommandMessage,
+    UserHookNotificationMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserTextMessage,
@@ -308,6 +309,26 @@ def format_user_memory_content(content: UserMemoryMessage) -> str:
     return f"<pre>{escaped_text}</pre>"
 
 
+def format_user_hook_notification_content(
+    content: UserHookNotificationMessage,
+) -> str:
+    """Format a hook-injected notification (clmail / monitor) as a compact line.
+
+    These reach the renderer only at ``DetailLevel.FULL`` (the
+    ``_HIGH_EXCLUDE_CLASSES`` filter drops them otherwise). Even at
+    FULL we render them as a single-line marker rather than a full
+    user heading — they're signals, not prompts.
+    """
+    source = escape_html(content.source)
+    text = escape_html(content.text)
+    return (
+        f'<div class="hook-notification hook-notification-{source}">'
+        f'<span class="hook-notification-source">[{source}]</span> '
+        f'<span class="hook-notification-text">{text}</span>'
+        f"</div>"
+    )
+
+
 def format_user_slash_command_content(content: UserSlashCommandMessage) -> str:
     """Format slash command expanded prompt (isMeta) as HTML.
 
@@ -424,5 +445,6 @@ __all__ = [
     "format_user_text_model_content",
     "format_compacted_summary_content",
     "format_user_memory_content",
+    "format_user_hook_notification_content",
     "format_ide_notification_content",
 ]

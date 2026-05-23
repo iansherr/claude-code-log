@@ -54,6 +54,7 @@ from .models import (
     ToolResultMessage,
     ToolUseMessage,
     UnknownMessage,
+    UserHookNotificationMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserSteeringMessage,
@@ -3166,6 +3167,7 @@ _HIGH_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
     SystemMessage,
     HookSummaryMessage,
     HookAttachmentMessage,
+    UserHookNotificationMessage,
     UnknownMessage,
 )
 
@@ -4252,6 +4254,15 @@ class Renderer:
         self, _content: UserMemoryMessage, _: TemplateMessage
     ) -> str:
         return "Memory"
+
+    def title_UserHookNotificationMessage(
+        self,
+        _content: UserHookNotificationMessage,
+        _message: TemplateMessage,
+    ) -> str:
+        # Empty title — the body formatter already prints a compact
+        # ``[source] text`` marker; a heading would defeat the purpose.
+        return ""
 
     def title_UserSlashCommandMessage(
         self, _content: UserSlashCommandMessage, _: TemplateMessage

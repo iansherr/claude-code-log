@@ -730,6 +730,25 @@
       font-weight: 500;
   }
   
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
+  }
+  
   .hook-attachment {
       cursor: pointer;
   }
@@ -6644,6 +6663,25 @@
   div.system-hook-attachment .header,
   div.system-hook .header {
       font-weight: 500;
+  }
+  
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
   }
   
   .hook-attachment {
@@ -14654,6 +14692,25 @@
       font-weight: 500;
   }
   
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
+  }
+  
   .hook-attachment {
       cursor: pointer;
   }
@@ -20673,6 +20730,25 @@
   div.system-hook-attachment .header,
   div.system-hook .header {
       font-weight: 500;
+  }
+  
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
   }
   
   .hook-attachment {
@@ -26927,6 +27003,25 @@
       font-weight: 500;
   }
   
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
+  }
+  
   .hook-attachment {
       cursor: pointer;
   }
@@ -33045,6 +33140,25 @@
   div.system-hook-attachment .header,
   div.system-hook .header {
       font-weight: 500;
+  }
+  
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
   }
   
   .hook-attachment {
@@ -39222,6 +39336,25 @@
   div.system-hook-attachment .header,
   div.system-hook .header {
       font-weight: 500;
+  }
+  
+  /* Hook-injected synthetic user turns (clmail / monitor one-liners).
+     At FULL detail these reach the renderer; at HIGH and below they're
+     filtered out by `_HIGH_EXCLUDE_CLASSES`. Render with the same
+     "secondary signal" weight as the other hook entries above. */
+  div.hook-notification {
+      font-size: 75%;
+      opacity: 65%;
+      border-left-color: var(--warning-dimmed);
+  }
+  
+  div.hook-notification .content {
+      font-family: var(--font-monospace);
+  }
+  
+  .hook-notification-source {
+      color: var(--text-muted);
+      font-weight: 600;
   }
   
   .hook-attachment {

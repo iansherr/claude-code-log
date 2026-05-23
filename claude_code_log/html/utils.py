@@ -41,6 +41,7 @@ from ..models import (
     ToolResultMessage,
     ToolUseMessage,
     UnknownMessage,
+    UserHookNotificationMessage,
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserSteeringMessage,
@@ -69,6 +70,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     SlashCommandMessage: ["user", "slash-command"],
     UserSlashCommandMessage: ["user", "slash-command"],
     UserMemoryMessage: ["user"],
+    UserHookNotificationMessage: ["user", "hook-notification"],
     CompactedSummaryMessage: ["user", "compacted"],
     CommandOutputMessage: ["user", "command-output"],
     TeammateMessage: ["user", "teammate"],
@@ -180,6 +182,10 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
     elif msg_type == "user":
         # Command output has no emoji (neutral - can be from built-in or user command)
         if isinstance(msg.content, CommandOutputMessage):
+            return ""
+        # Hook-injected notifications (clmail / monitor) render compactly
+        # at FULL detail and are dropped at HIGH and below — no 🤷 chrome.
+        if isinstance(msg.content, UserHookNotificationMessage):
             return ""
         return "🤷"
     elif msg_type == "bash-input":
