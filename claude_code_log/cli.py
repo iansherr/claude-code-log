@@ -696,6 +696,15 @@ def _validate_git_link_template(template: str) -> None:
     ),
 )
 @click.option(
+    "--no-timestamps",
+    is_flag=True,
+    help=(
+        "Suppress per-message timestamp lines in Markdown output "
+        "(#160). Markdown-only — a warning is emitted (but not an "
+        "error) if combined with --format html / --format json."
+    ),
+)
+@click.option(
     "--debug",
     is_flag=True,
     default=False,
@@ -724,6 +733,7 @@ def main(
     detail: str,
     compact: bool,
     git_link: Optional[str],
+    no_timestamps: bool,
     debug: bool,
 ) -> None:
     """Convert Claude transcript JSONL files to HTML or Markdown.
@@ -816,6 +826,16 @@ def main(
         click.echo(
             "Warning: --expand-paths / --filter-path require --output to be a "
             "directory (no recognised file suffix); ignoring.",
+            err=True,
+        )
+
+    # `--no-timestamps` is Markdown-only (#160). Warn (not error) when
+    # paired with HTML/JSON so the flag is benignly ignored rather than
+    # silently misapplied.
+    if no_timestamps and output_format not in ("md", "markdown"):
+        click.echo(
+            f"Warning: --no-timestamps is Markdown-only; ignoring under "
+            f"--format {output_format}.",
             err=True,
         )
 
@@ -982,6 +1002,7 @@ def main(
                 image_export_mode,
                 detail=detail_level,
                 compact=compact,
+                no_timestamps=no_timestamps,
             )
             click.echo(f"Successfully exported session to {output_path}")
             if open_browser:
@@ -1041,6 +1062,7 @@ def main(
                 expand_paths=expand_paths,
                 filter_path=filter_path,
                 write_combined=write_combined,
+                no_timestamps=no_timestamps,
             )
 
             # Count processed projects
@@ -1099,6 +1121,7 @@ def main(
             # don't occupy a cache slot keyed by an arbitrary destination.
             update_cache=output is None,
             write_combined=write_combined,
+            no_timestamps=no_timestamps,
         )
         if input_path.is_file():
             click.echo(f"Successfully converted {input_path} to {output_path}")

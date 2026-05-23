@@ -14,7 +14,7 @@ from mistune.renderers.markdown import MarkdownRenderer as _MistuneMarkdownRende
 
 from ..cache import get_library_version
 from ..html.utils import is_well_formed_html, render_user_markdown
-from ..utils import generate_unified_diff, strip_error_tags
+from ..utils import format_timestamp, generate_unified_diff, strip_error_tags
 from ..models import (
     AssistantTextMessage,
     AwaySummaryMessage,
@@ -126,6 +126,13 @@ _COLOR_CIRCLE: dict[str, str] = {
     "system": "⬛",
     "default": "⚪",
 }
+
+
+# Matches the display form ``format_timestamp`` returns on success
+# (``YYYY-MM-DD HH:MM:SS``). The function falls back to its raw input
+# on parse failure, so we validate the rendered shape rather than
+# presence-of-space — see ``_format_message_timestamp``.
+_TIMESTAMP_DISPLAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
 
 
 def _inline_code(value: str) -> str:
@@ -341,11 +348,18 @@ def _render_expand_paths_tree(template_projects: list[Any]) -> list[str]:
 class MarkdownRenderer(Renderer):
     """Markdown renderer for Claude Code transcripts."""
 
-    def __init__(self, image_export_mode: str = "referenced"):
+    def __init__(
+        self,
+        image_export_mode: str = "referenced",
+        *,
+        no_timestamps: bool = False,
+    ):
         """Initialize the Markdown renderer.
 
         Args:
             image_export_mode: Image export mode - "placeholder", "embedded", or "referenced"
+            no_timestamps: When True, suppress the per-message timestamp
+                line emitted after each heading (issue #160).
         """
         super().__init__()
         self.image_export_mode = image_export_mode
@@ -356,6 +370,13 @@ class MarkdownRenderer(Renderer):
         # start. Scoped to avoid cross-session contamination in
         # combined transcripts (see RenderingContext.teammate_colors).
         self._teammate_colors_by_session: dict[str, dict[str, str]] = {}
+        # Per-message timestamp emission (issue #160): emit a line
+        # immediately after each heading using a date-on-change rule.
+        # Last-date-seen state lives here so the rule observes the
+        # actual rendered order, including any `compact`-mode heading
+        # suppression.
+        self.no_timestamps: bool = no_timestamps
+        self._last_date_seen: Optional[str] = None
 
     # -------------------------------------------------------------------------
     # Private Utility Methods
@@ -1834,6 +1855,35 @@ class MarkdownRenderer(Renderer):
         lines.append("")
         return "\n".join(lines)
 
+    def _format_message_timestamp(self, msg: TemplateMessage) -> str:
+        """Render the per-message timestamp line for *msg* (issue #160).
+
+        Date-on-change rule: when *msg*'s date differs from
+        ``self._last_date_seen`` (which is reset to ``None`` at the
+        start of each ``generate()`` and on every ``SessionHeaderMessage``)
+        the line carries the full ``**`YYYY-MM-DD`** `HH:MM:SS``` form;
+        otherwise just the `` `HH:MM:SS` `` time component. Returns ``""``
+        when the source timestamp is missing or unparseable, so the
+        caller can append unconditionally.
+        """
+        raw = getattr(msg.meta, "timestamp", "") if msg.meta else ""
+        if not raw:
+            return ""
+        formatted = format_timestamp(raw)
+        # ``format_timestamp`` returns ``"YYYY-MM-DD HH:MM:SS"`` on
+        # success and (per its contract) the raw input unchanged on
+        # parse failure. A raw string with an embedded space would
+        # otherwise pass a naive presence-of-space check and produce
+        # garbage like ``**`not`** `a timestamp` ``; validate the
+        # rendered shape instead.
+        if not _TIMESTAMP_DISPLAY_RE.match(formatted):
+            return ""
+        date_part, _, time_part = formatted.partition(" ")
+        if date_part != self._last_date_seen:
+            self._last_date_seen = date_part
+            return f"**`{date_part}`** `{time_part}`"
+        return f"`{time_part}`"
+
     def _render_message(self, msg: TemplateMessage, level: int) -> str:
         """Render a message and its children recursively."""
         # Skip pair_middle and pair_last — both render under pair_first
@@ -1863,9 +1913,13 @@ class MarkdownRenderer(Renderer):
             heading_category = title.split(":", 1)[0].strip()
 
             # Compact mode: suppress heading for consecutive same-category
-            # messages. Reset tracking on session boundaries.
+            # messages. Reset tracking on session boundaries — and also
+            # reset the per-message timestamp `last_date_seen` so the
+            # first message of every session re-emits its full date
+            # (issue #160).
             if is_session_header:
                 self._last_heading_category = None
+                self._last_date_seen = None
             suppress_heading = (
                 self.compact
                 and not is_session_header
@@ -1876,6 +1930,14 @@ class MarkdownRenderer(Renderer):
             if not suppress_heading:
                 heading_level = min(level, 6)  # Markdown max is h6
                 parts.append(f"{'#' * heading_level} {title}")
+                # Per-message timestamp line (issue #160). Skip for
+                # session headers (they have no meaningful per-msg time)
+                # and when the heading was suppressed by `compact` mode
+                # (the body would dangle behind a stray timestamp).
+                if not self.no_timestamps and not is_session_header:
+                    ts_line = self._format_message_timestamp(msg)
+                    if ts_line:
+                        parts.append(ts_line)
 
             # Format content (if not already output above)
             if content:
@@ -1939,6 +2001,10 @@ class MarkdownRenderer(Renderer):
         self._output_dir = output_dir
         self._image_counter = 0
         self._last_heading_category: Optional[str] = None
+        # Per-message timestamp date-on-change state (issue #160).
+        # Reset each generate() so reusing a renderer across pages /
+        # files doesn't leak the previous run's date.
+        self._last_date_seen = None
 
         if not title:
             title = "Claude Transcript"
@@ -1999,7 +2065,9 @@ class MarkdownRenderer(Renderer):
         if cache_manager is not None and not suppress_combined_link:
             from ..utils import variant_suffix as _variant_suffix
 
-            suffix = _variant_suffix(self.detail, self.compact, "md")
+            suffix = _variant_suffix(
+                self.detail, self.compact, "md", self.no_timestamps
+            )
             combined_link = f"combined_transcripts{suffix}.md"
         else:
             combined_link = None

@@ -49,6 +49,7 @@ def variant_suffix(
     detail: DetailLevel | str = DetailLevel.FULL,
     compact: bool = False,
     format: str = "html",
+    no_timestamps: bool = False,
 ) -> str:
     """Compute the filename infix for a given render variant.
 
@@ -64,10 +65,18 @@ def variant_suffix(
     parts: list[str] = []
     if detail != DetailLevel.FULL:
         parts.append(detail.value)
-    # `--compact` is Markdown-only (merges consecutive same-category
-    # headings in the Markdown renderer). For HTML it's a no-op.
-    if compact and format in ("md", "markdown"):
+    # `--compact` and `--no-timestamps` are Markdown-only (merges of
+    # same-category headings / suppression of per-message timestamp
+    # lines). They are silent no-ops for HTML, so they don't earn a
+    # suffix slot under non-markdown output.
+    is_markdown = format in ("md", "markdown")
+    if compact and is_markdown:
         parts.append("compact")
+    # `no_timestamps` participates in the suffix so toggling the flag
+    # produces a distinct filename and the cache/path-existence check
+    # doesn't treat the prior export as up-to-date (CR finding on #165).
+    if no_timestamps and is_markdown:
+        parts.append("no-timestamps")
     return "".join(f".{p}" for p in parts)
 
 
