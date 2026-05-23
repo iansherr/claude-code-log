@@ -94,7 +94,15 @@ Icons are scattered as string literals across title methods in
    (and equivalents on other message types) is byte-equivalent
    to this extraction, so transformer regexes behave consistently
    whether called inside the factory or against a parsed
-   `MessageContent`.
+   `MessageContent`. **Enforcement.** The plugin-system test
+   suite includes a dedicated equivalence test that walks the
+   existing JSONL test corpus and asserts
+   `UserTextMessage(content_list=cl).text == extract_text_content(cl)`
+   for every user entry. A future factory PR that introduces
+   normalization (markdown cleanup, whitespace folding, etc.)
+   between extraction and assignment fails this test, surfacing
+   the contract break before it silently drifts plugin regex
+   behaviour.
 
 Detail-level filtering for hook-notification noise lives in
 `_HIGH_EXCLUDE_CLASSES` (renderer.py). This stays as a core
