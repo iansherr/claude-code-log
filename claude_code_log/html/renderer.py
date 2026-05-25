@@ -830,13 +830,19 @@ class HtmlRenderer(Renderer):
     def title_ReadInput(self, input: ReadInput, message: TemplateMessage) -> str:
         """Title → '📄 Read <file_path>[, lines N-M]'."""
         summary = input.file_path
-        # Add line range info if available
+        # Add line range info if available. ``offset`` in the Read tool's
+        # input is the 1-based starting line number (matches what the
+        # ``toolUseResult.file.startLine`` and the cat-n line numbers in
+        # the rendered content show). ``None`` or ``0`` both mean "start
+        # from line 1". The displayed range is inclusive on both ends, so
+        # the end is ``start + limit - 1`` — not ``start + limit``.
         if input.limit is not None:
-            offset = input.offset or 0
+            start = input.offset if input.offset else 1
+            end = start + input.limit - 1
             if input.limit == 1:
-                summary = f"{summary}, line {offset + 1}"
+                summary = f"{summary}, line {start}"
             else:
-                summary = f"{summary}, lines {offset + 1}-{offset + input.limit}"
+                summary = f"{summary}, lines {start}-{end}"
         return self._tool_title(message, "📄", summary)
 
     def title_GlobInput(self, input: GlobInput, message: TemplateMessage) -> str:
