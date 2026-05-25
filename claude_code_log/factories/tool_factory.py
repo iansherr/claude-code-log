@@ -18,6 +18,7 @@ from typing import Any, Callable, Optional, cast
 from pydantic import BaseModel
 
 from .agent_metadata_factory import parse_agent_result_metadata
+from ..plugins import apply_transformers
 from ..models import (
     # Tool input models
     AskUserQuestionInput,
@@ -1403,12 +1404,17 @@ def create_tool_use_message(
 
     # Create ToolUseMessage wrapper with parsed input for specialized formatting
     # Use ToolUseContent as fallback when no specialized parser exists
-    tool_use_message = ToolUseMessage(
+    tool_use_message: MessageContent = ToolUseMessage(
         meta,
         input=parsed if parsed is not None else tool_use,
         tool_use_id=tool_use.id,
         tool_name=tool_use.name,
     )
+
+    # Plugin transformer pass: lets a plugin rewrite the ToolUseMessage
+    # into a specialized subclass (e.g. ClmailCommunicateInputMessage)
+    # carrying its own format/title methods. No-op when no plugin matches.
+    tool_use_message = apply_transformers(tool_use_message, meta)
 
     return ToolItemResult(
         message_type="tool_use",
@@ -1455,7 +1461,7 @@ def create_tool_result_message(
     )
 
     # Create content model with rendering context
-    content_model = ToolResultMessage(
+    content_model: MessageContent = ToolResultMessage(
         meta,
         tool_use_id=tool_result.tool_use_id,
         output=parsed_output,
@@ -1463,6 +1469,10 @@ def create_tool_result_message(
         tool_name=result_tool_name,
         file_path=result_file_path,
     )
+
+    # Plugin transformer pass: lets a plugin rewrite the ToolResultMessage
+    # into a specialized subclass with its own format/title methods.
+    content_model = apply_transformers(content_model, meta)
 
     return ToolItemResult(
         message_type="tool_result",

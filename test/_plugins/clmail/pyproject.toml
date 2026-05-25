@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "claude-code-log-clmail-test"
+version = "0.0.1"
+description = "Test fixture plugin for claude-code-log's plugin system. Doubles as the canonical reference for plugin authors."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."claude_code_log.plugins"]
+# Hook-style transformer: rewrite UserTextMessage entries matching
+# a "[testhook]" prefix into a TaskNotificationMessage so the test
+# can observe the rewrite at the renderer.
+testhook_demotion = "claude_code_log_clmail_test.transformers.hook_demotion:TestHookDemotion"
+
+# Tool-style transformer: rewrite ToolUseMessage entries for a
+# specific MCP tool name into a plugin-defined subclass that
+# carries its own class-side format_markdown / format_html / title
+# methods (exercises Strategy 2 of _dispatch_format).
+tool_clmail_communicate = "claude_code_log_clmail_test.transformers.tool_communicate:ClmailCommunicateInputTransformer"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/claude_code_log_clmail_test"]

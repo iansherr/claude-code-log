@@ -264,6 +264,14 @@ def _build_html_project_tree(template_projects: list[Any]) -> dict[str, Any]:
 class HtmlRenderer(Renderer):
     """HTML renderer for Claude Code transcripts."""
 
+    # Consulted by Renderer._dispatch_format Strategy 2: plugin-defined
+    # content classes contributing a ``format_html`` method get picked up
+    # here. See work/tool-renderer-plugins.md §`_dispatch_format`
+    # resolution order. Class-side ``format_html`` may return None to
+    # opt for mistune-derived HTML; that fallback is handled by callers
+    # of format_content, not by the dispatcher itself.
+    _class_dispatch_format: str = "html"
+
     def __init__(self, image_export_mode: str = "embedded"):
         """Initialize the HTML renderer.
 

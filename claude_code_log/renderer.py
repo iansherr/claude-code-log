@@ -3194,6 +3194,64 @@ _USER_ONLY_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
 )
 
 
+# DetailLevel verbosity ordering: lower index = more verbose. A message
+# is visible iff ``current_detail`` is at least as verbose as the
+# required ``detail_visibility`` declared on its content class. With
+# this ordering "at least as verbose" reduces to
+# ``order[current] <= order[required]``.
+_DETAIL_ORDER: dict[DetailLevel, int] = {
+    DetailLevel.FULL: 0,
+    DetailLevel.HIGH: 1,
+    DetailLevel.LOW: 2,
+    DetailLevel.MINIMAL: 3,
+    DetailLevel.USER_ONLY: 4,
+}
+
+# Guard against drift: if a new DetailLevel value is added without an
+# entry here, the visibility helper would raise KeyError silently on
+# first use. Fail loudly at import time instead.
+assert set(_DETAIL_ORDER.keys()) == set(DetailLevel), (
+    f"_DETAIL_ORDER missing entries for: {set(DetailLevel) - set(_DETAIL_ORDER.keys())}"
+)
+
+
+def _content_visible_at(content: "MessageContent", detail: DetailLevel) -> bool:
+    """Return True iff ``content`` is visible at the given detail level.
+
+    Resolution order (per RFC §detail_visibility semantics and built-in
+    bridge):
+
+    1. **Class attribute** ``detail_visibility: ClassVar[DetailLevel]``
+       on the content's class. Plugin-defined classes use this; future
+       migrations of built-ins to the class-attribute form do too.
+       Monotone-down: visible iff ``detail`` is at least as verbose as
+       the class's declared minimum.
+    2. **Bridge** to the legacy ``_HIGH_EXCLUDE_CLASSES`` /
+       ``_LOW_EXCLUDE_CLASSES`` / etc. registries for built-in classes
+       that have not been migrated yet. ``isinstance`` semantics
+       (matches subclasses too, so plugin classes that subclass a
+       built-in inherit the built-in's filter membership unless they
+       override via the class attribute).
+    3. **Default visible** when neither strategy excludes.
+    """
+    visibility = getattr(type(content), "detail_visibility", None)
+    if visibility is not None:
+        return _DETAIL_ORDER[detail] <= _DETAIL_ORDER[visibility]
+    # Bridge: only the active level's exclude registry applies.
+    exclude: tuple[type[MessageContent], ...]
+    if detail == DetailLevel.HIGH:
+        exclude = _HIGH_EXCLUDE_CLASSES
+    elif detail == DetailLevel.LOW:
+        exclude = _LOW_EXCLUDE_CLASSES
+    elif detail == DetailLevel.MINIMAL:
+        exclude = _MINIMAL_EXCLUDE_CLASSES
+    elif detail == DetailLevel.USER_ONLY:
+        exclude = _USER_ONLY_EXCLUDE_CLASSES
+    else:  # FULL
+        return True
+    return not isinstance(content, exclude)
+
+
 def _filter_by_detail(
     messages: list[TranscriptEntry],
     detail: DetailLevel,
@@ -3472,32 +3530,47 @@ def _filter_template_by_detail(
     messages: list[TemplateMessage],
     detail: DetailLevel,
 ) -> list[TemplateMessage]:
-    """Post-render filter: remove TemplateMessage types per detail level."""
-    if detail == DetailLevel.USER_ONLY:
-        exclude = _USER_ONLY_EXCLUDE_CLASSES
-    elif detail == DetailLevel.MINIMAL:
-        exclude = _MINIMAL_EXCLUDE_CLASSES
-    elif detail == DetailLevel.LOW:
-        exclude = _LOW_EXCLUDE_CLASSES
-    else:
-        exclude = _HIGH_EXCLUDE_CLASSES
+    """Post-render filter: remove TemplateMessage types per detail level.
 
+    Visibility is computed by :func:`_content_visible_at`, which
+    consults a content class's ``detail_visibility`` attribute first
+    (plugin path) and falls back to the legacy ``_*_EXCLUDE_CLASSES``
+    registries (built-in path). At ``LOW``, the ``_LOW_KEEP_TOOLS``
+    allowlist rescues specific tool names that the bridge would
+    otherwise drop.
+    """
     result: list[TemplateMessage] = []
     for msg in messages:
-        if isinstance(msg.content, exclude):
+        visible = _content_visible_at(msg.content, detail)
+
+        # LOW keep-list: ToolUseMessage / ToolResultMessage are NOT in
+        # _LOW_EXCLUDE_CLASSES (only in _MINIMAL_EXCLUDE_CLASSES), so
+        # the bridge passes them through at LOW. The keep-list then
+        # applies a *positive* filter: keep only tools whose tool_name
+        # is in _LOW_KEEP_TOOLS; drop the rest. Plugin classes
+        # carrying an explicit ``detail_visibility`` opt out of the
+        # keep-list — their declared visibility is authoritative,
+        # letting a plugin (e.g. clmail communicate) be visible at LOW
+        # without core needing to update _LOW_KEEP_TOOLS.
+        if (
+            visible
+            and detail == DetailLevel.LOW
+            and isinstance(msg.content, (ToolUseMessage, ToolResultMessage))
+            and not hasattr(type(msg.content), "detail_visibility")
+        ):
+            tool_name = getattr(msg.content, "tool_name", "")
+            if tool_name not in _LOW_KEEP_TOOLS:
+                visible = False
+
+        if not visible:
             continue
+
         if (
             detail in (DetailLevel.MINIMAL, DetailLevel.LOW, DetailLevel.USER_ONLY)
             and msg.is_sidechain
         ):
             continue
-        # LOW: drop tool_use/tool_result unless it's a kept tool
-        if detail == DetailLevel.LOW and isinstance(
-            msg.content, (ToolUseMessage, ToolResultMessage)
-        ):
-            tool_name = getattr(msg.content, "tool_name", "")
-            if tool_name not in _LOW_KEEP_TOOLS:
-                continue
+
         result.append(msg)
     return result
 
@@ -4140,22 +4213,64 @@ class Renderer:
     detail: DetailLevel = DetailLevel.FULL
     compact: bool = False
 
+    # Output format identifier consulted by the class-side dispatch path
+    # below. Subclasses override to ``"html"`` etc.; the default
+    # ``"markdown"`` makes the base Renderer behave correctly when used
+    # standalone (it emits markdown anyway). See _dispatch_format docstring.
+    _class_dispatch_format: str = "markdown"
+
     def _dispatch_format(self, obj: Any, message: TemplateMessage) -> str:
-        """Dispatch to format_{ClassName}(obj, message) based on object type."""
+        """Dispatch to format_{ClassName}(obj, message) based on object type.
+
+        Two-strategy resolution walking ``type(obj).__mro__``:
+
+        1. **Renderer-side** ``format_<ClassName>(self, obj, message)``
+           method. Preserves all built-in dispatch unchanged — the
+           renderer class carries hand-written format_BashInput /
+           format_ToolUseMessage / etc.
+        2. **Class-side** ``format_<output>(self, renderer, message)``
+           method on the content class itself (where ``<output>`` is
+           ``markdown`` or ``html`` per ``_class_dispatch_format``).
+           Used by plugin-defined ``MessageContent`` subclasses that
+           carry their own render methods.
+
+        Renderer-side wins first per MRO node (matrix in
+        ``work/tool-renderer-plugins.md`` §``_dispatch_format``
+        resolution order). A plugin subclass that wants to shadow a
+        built-in renderer method does so by defining the class-side
+        method on the *plugin* subclass — the MRO walk visits it
+        before the built-in's renderer method registers.
+        """
+        method_attr = f"format_{self._class_dispatch_format}"
         for cls in type(obj).__mro__:
             if cls is object:
                 break
+            # Strategy 1: renderer-side method.
             if method := getattr(self, f"format_{cls.__name__}", None):
                 return method(obj, message)
+            # Strategy 2: class-side method declared *on this MRO node*
+            # (intentionally not inherited — each class opts in).
+            class_method = cls.__dict__.get(method_attr)
+            if class_method is not None:
+                return class_method(obj, self, message)
         return ""
 
     def _dispatch_title(self, obj: Any, message: TemplateMessage) -> Optional[str]:
-        """Dispatch to title_{ClassName}(obj, message) based on object type."""
+        """Dispatch to title_{ClassName}(obj, message) based on object type.
+
+        Same two-strategy resolution as :meth:`_dispatch_format`:
+        renderer-side ``title_<ClassName>`` first, then class-side
+        ``title()`` declared on the MRO node. Returns ``None`` if no
+        handler exists (caller falls back to a default).
+        """
         for cls in type(obj).__mro__:
             if cls is object:
                 break
             if method := getattr(self, f"title_{cls.__name__}", None):
                 return method(obj, message)
+            class_method = cls.__dict__.get("title")
+            if class_method is not None:
+                return class_method(obj, self, message)
         return None
 
     def format_content(self, message: TemplateMessage) -> str:
@@ -4175,21 +4290,26 @@ class Renderer:
     def title_content(self, message: TemplateMessage) -> str:
         """Get message title by dispatching to type-specific title method.
 
-        Looks for a method named title_{ClassName} (e.g., title_ToolUseMessage).
-        Falls back to type-based title derived from message_type.
+        Delegates to :meth:`_dispatch_title` so plugin-defined
+        ``MessageContent`` subclasses can supply their own class-side
+        ``title()`` method (Strategy 2 of the plugin dispatch contract).
+        Without delegation, the renderer-only MRO walk fires
+        ``title_ToolUseMessage`` on the base renderer before a plugin
+        subclass's class-side ``title()`` is reached — silently
+        ignoring the plugin's contribution at the top level.
 
-        Args:
-            message: TemplateMessage to get title for.
-
-        Returns:
-            Title string for the message header.
+        Falls back to a title-cased ``message_type`` when neither
+        strategy yields a title (which is what happens for built-in
+        message classes that have no renderer-side title method either).
         """
-        # Try title_{ClassName} dispatch
-        for cls in type(message.content).__mro__:
-            if cls is object:
-                break
-            if method := getattr(self, f"title_{cls.__name__}", None):
-                return method(message.content, message)
+        # Use `is not None` rather than truthiness: a handler that
+        # returns an empty string (e.g. title_ToolResultMessage for
+        # non-error results) is asserting "no header content needed",
+        # not "I didn't handle this". The walrus / truthy form would
+        # incorrectly fall through to the message_type default.
+        title = self._dispatch_title(message.content, message)
+        if title is not None:
+            return title
         # Fallback: convert message_type to title case
         return message.content.message_type.replace("_", " ").replace("-", " ").title()
 

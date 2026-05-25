@@ -42,6 +42,7 @@ from ..models import (
     UserSlashCommandMessage,
     UserTextMessage,
 )
+from ..plugins import apply_transformers
 from .task_notification_factory import (
     create_task_notification_message,
     has_task_notification,
@@ -463,6 +464,30 @@ UserMessageContent = Union[
 
 
 def create_user_message(
+    meta: MessageMeta,
+    content_list: list[ContentItem],
+    text_content: str,
+    is_slash_command: bool = False,
+) -> Optional[UserMessageContent]:
+    """Wrapper: build the candidate, then run plugin transformers.
+
+    The body lives in :func:`_classify_user_message`; this wrapper
+    applies the plugin transformer pass to the result so every
+    classification path (slash-command, bash, teammate, ...) becomes
+    rewriteable by a plugin, not just the generic-text fallback.
+    Transformers whose ``applies_to`` doesn't subclass-match the
+    candidate's type pass through with no-op cost.
+    """
+    candidate = _classify_user_message(
+        meta, content_list, text_content, is_slash_command
+    )
+    if candidate is None:
+        return None
+    transformed = apply_transformers(candidate, meta)
+    return cast("UserMessageContent", transformed)
+
+
+def _classify_user_message(
     meta: MessageMeta,
     content_list: list[ContentItem],
     text_content: str,

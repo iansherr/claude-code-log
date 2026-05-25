@@ -125,4 +125,11 @@ dev = [
     "ty>=0.0.11",
     "pytest-playwright>=0.7.0",
     "syrupy>=5.0.0",
+    # Reference test plugin for the plugin-system test suite. Doubles as
+    # the canonical example for third-party plugin authors. See
+    # test/_plugins/clmail/README.md.
+    "claude-code-log-clmail-test",
 ]
+
+[tool.uv.sources]
+claude-code-log-clmail-test = { path = "test/_plugins/clmail", editable = true }
