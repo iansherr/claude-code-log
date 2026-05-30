@@ -29,16 +29,14 @@
 
 > The CI/CodeRabbit trigger mechanics for stacked PRs (retarget-then-force-push
 > order; why CodeRabbit needs an explicit `@coderabbitai full review` even at
-> base=`main`) are operational GitHub notes, not part of this plan — see
-> `~/.claude/guidelines/github.md`.
+> base=`main`) are operational GitHub notes, out of scope for this plan.
 
 **Current track (sequential): opp 1 (#182) and opp 6 (#183) MERGED; opp 7 (#184)
 rebased onto `main`, awaiting its explicit CodeRabbit review + final merge.** opp 1
 lived in `converter.py`; opp 6/7 in `renderer.py` and overlap the branch-header
 block, so 7 followed 6. Branches were stacked (each PR based on the previous) for
 clean atomic diffs; each was rebased onto `main` and re-checked as its parent
-merged (the retarget/force-push + `@coderabbitai` mechanics are in the github
-guideline, not here).
+merged.
 
 ## 1. Executive summary
 
