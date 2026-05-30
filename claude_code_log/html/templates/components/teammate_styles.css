@@ -246,13 +246,12 @@
     margin-left: 0.3em;
 }
 
-/* Cancel the tool_result negative-margin pull-up on the async-answer
-   collapsible — that rule is meant to tuck the *first* collapsible under
-   the tool title, but here the collapsible follows a label and would
-   otherwise overlap it. */
-.task-async-answer .collapsible-code {
-    margin-top: 0;
-}
+/* The async-answer collapsible follows a label, so the tool_result
+   negative-margin pull-up (meant to tuck the *first* collapsible under the
+   tool title) would make it overlap that label. This is now handled
+   generically — see `.tool_result .content > * + * .collapsible-code` in
+   message_styles.css (issue #153) — so no async-answer-specific override is
+   needed here. */
 
 /* ----------------------------------------------------------------------
    Async-agent cards (issue #90).

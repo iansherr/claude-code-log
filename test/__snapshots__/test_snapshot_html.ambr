@@ -1414,6 +1414,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -1583,10 +1596,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -3347,13 +3362,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -7330,6 +7344,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -7499,10 +7526,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -9263,13 +9292,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -15338,6 +15366,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -15507,10 +15548,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -17271,13 +17314,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -21359,6 +21401,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -21528,10 +21583,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -23292,13 +23349,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -27611,6 +27667,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -27780,10 +27849,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -29544,13 +29615,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -33731,6 +33801,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -33900,10 +33983,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -35664,13 +35749,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
@@ -39908,6 +39992,19 @@
       margin-top: -2.5em;
   }
   
+  /* The negative margin above deliberately tucks the *first* collapsible up
+     under the tool's header bar. But when a collapsible instead FOLLOWS
+     sibling content in the card body — a WebFetch meta badge, an async-answer
+     label, or a plugin-emitted header line — that pull-up makes the
+     collapsible's first row overlap the preceding content (issue #153).
+     Whenever the collapsible's wrapper is not the first child of the card
+     body, cancel the merge and leave a little breathing room instead.
+     This generalises the earlier per-case overrides for WebFetch and the
+     async-answer label. */
+  .tool_result .content > * + * .collapsible-code {
+      margin-top: 0.5em;
+  }
+  
   .tool_result .collapsible-code summary {
       cursor: pointer;
       padding-top: 0.5em;
@@ -40077,10 +40174,12 @@
       color: var(--text-muted);
   }
   
-  /* Override negative margin for WebFetch collapsible - needs space for meta badges */
-  .webfetch-result.collapsible-code {
-      margin-top: 0;
-  }
+  /* Note: WebFetch puts a `.webfetch-meta` badge above the collapsible, so the
+     negative-margin pull-up would overlap it. That's handled generically by the
+     `.tool_result .content > * + * .collapsible-code` rule above (issue #153) —
+     no WebFetch-specific override needed. (The previous `.webfetch-result.collapsible-code`
+     rule never matched: those two classes sit on different elements — the wrapper
+     div vs. the nested `<details>`.) */
   
   /* Override centered h1 from global styles for WebFetch content */
   .webfetch-result h1 {
@@ -41841,13 +41940,12 @@
       margin-left: 0.3em;
   }
   
-  /* Cancel the tool_result negative-margin pull-up on the async-answer
-     collapsible — that rule is meant to tuck the *first* collapsible under
-     the tool title, but here the collapsible follows a label and would
-     otherwise overlap it. */
-  .task-async-answer .collapsible-code {
-      margin-top: 0;
-  }
+  /* The async-answer collapsible follows a label, so the tool_result
+     negative-margin pull-up (meant to tuck the *first* collapsible under the
+     tool title) would make it overlap that label. This is now handled
+     generically — see `.tool_result .content > * + * .collapsible-code` in
+     message_styles.css (issue #153) — so no async-answer-specific override is
+     needed here. */
   
   /* ----------------------------------------------------------------------
      Async-agent cards (issue #90).
