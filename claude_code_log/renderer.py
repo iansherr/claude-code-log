@@ -3652,6 +3652,126 @@ def _collect_session_info(
     return sessions, session_order, show_tokens_for_message
 
 
+def _build_trunk_header(
+    session_id: str,
+    trunk_summary: Optional[str],
+    session_hierarchy: dict[str, dict[str, Any]] | None,
+    session_summaries: dict[str, str] | None,
+    session_team_names: dict[str, str] | None,
+    ctx: RenderingContext,
+) -> SessionHeaderMessage:
+    """Build the SessionHeaderMessage content for a trunk session when
+    first encountered. Caller is responsible for wrapping in
+    ``TemplateMessage``, calling ``ctx.register(...)``, and updating
+    ``ctx.session_first_message`` — that positional placement stays in
+    the render loop to preserve ``#msg-d-{N}`` anchor stability.
+    """
+    session_title = (
+        f"{trunk_summary} • {session_id[:8]}" if trunk_summary else session_id[:8]
+    )
+    session_header_meta = MessageMeta(
+        session_id=session_id,
+        timestamp="",
+        uuid="",
+    )
+    hier = (session_hierarchy or {}).get(session_id, {})
+    parent_sid = hier.get("parent_session_id")
+    parent_msg_idx = ctx.session_first_message.get(parent_sid) if parent_sid else None
+    return SessionHeaderMessage(
+        session_header_meta,
+        title=session_title,
+        session_id=session_id,
+        summary=trunk_summary,
+        parent_session_id=parent_sid,
+        parent_session_summary=(session_summaries or {}).get(parent_sid)
+        if parent_sid
+        else None,
+        parent_message_index=parent_msg_idx,
+        depth=hier.get("depth", 0),
+        attachment_uuid=hier.get("attachment_uuid"),
+        team_name=(session_team_names or {}).get(session_id),
+    )
+
+
+def _build_branch_header(
+    branch_sid: str,
+    message: TranscriptEntry,
+    session_hierarchy: dict[str, dict[str, Any]] | None,
+    session_summaries: dict[str, str] | None,
+    session_team_names: dict[str, str] | None,
+    ctx: RenderingContext,
+) -> SessionHeaderMessage:
+    """Build the SessionHeaderMessage content for a within-session
+    branch (fork) when first encountered. ``message`` is the first
+    entry of the branch — used to extract the preview text. Caller
+    handles ``TemplateMessage`` wrapping, ``render_session_id`` tagging,
+    ``ctx.register(...)``, and ``ctx.session_first_message`` updates so
+    positional placement (anchor stability) stays in the render loop.
+    """
+    b_hier = (session_hierarchy or {}).get(branch_sid, {})
+    parent_sid = b_hier.get("parent_session_id")
+    # Look up the fork point message index (attachment_uuid),
+    # not the parent session header.
+    attachment_uuid = b_hier.get("attachment_uuid")
+    parent_msg_idx = None
+    if attachment_uuid:
+        for msg in ctx.messages:
+            if msg.meta.uuid == attachment_uuid and msg.message_index is not None:
+                parent_msg_idx = msg.message_index
+                break
+    if parent_msg_idx is None and parent_sid:
+        parent_msg_idx = ctx.session_first_message.get(parent_sid)
+    original_sid = b_hier.get("original_session_id", message.sessionId)
+    branch_summary = (session_summaries or {}).get(original_sid)
+
+    # Extract preview from the branch's first user message
+    branch_preview = ""
+    user_entry = as_user_entry(message)
+    if user_entry is not None:
+        branch_text = extract_text_content(user_entry.message.content)
+        if branch_text:
+            branch_preview = create_session_preview(branch_text)
+    branch_title = _branch_label(branch_sid, branch_preview)
+
+    branch_header_meta = MessageMeta(
+        session_id=branch_sid,
+        timestamp="",
+        uuid="",
+    )
+
+    # Get fork point preview for backlink text
+    fork_context = ""
+    if attachment_uuid:
+        for fmsg in ctx.messages:
+            if fmsg.meta.uuid == attachment_uuid:
+                fork_context = _fork_point_preview(fmsg, ctx)
+                break
+
+    # Branches inherit the team_name of the original (pre-fork) session:
+    # a within-session fork doesn't change which team is active.
+    _team_names = session_team_names or {}
+    branch_team_name = _team_names.get(branch_sid) or _team_names.get(
+        original_sid or ""
+    )
+
+    return SessionHeaderMessage(
+        branch_header_meta,
+        title=branch_title,
+        session_id=branch_sid,
+        summary=branch_summary,
+        parent_session_id=parent_sid,
+        parent_session_summary=fork_context or None,
+        parent_message_index=parent_msg_idx,
+        depth=b_hier.get("depth", 0),
+        attachment_uuid=b_hier.get("attachment_uuid"),
+        is_branch=True,
+        original_session_id=original_sid,
+        first_uuid=getattr(message, "uuid", ""),
+        team_name=branch_team_name,
+        preview=branch_preview or None,
+    )
+
+
 def _render_messages(
     messages: list[TranscriptEntry],
     sessions: dict[str, dict[str, Any]],
@@ -3729,69 +3849,13 @@ def _render_messages(
                 seen_sessions.add(branch_sid)
                 current_render_session = branch_sid
 
-                # Create branch header
-                b_hier = (session_hierarchy or {}).get(branch_sid, {})
-                parent_sid = b_hier.get("parent_session_id")
-                # Look up the fork point message index (attachment_uuid),
-                # not the parent session header
-                attachment_uuid = b_hier.get("attachment_uuid")
-                parent_msg_idx = None
-                if attachment_uuid:
-                    for msg in ctx.messages:
-                        if (
-                            msg.meta.uuid == attachment_uuid
-                            and msg.message_index is not None
-                        ):
-                            parent_msg_idx = msg.message_index
-                            break
-                if parent_msg_idx is None and parent_sid:
-                    parent_msg_idx = ctx.session_first_message.get(parent_sid)
-                original_sid = b_hier.get("original_session_id", message.sessionId)
-                branch_summary = (session_summaries or {}).get(original_sid)
-                # Extract preview from the branch's first user message
-                branch_preview = ""
-                user_entry = as_user_entry(message)
-                if user_entry is not None:
-                    branch_text = extract_text_content(user_entry.message.content)
-                    if branch_text:
-                        branch_preview = create_session_preview(branch_text)
-                branch_title = _branch_label(branch_sid, branch_preview)
-
-                branch_header_meta = MessageMeta(
-                    session_id=branch_sid,
-                    timestamp="",
-                    uuid="",
-                )
-                # Get fork point preview for backlink text
-                fork_context = ""
-                if attachment_uuid:
-                    for fmsg in ctx.messages:
-                        if fmsg.meta.uuid == attachment_uuid:
-                            fork_context = _fork_point_preview(fmsg, ctx)
-                            break
-
-                # Branches inherit the team_name of the original (pre-fork)
-                # session: a within-session fork doesn't change which team is
-                # active.
-                _team_names = session_team_names or {}
-                branch_team_name = _team_names.get(branch_sid) or _team_names.get(
-                    original_sid or ""
-                )
-                branch_header_content = SessionHeaderMessage(
-                    branch_header_meta,
-                    title=branch_title,
-                    session_id=branch_sid,
-                    summary=branch_summary,
-                    parent_session_id=parent_sid,
-                    parent_session_summary=fork_context or None,
-                    parent_message_index=parent_msg_idx,
-                    depth=b_hier.get("depth", 0),
-                    attachment_uuid=b_hier.get("attachment_uuid"),
-                    is_branch=True,
-                    original_session_id=original_sid,
-                    first_uuid=message_uuid,
-                    team_name=branch_team_name,
-                    preview=branch_preview or None,
+                branch_header_content = _build_branch_header(
+                    branch_sid,
+                    message,
+                    session_hierarchy,
+                    session_summaries,
+                    session_team_names,
+                    ctx,
                 )
                 branch_header = TemplateMessage(branch_header_content)
                 branch_header.render_session_id = branch_sid
@@ -3883,36 +3947,13 @@ def _render_messages(
             seen_sessions.add(session_id)
             if not is_agent:
                 current_render_session = None  # Reset branch tracking
-                current_session_summary = session_summary
-                session_title = (
-                    f"{current_session_summary} • {session_id[:8]}"
-                    if current_session_summary
-                    else session_id[:8]
-                )
-
-                session_header_meta = MessageMeta(
-                    session_id=session_id,
-                    timestamp="",
-                    uuid="",
-                )
-                hier = (session_hierarchy or {}).get(session_id, {})
-                parent_sid = hier.get("parent_session_id")
-                parent_msg_idx = (
-                    ctx.session_first_message.get(parent_sid) if parent_sid else None
-                )
-                session_header_content = SessionHeaderMessage(
-                    session_header_meta,
-                    title=session_title,
-                    session_id=session_id,
-                    summary=current_session_summary,
-                    parent_session_id=parent_sid,
-                    parent_session_summary=(session_summaries or {}).get(parent_sid)
-                    if parent_sid
-                    else None,
-                    parent_message_index=parent_msg_idx,
-                    depth=hier.get("depth", 0),
-                    attachment_uuid=hier.get("attachment_uuid"),
-                    team_name=(session_team_names or {}).get(session_id),
+                session_header_content = _build_trunk_header(
+                    session_id,
+                    session_summary,
+                    session_hierarchy,
+                    session_summaries,
+                    session_team_names,
+                    ctx,
                 )
                 # Register and track session's first message
                 session_header = TemplateMessage(session_header_content)
