@@ -5,6 +5,33 @@
 > no code changed. Implementation proceeds via the worktree-actors flow
 > (one branch per opportunity, monk reviews, main merges progressively).
 
+## 0. Live status
+
+> Working log of the implementation effort, updated as branches land.
+> Status-doc edits go **direct to `main`** (doc-only); code changes go
+> through PRs reviewed by monk + CodeRabbit and merged by the maintainer.
+> Implementation runs via the worktree-actors flow: **alice** develops each
+> branch locally, reviews with **monk**, iterates, then pushes a PR; **main**
+> coordinates and watches each PR's CodeRabbit/CI; **bob** is the overflow
+> implementer.
+
+| Opp | Branch (`wf/simplify/…`) | PR | State |
+|-----|--------------------------|-----|-------|
+| 5 — drop-progress-repair | `drop-progress-repair` | [#175](https://github.com/daaain/claude-code-log/pull/175) | ✅ merged |
+| 2 — away-summary-rule | `away-summary-rule` | [#176](https://github.com/daaain/claude-code-log/pull/176) | ✅ merged |
+| 4 — extract-junction-link-pass | `extract-junction-link-pass` | [#177](https://github.com/daaain/claude-code-log/pull/177) | ✅ merged |
+| 3 — fix-rendering-arch-doc | `fix-rendering-arch-doc` | [#178](https://github.com/daaain/claude-code-log/pull/178) | ✅ merged |
+| §7 — detail-visibility-method | `detail-visibility-method` | [#181](https://github.com/daaain/claude-code-log/pull/181) | ✅ merged |
+| 1 — pagination-token-dedup | `pagination-token-dedup` | _pending_ | 🔄 in progress (alice) |
+| 6 — factor-session-headers | `factor-session-headers` | _pending_ | ⏳ queued (stacked on opp 1) |
+| 7 — branch-label-source | `branch-label-source` | _pending_ | ⏳ queued (stacked on opp 6) |
+| 8–12 — Wave C / D | — | — | ⏳ not started |
+
+**Current track (sequential):** opp 1 → opp 6 → opp 7. Branches are **stacked** —
+each PR targets the previous branch (`--base`) until that branch merges, so
+CodeRabbit diffs only the new change. opp 1 lives in `converter.py`; opp 6/7 in
+`renderer.py` and overlap the branch-header block, so 7 must follow 6.
+
 ## 1. Executive summary
 
 `converter.py` (3189 lines) and `renderer.py` (4618 lines) are hard to follow for two structural reasons. First, **session metadata is derived independently in at least four-to-five places** that all run the same prologue (build a uuid→session map, resolve `SummaryTranscriptEntry.leafUuid`→session, overlay ai-titles, group by `get_parent_session_id`, filter warmup, accumulate previews/tokens): `_update_cache_with_session_data`, `_build_session_data_from_messages`, `_collect_project_sessions` (all in `converter.py`), plus an inline aggregate loop in the index no-cache fallback, and the renderer's own `prepare_session_summaries`/`prepare_session_ai_titles`/`prepare_session_team_names`/`_collect_session_info`. These copies already drift (the pagination fallback double-counts tokens because it lacks the `requestId` dedup the cache path has), and the code comments literally say "Mirrors X" / "matches the logic from renderer.py exactly" — a hand-maintained invariant with no enforcement. Second, **`renderer.py::generate_template_messages` runs ~20 strictly-ordered in-place passes over a flat `list[TemplateMessage]`**, several of which re-derive session/branch structure the `SessionTree` (dag.py) already knows authoritatively — most acutely the `current_render_session` mutable loop variable in `_render_messages`, which re-discovers branch boundaries by walking the message stream.
