@@ -405,10 +405,12 @@ declares its own. A handful of built-ins (`UserTextMessage`,
 do *not* declare a threshold and fall through to the base predicate's
 "visible when unset" default — a plugin subclassing one of those
 inherits no threshold and is likewise visible-by-default unless it
-declares its own. Declaring your own opts you out of the orthogonal
-`_LOW_KEEP_TOOLS` tool-name allowlist (for `ToolUseMessage` /
-`ToolResultMessage` subclasses) — your declared visibility is
-authoritative.
+declares its own. The same applies transitively: `UserSteeringMessage`
+subclasses `UserTextMessage`, neither declares, so `UserSteeringMessage`
+also lands on the default-visible path. Declaring your own opts you out
+of the orthogonal `_LOW_KEEP_TOOLS` tool-name allowlist (for
+`ToolUseMessage` / `ToolResultMessage` subclasses) — your declared
+visibility is authoritative.
 
 **Practical guide.** Pick based on user-perceived value:
 
