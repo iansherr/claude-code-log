@@ -3175,101 +3175,22 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
 # teammate transcripts keep their spawn-and-result pairs at low detail.
 _LOW_KEEP_TOOLS = {"WebSearch", "WebFetch", "Task", "Agent"}
 
-# Post-render classes excluded per level (cumulative: each level adds to the
-# previous). HIGH excludes system/hook noise; LOW adds bash and tools; MINIMAL
-# adds everything except user/assistant text.
-_HIGH_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
-    SlashCommandMessage,
-    UserSlashCommandMessage,
-    CommandOutputMessage,
-    CompactedSummaryMessage,
-    UserMemoryMessage,
-    SystemMessage,
-    HookSummaryMessage,
-    HookAttachmentMessage,
-    UnknownMessage,
-)
-
-# AwaySummaryMessage is governed by its own class attribute
-# (detail_visibility = HIGH in models.py), not these registries: recaps are
-# narrative content (has_markdown=True, assistant-side visual treatment),
-# kept at HIGH and dropped from LOW down. The pre-render `_filter_by_detail`
-# carries a matching whitelist for SystemTranscriptEntry subtype="away_summary".
-_LOW_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
-    *_HIGH_EXCLUDE_CLASSES,
-    BashInputMessage,
-    BashOutputMessage,
-    ThinkingMessage,
-)
-
-_MINIMAL_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
-    *_LOW_EXCLUDE_CLASSES,
-    ToolUseMessage,
-    ToolResultMessage,
-)
-
-_USER_ONLY_EXCLUDE_CLASSES: tuple[type[MessageContent], ...] = (
-    *_MINIMAL_EXCLUDE_CLASSES,
-    AssistantTextMessage,
-)
-
-
-# DetailLevel verbosity ordering: lower index = more verbose. A message
-# is visible iff ``current_detail`` is at least as verbose as the
-# required ``detail_visibility`` declared on its content class. With
-# this ordering "at least as verbose" reduces to
-# ``order[current] <= order[required]``.
-_DETAIL_ORDER: dict[DetailLevel, int] = {
-    DetailLevel.FULL: 0,
-    DetailLevel.HIGH: 1,
-    DetailLevel.LOW: 2,
-    DetailLevel.MINIMAL: 3,
-    DetailLevel.USER_ONLY: 4,
-}
-
-# Guard against drift: if a new DetailLevel value is added without an
-# entry here, the visibility helper would raise KeyError silently on
-# first use. Fail loudly at import time instead.
-assert set(_DETAIL_ORDER.keys()) == set(DetailLevel), (
-    f"_DETAIL_ORDER missing entries for: {set(DetailLevel) - set(_DETAIL_ORDER.keys())}"
-)
+# Per-class detail-level filtering lives on the content classes themselves
+# via ``MessageContent.visible_at`` / the ``detail_visibility`` ClassVar
+# (see ``models.py`` and ``dev-docs/plugins.md`` §6). The thin wrapper
+# below survives only because it is called from many sites in this
+# module; new code should call ``content.visible_at(detail)`` directly.
 
 
 def _content_visible_at(content: "MessageContent", detail: DetailLevel) -> bool:
     """Return True iff ``content`` is visible at the given detail level.
 
-    Resolution order (per RFC §detail_visibility semantics and built-in
-    bridge):
-
-    1. **Class attribute** ``detail_visibility: ClassVar[DetailLevel]``
-       on the content's class. Plugin-defined classes use this; future
-       migrations of built-ins to the class-attribute form do too.
-       Monotone-down: visible iff ``detail`` is at least as verbose as
-       the class's declared minimum.
-    2. **Bridge** to the legacy ``_HIGH_EXCLUDE_CLASSES`` /
-       ``_LOW_EXCLUDE_CLASSES`` / etc. registries for built-in classes
-       that have not been migrated yet. ``isinstance`` semantics
-       (matches subclasses too, so plugin classes that subclass a
-       built-in inherit the built-in's filter membership unless they
-       override via the class attribute).
-    3. **Default visible** when neither strategy excludes.
+    Thin delegate to :meth:`MessageContent.visible_at`, which reads the
+    class-side ``detail_visibility`` ClassVar via the monotone-down
+    ordering on :class:`DetailLevel`. Plugin classes participate
+    automatically through the same predicate.
     """
-    visibility = getattr(type(content), "detail_visibility", None)
-    if visibility is not None:
-        return _DETAIL_ORDER[detail] <= _DETAIL_ORDER[visibility]
-    # Bridge: only the active level's exclude registry applies.
-    exclude: tuple[type[MessageContent], ...]
-    if detail == DetailLevel.HIGH:
-        exclude = _HIGH_EXCLUDE_CLASSES
-    elif detail == DetailLevel.LOW:
-        exclude = _LOW_EXCLUDE_CLASSES
-    elif detail == DetailLevel.MINIMAL:
-        exclude = _MINIMAL_EXCLUDE_CLASSES
-    elif detail == DetailLevel.USER_ONLY:
-        exclude = _USER_ONLY_EXCLUDE_CLASSES
-    else:  # FULL
-        return True
-    return not isinstance(content, exclude)
+    return content.visible_at(detail)
 
 
 def _filter_by_detail(
@@ -3549,35 +3470,38 @@ def _filter_template_by_detail(
 ) -> list[TemplateMessage]:
     """Post-render filter: remove TemplateMessage types per detail level.
 
-    Visibility is computed by :func:`_content_visible_at`, which
-    consults a content class's ``detail_visibility`` attribute first
-    (plugin path) and falls back to the legacy ``_*_EXCLUDE_CLASSES``
-    registries (built-in path). At ``LOW``, the ``_LOW_KEEP_TOOLS``
-    allowlist rescues specific tool names that the bridge would
-    otherwise drop.
+    Visibility is computed by :func:`_content_visible_at`, which delegates
+    to each content class's ``visible_at`` predicate / ``detail_visibility``
+    ClassVar. At ``LOW``, the ``_LOW_KEEP_TOOLS`` allowlist narrows
+    built-in tool messages further to a specific set of tool names.
     """
     result: list[TemplateMessage] = []
     for msg in messages:
         visible = _content_visible_at(msg.content, detail)
 
-        # LOW keep-list: ToolUseMessage / ToolResultMessage are NOT in
-        # _LOW_EXCLUDE_CLASSES (only in _MINIMAL_EXCLUDE_CLASSES), so
-        # the bridge passes them through at LOW. The keep-list then
-        # applies a *positive* filter: keep only tools whose tool_name
-        # is in _LOW_KEEP_TOOLS; drop the rest. Plugin classes
-        # carrying an explicit ``detail_visibility`` opt out of the
-        # keep-list — their declared visibility is authoritative,
-        # letting a plugin (e.g. clmail communicate) be visible at LOW
-        # without core needing to update _LOW_KEEP_TOOLS.
-        if (
-            visible
-            and detail == DetailLevel.LOW
-            and isinstance(msg.content, (ToolUseMessage, ToolResultMessage))
-            and not hasattr(type(msg.content), "detail_visibility")
-        ):
-            tool_name = getattr(msg.content, "tool_name", "")
-            if tool_name not in _LOW_KEEP_TOOLS:
-                visible = False
+        # LOW keep-list: built-in ToolUseMessage / ToolResultMessage declare
+        # ``detail_visibility = LOW``, so the predicate keeps them at LOW;
+        # the keep-list then narrows that set to a few specific tool names
+        # (Web/Task/Agent). Plugin subclasses that declare *their own*
+        # ``detail_visibility`` opt out — their declared visibility is
+        # authoritative, letting a plugin (e.g. clmail communicate) be
+        # visible at LOW without core needing to update _LOW_KEEP_TOOLS.
+        # Detection: the class introduces ``detail_visibility`` in its own
+        # ``__dict__`` AND is not one of the built-in bases (which declare
+        # the LOW baseline that this keep-list is designed to narrow).
+        if visible and detail == DetailLevel.LOW:
+            content_cls = type(msg.content)
+            declares_own_visibility = (
+                "detail_visibility" in content_cls.__dict__
+                and content_cls not in (ToolUseMessage, ToolResultMessage)
+            )
+            if (
+                isinstance(msg.content, (ToolUseMessage, ToolResultMessage))
+                and not declares_own_visibility
+            ):
+                tool_name = getattr(msg.content, "tool_name", "")
+                if tool_name not in _LOW_KEEP_TOOLS:
+                    visible = False
 
         if not visible:
             continue

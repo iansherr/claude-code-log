@@ -58,6 +58,36 @@ class DetailLevel(str, Enum):
     MINIMAL = "minimal"  # User + assistant messages only
     USER_ONLY = "user-only"  # User prompts + steering only (for downstream agents)
 
+    def includes(self, threshold: "DetailLevel") -> bool:
+        """Return True iff this level is verbose enough to show content
+        whose ``detail_visibility`` is declared at ``threshold``.
+
+        Monotone-down: ``FULL.includes(X)`` is True for every ``X``;
+        ``USER_ONLY.includes(X)`` is True only for ``USER_ONLY`` itself.
+        """
+        return _DETAIL_ORDER[self] <= _DETAIL_ORDER[threshold]
+
+
+# Verbosity ordering: lower index = more verbose. The ``DetailLevel.includes``
+# predicate (and ``MessageContent.visible_at``) treats a level as "verbose
+# enough" iff ``order[current] <= order[threshold]``.
+_DETAIL_ORDER: dict[DetailLevel, int] = {
+    DetailLevel.FULL: 0,
+    DetailLevel.HIGH: 1,
+    DetailLevel.LOW: 2,
+    DetailLevel.MINIMAL: 3,
+    DetailLevel.USER_ONLY: 4,
+}
+
+# Guard against drift: if a new DetailLevel value is added without an
+# entry here, ``includes`` would raise KeyError silently on first use.
+# Fail loudly at import time instead. Uses ``if ... raise`` rather than
+# ``assert`` so the check survives ``python -O`` / ``PYTHONOPTIMIZE``.
+if set(_DETAIL_ORDER.keys()) != set(DetailLevel):
+    raise RuntimeError(
+        f"_DETAIL_ORDER missing entries for: {set(DetailLevel) - set(_DETAIL_ORDER.keys())}"
+    )
+
 
 # =============================================================================
 # JSONL Content Models (Pydantic)
@@ -422,6 +452,27 @@ class MessageContent:
         """
         return False
 
+    def visible_at(self, detail: DetailLevel) -> bool:
+        """Return True iff this content is visible at ``detail``.
+
+        Resolution: each subclass MAY declare a class-level
+        ``detail_visibility: ClassVar[DetailLevel]`` that names the LEAST
+        verbose level at which it should still render. The predicate is
+        monotone-down — a class declared at ``HIGH`` is visible at
+        ``FULL`` and ``HIGH`` and dropped at ``LOW`` and below
+        (see :meth:`DetailLevel.includes`).
+
+        Classes without a declared threshold are always visible — useful
+        for built-ins like ``UserTextMessage`` that have no level-based
+        filtering rule. Plugin subclasses inherit the threshold from
+        their base via normal ClassVar inheritance unless they declare
+        their own (documented contract — see ``dev-docs/plugins.md``).
+        """
+        threshold = getattr(type(self), "detail_visibility", None)
+        if threshold is None:
+            return True
+        return detail.includes(threshold)
+
 
 @dataclass
 class SystemMessage(MessageContent):
@@ -429,6 +480,9 @@ class SystemMessage(MessageContent):
 
     Used for info, warning, and error system messages.
     """
+
+    # System info/warning/error noise — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
 
     level: str  # "info", "warning", "error"
     text: str  # Raw text content (may contain ANSI codes)
@@ -457,6 +511,9 @@ class HookSummaryMessage(MessageContent):
 
     Used for subtype="stop_hook_summary" system messages.
     """
+
+    # Hook noise — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
 
     has_output: bool
     hook_errors: list[str]  # Error messages from hooks
@@ -504,7 +561,7 @@ class HookAttachmentMessage(MessageContent):
     hook invocation captured by the harness as an attachment, with
     full payload (command, exit code, stdout/stderr, duration). Visible
     only at ``DetailLevel.FULL``; dropped at HIGH and below alongside
-    other hook noise (see ``_HIGH_EXCLUDE_CLASSES``).
+    other hook noise (see ``detail_visibility`` below).
 
     ``kind`` distinguishes the attachment flavour:
 
@@ -519,6 +576,9 @@ class HookAttachmentMessage(MessageContent):
       reported an error but didn't block. Same shape as ``success``
       but with non-zero ``exitCode``.
     """
+
+    # Hook attachment noise — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
 
     kind: str  # success / additional_context / blocking_error / non_blocking_error
     hook_event: str = ""  # PostToolUse / UserPromptSubmit / Stop / SessionStart / ...
@@ -552,6 +612,9 @@ class SlashCommandMessage(MessageContent):
     command-contents tags parsed from the text.
     """
 
+    # Slash-command framing — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
+
     command_name: str
     command_args: str
     command_contents: str
@@ -568,6 +631,9 @@ class CommandOutputMessage(MessageContent):
     These are user messages containing local-command-stdout tags.
     """
 
+    # Local-command output — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
+
     stdout: str
     is_markdown: bool  # True if content appears to be markdown
 
@@ -583,6 +649,9 @@ class BashInputMessage(MessageContent):
     These are user messages containing bash-input tags.
     """
 
+    # Inline bash — kept through HIGH, dropped at LOW and below.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.HIGH
+
     command: str
 
     @property
@@ -596,6 +665,9 @@ class BashOutputMessage(MessageContent):
 
     These are user messages containing bash-stdout and/or bash-stderr tags.
     """
+
+    # Inline bash output — kept through HIGH, dropped at LOW and below.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.HIGH
 
     stdout: Optional[str] = None  # Raw stdout content (may contain ANSI codes)
     stderr: Optional[str] = None  # Raw stderr content (may contain ANSI codes)
@@ -619,6 +691,9 @@ class CompactedSummaryMessage(MessageContent):
     format_compacted_summary_content() in html/user_formatters.py.
     """
 
+    # /compact framing — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
+
     summary_text: str
 
     @property
@@ -639,6 +714,9 @@ class UserMemoryMessage(MessageContent):
     format_user_memory_content() in html/user_formatters.py.
     """
 
+    # Memory-input framing — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
+
     memory_text: str
 
     @property
@@ -654,6 +732,9 @@ class UserSlashCommandMessage(MessageContent):
     The text is markdown formatted and rendered as such.
     Formatted by format_user_slash_command_content() in html/user_formatters.py.
     """
+
+    # Slash-command expansion framing — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
 
     text: str
 
@@ -879,6 +960,10 @@ class AssistantTextMessage(MessageContent):
     Empty items list indicates no content.
     """
 
+    # Assistant prose — visible at MINIMAL and above; dropped only at
+    # USER_ONLY (which keeps user prompts + steering only).
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.MINIMAL
+
     # Interleaved content items preserving original order
     items: list[  # pyright: ignore[reportUnknownVariableType]
         TextContent | ImageContent
@@ -907,6 +992,9 @@ class ThinkingMessage(MessageContent):
     for parsing JSONL). This dataclass is for rendering purposes.
     """
 
+    # Thinking blocks — kept through HIGH, dropped at LOW and below.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.HIGH
+
     thinking: str
     signature: Optional[str] = None
 
@@ -933,6 +1021,9 @@ class UnknownMessage(MessageContent):
     Used as a fallback when encountering content types that don't have
     specific handlers. Stores the type name for display purposes.
     """
+
+    # Unknown content — visible only at FULL.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.FULL
 
     type_name: str  # The name/description of the unknown type
 
@@ -999,6 +1090,11 @@ class ToolResultMessage(MessageContent):
     needed for rendering, such as the associated tool name and file path.
     """
 
+    # Tool results — kept through LOW (narrowed there by the orthogonal
+    # tool-name keep-list in ``_filter_template_by_detail``), dropped at
+    # MINIMAL and below.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.LOW
+
     tool_use_id: str
     output: (
         "ToolOutput"  # Specialized (ReadOutput, etc.) or generic (ToolResultContent)
@@ -1024,6 +1120,11 @@ class ToolUseMessage(MessageContent):
     Wraps ToolUseContent with the parsed input for specialized formatting.
     Falls back to the original ToolUseContent when no specialized parser exists.
     """
+
+    # Tool invocations — kept through LOW (narrowed there by the orthogonal
+    # tool-name keep-list in ``_filter_template_by_detail``), dropped at
+    # MINIMAL and below.
+    detail_visibility: ClassVar[DetailLevel] = DetailLevel.LOW
 
     input: "ToolInput"  # Specialized (BashInput, etc.) or ToolUseContent fallback
     tool_use_id: str  # From ToolUseContent.id

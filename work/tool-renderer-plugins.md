@@ -14,7 +14,7 @@ the items the RFC explicitly deferred to v2.
 - **MCP namespace sugar.** Match `clmail__communicate` against any `mcp__*__clmail__communicate`. Declined for v1; plugins declare exact verbatim tool names. Revisit once we have two MCP servers exposing the same tool name.
 - **Icon centralization.** Follow-up could migrate scattered icon literals (`html/renderer.py:843–930`) into a registry populated by plugin classes' icon declarations. v1 keeps icons in title methods.
 - **Built-in migration to class-method pattern.** Mechanical follow-up after v1 lands. Reduces the renderer classes' surface area and unifies dispatch. Not blocking.
-- **Built-in migration from `_HIGH_EXCLUDE_CLASSES` to `detail_visibility`.** Same: mechanical follow-up.
+- ~~**Built-in migration from `_HIGH_EXCLUDE_CLASSES` to `detail_visibility`.**~~ **Done** (`wf/simplify/detail-visibility-method`, 2026-05-29): built-ins declare `detail_visibility` ClassVars and the four `_*_EXCLUDE_CLASSES` tuples are gone; the visibility predicate (`MessageContent.visible_at`) lives on the model.
 - **Transformer chaining.** First non-None wins in v1; no chaining. Revisit only with a concrete use case.
 - **Interleaved dispatch.** Today plugins run as a post-classification pass. Letting plugins run *between* built-in detectors (e.g. before the generic `TextFallback` classifier) would let a plugin claim a `UserTextMessage` before the built-in chain has decided. Needs a redesign of the factory loop to call into the plugin chain at each detector boundary.
 - **Namespace-collision diagnosis.** No `--list-plugins` CLI in v1. Startup warning logs cover the worst case (two transformers with same priority and `applies_to`). Follow-up if needed.

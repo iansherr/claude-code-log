@@ -33,9 +33,13 @@ Two callers, both in `claude_code_log/renderer.py`:
    the Skill `tool_use`'s `skill_body`, and the redundant
    "Launching skill: …" tool_result).
 2. **`_filter_template_by_detail`** (line ~3002) — drops
-   potentially many messages, by content type (`HIGH/LOW/MINIMAL/
-   USER_ONLY` exclusion sets), sidechain status, or LOW-tool
-   whitelist.
+   potentially many messages, by content type (each class's
+   `detail_visibility` ClassVar — see
+   `MessageContent.visible_at` in `models.py`; previously expressed
+   as cumulative `_*_EXCLUDE_CLASSES` tuples in `renderer.py`,
+   collapsed onto the model in
+   `wf/simplify/detail-visibility-method`), sidechain status, or
+   the orthogonal LOW-tool whitelist.
 
 Both callers run **before** hierarchy build (`_build_message_hierarchy`,
 line ~2024 sets `message.ancestry`), pair identification
@@ -153,12 +157,41 @@ formatter.
   async-agents support; landed the targeted ghost for
   `TaskNotificationMessage` at LOW.
 
+## The single-axis end-state
+
+Detail filtering currently runs on **two axes**: a pre-render pass
+(`_filter_by_detail` on raw `TranscriptEntry`, which strips content
+*items* within an entry) and a post-render pass (`visible_at` /
+`_filter_template_by_detail` on `MessageContent`). The pre-render
+axis is not a documented performance decision — the only stated
+rationale for two passes
+(`application_model.md` §2.6) is that some content is identifiable
+only after factory dispatch. Functionally, *everything* the
+pre-render pass does is expressible post-render, because the factory
+already splits a single entry's content items into separate messages.
+The pre-render axis earns its keep today only by keeping dropped
+content **out of the message index**, which sidesteps
+`_reindex_filtered_context`.
+
+**End-state.** One filtering axis (post-render) + ghosting (dropped
+messages keep their index slot) + one per-class visibility predicate
+(`MessageContent.visible_at`, landed in
+`wf/simplify/detail-visibility-method`) ⇒ delete *both*
+`_filter_by_detail` (pre-render) **and**
+`_reindex_filtered_context`. The post-render path becomes the
+single axis; the pre-render path is absorbed into it.
+
+This is the broader scope this epic now covers — the per-class
+predicate is the foundation the ghosting/single-axis work routes
+the post-render path through.
+
 ## Out of scope for this work item
 
 - Sidechain duplicate cleanup
   (`_cleanup_sidechain_duplicates`) does **not** call
   `_reindex_filtered_context` — it mutates `parent.children`
   in place without touching `ctx.messages`. No ghosting needed.
-- The pre-render filter `_filter_by_detail` (entries level,
-  before `_render_messages`) is a different layer and not part
-  of this remap surface.
+- `_LOW_KEEP_TOOLS` (the tool-name allowlist that narrows
+  `ToolUseMessage`/`ToolResultMessage` at LOW) is orthogonal to
+  the visibility predicate and stays in
+  `_filter_template_by_detail`.

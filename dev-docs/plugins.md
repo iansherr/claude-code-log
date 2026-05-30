@@ -389,16 +389,28 @@ minimum. With the ordering above:
 | `MINIMAL` | `FULL`, `HIGH`, `LOW`, `MINIMAL` |
 | `USER_ONLY` | all levels |
 
-The order is pinned in a `_DETAIL_ORDER` map in `renderer.py` (so a
-future reorder of the enum can't silently flip semantics), guarded
-by a module-load assertion that every `DetailLevel` value is mapped.
+The order is pinned in a `_DETAIL_ORDER` map next to `DetailLevel` in
+`models.py` (so a future reorder of the enum can't silently flip
+semantics), guarded by a module-load assertion that every
+`DetailLevel` value is mapped. The predicate itself lives on each
+content class as `MessageContent.visible_at(detail)` and consults the
+class-side `detail_visibility` ClassVar via `DetailLevel.includes`.
 
-**Opt-in nature.** Plugin classes that declare `detail_visibility`
-bypass the legacy `_HIGH_EXCLUDE_CLASSES` / `_LOW_KEEP_TOOLS`
-registries entirely — your declaration is authoritative. A plugin
-class that inherits from a built-in (e.g. `MyToolMessage(ToolUseMessage)`)
-but does NOT declare `detail_visibility` inherits the built-in's
-filter membership through the bridge.
+**Opt-in nature.** Most built-in `MessageContent` classes declare their
+own `detail_visibility` (e.g. `ToolUseMessage = LOW`, `SystemMessage =
+FULL`), and a plugin class subclassing such a built-in inherits the
+parent's threshold through normal ClassVar inheritance unless it
+declares its own. A handful of built-ins (`UserTextMessage`,
+`TeammateMessage`, `TaskNotificationMessage`, `SessionHeaderMessage`)
+do *not* declare a threshold and fall through to the base predicate's
+"visible when unset" default — a plugin subclassing one of those
+inherits no threshold and is likewise visible-by-default unless it
+declares its own. The same applies transitively: `UserSteeringMessage`
+subclasses `UserTextMessage`, neither declares, so `UserSteeringMessage`
+also lands on the default-visible path. Declaring your own opts you out
+of the orthogonal `_LOW_KEEP_TOOLS` tool-name allowlist (for
+`ToolUseMessage` / `ToolResultMessage` subclasses) — your declared
+visibility is authoritative.
 
 **Practical guide.** Pick based on user-perceived value:
 
@@ -701,7 +713,7 @@ NOT already wrap. Synthesis classes leave `has_markdown` alone.
 | Protocol + loader + dispatch | [`claude_code_log/plugins.py`](../claude_code_log/plugins.py) |
 | Priority constants | [`claude_code_log/factories/priorities.py`](../claude_code_log/factories/priorities.py) |
 | Renderer dispatch | `Renderer._dispatch_format`, `Renderer._dispatch_title`, `HtmlRenderer._class_dispatch_format` in [`renderer.py`](../claude_code_log/renderer.py) / [`html/renderer.py`](../claude_code_log/html/renderer.py) |
-| Visibility filter | `_content_visible_at`, `_filter_template_by_detail`, `_DETAIL_ORDER` in [`renderer.py`](../claude_code_log/renderer.py) |
+| Visibility predicate | `MessageContent.visible_at`, `DetailLevel.includes`, `_DETAIL_ORDER` in [`models.py`](../claude_code_log/models.py); `_filter_template_by_detail` (post-render driver) in [`renderer.py`](../claude_code_log/renderer.py) |
 | Reference plugin (canonical example) | [`test/_plugins/clmail/`](../test/_plugins/clmail/) + [`README.md`](../test/_plugins/clmail/README.md) |
 | Test suite (four layers) | [`test/test_plugin_system.py`](../test/test_plugin_system.py) |
 | Design discussion | [`work/tool-renderer-plugins.md`](../work/tool-renderer-plugins.md) |

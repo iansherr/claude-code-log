@@ -54,9 +54,9 @@ A `ClassVar[DetailLevel]` on the plugin's `MessageContent` subclass
 declares the minimum detail level at which the message is rendered.
 Monotone-down: a message is visible iff `current_detail` is at least
 as verbose as `detail_visibility` (with `FULL` most verbose,
-`USER_ONLY` least). Plugin classes that opt into a class attribute
-bypass the legacy `_HIGH_EXCLUDE_CLASSES` / `_LOW_KEEP_TOOLS` logic
-entirely.
+`USER_ONLY` least). Plugin classes that declare their own
+`detail_visibility` bypass the orthogonal `_LOW_KEEP_TOOLS` tool-name
+allowlist — their declared visibility is authoritative.
 
 ## Installing this fixture for tests
 
