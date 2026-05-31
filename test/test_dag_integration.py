@@ -1045,16 +1045,27 @@ class TestAgentDagIntegration:
 
 
 # =============================================================================
-# Test: current_render_session reset across sessions
+# Test: render_session_id does not leak across sessions
 # =============================================================================
 
 
 class TestRenderSessionResetAcrossSessions:
-    """Test that current_render_session is reset when entering a new session.
+    """Pin that a within-session branch in session A doesn't leak its
+    render_session_id into session B.
 
-    Bug: _render_messages() sets current_render_session when entering a
-    within-session fork branch but never clears it on new sessions,
-    causing subsequent session messages to inherit a stale branch ID.
+    Historical context: pre-D11 the renderer tracked the current
+    render session via a loop-local ``current_render_session``
+    variable, set on each branch-start trigger and cleared on each
+    new trunk session. An early bug let the variable carry across
+    sessions and pollute the next trunk's messages with a stale
+    branch sid. D11 (``crux-derive-render-session-id-from-dag``)
+    replaced the loop variable with a precomputed
+    ``uuid_to_render_sid`` map derived from the SessionTree, so the
+    polluted-state shape is structurally impossible — each uuid's
+    render_session_id is determined by its DAG line, not by walk
+    order. The test still pins the OUTCOME (s2 messages resolve to
+    ``s2``), which is what any future implementation must continue
+    to guarantee.
     """
 
     def test_second_session_not_polluted_by_first_session_branch(

@@ -899,6 +899,62 @@ def _extract_session_hierarchy(
     return hierarchy, junction_targets
 
 
+def _build_uuid_to_render_sid(
+    session_hierarchy: dict[str, dict[str, Any]] | None,
+) -> dict[str, str]:
+    """Build a ``uuid → render_session_id`` map from the SessionTree.
+
+    Each rendered ``TemplateMessage`` carries a ``render_session_id``
+    that groups it with the correct session in the final tree
+    (trunk, within-session branch, or agent's parent). Pre-D11 this
+    was tracked by a loop-local ``current_render_session`` variable
+    flipped on each branch-start trigger — a re-derivation of what
+    the ``SessionTree`` already knew authoritatively. The loop
+    variable carried a latent bug: if a branch's ``first_uuid`` was
+    dropped by ``_filter_by_detail`` at non-FULL detail, the trigger
+    never fired and subsequent branch messages silently inherited
+    the *previous* branch's sid (or ``None``).
+
+    Reading the map up front fixes this — every uuid in a branch
+    DAG-line maps to that branch's sid regardless of which entries
+    survive filtering.
+
+    Map contents:
+
+    - **Branch lines** (``is_branch=True``, sid contains ``@``) —
+      every uuid maps to the branch sid.
+    - **Agent lines** (sid contains ``#agent-``) — every uuid maps
+      to the agent's *immediate* parent (``parent_session_id`` from
+      the hierarchy, falling back to ``get_parent_session_id(sid)``).
+      Immediate means: a nested agent B inside agent A maps to A's
+      synthetic sid, NOT transitively to the trunk. Replicates the
+      pre-D11 inline resolution.
+    - **Trunk lines** — uuids are OMITTED. The caller's
+      ``map.get(uuid)`` returns ``None``, leaving the
+      ``TemplateMessage``'s ``_render_session_id`` unset, which
+      then falls back to ``meta.session_id`` at read time
+      (``TemplateMessage.render_session_id`` property).
+
+    Returns the empty map if ``session_hierarchy`` is ``None`` or
+    empty — every uuid falls through to the trunk path.
+    """
+    result: dict[str, str] = {}
+    if not session_hierarchy:
+        return result
+    for sid, hier in session_hierarchy.items():
+        line_uuids: list[str] = hier.get("uuids") or []
+        if is_agent_session(sid):
+            parent = hier.get("parent_session_id") or get_parent_session_id(sid)
+            if parent:
+                for uuid in line_uuids:
+                    result[uuid] = parent
+        elif hier.get("is_branch"):
+            for uuid in line_uuids:
+                result[uuid] = sid
+        # Trunk sessions are deliberately omitted — see docstring.
+    return result
+
+
 def prepare_session_team_names(messages: list[TranscriptEntry]) -> dict[str, str]:
     """Extract the teamName per session (teammates feature).
 
@@ -3722,7 +3778,13 @@ def _build_branch_header(
         attachment_uuid=b_hier.get("attachment_uuid"),
         is_branch=True,
         original_session_id=original_sid,
-        first_uuid=getattr(message, "uuid", ""),
+        # Canonical first uuid of the branch DAG-line, NOT the
+        # trigger's uuid. Post-D11 the trigger may be a later entry
+        # (the first one to survive ``_filter_by_detail``) rather
+        # than ``dag_line.uuids[0]`` itself, so reading from the
+        # hierarchy keeps the header's ``first_uuid`` field pointing
+        # at the canonical entry regardless of filtering.
+        first_uuid=b_hier.get("first_uuid") or "",
         team_name=branch_team_name,
         preview=branch_preview or None,
     )
@@ -3765,12 +3827,19 @@ def _render_messages(
     if junction_targets:
         ctx.junction_targets = junction_targets
 
-    # Build branch_start_uuids: map first UUID of each branch → branch pseudo-session ID
-    branch_start_uuids: dict[str, str] = {}
-    if session_hierarchy:
-        for sid, hier in session_hierarchy.items():
-            if hier.get("is_branch") and hier.get("first_uuid"):
-                branch_start_uuids[hier["first_uuid"]] = sid
+    # uuid → render_session_id map, derived once up front from the
+    # SessionTree (via ``session_hierarchy``). Single source of truth
+    # for how each rendered TemplateMessage is grouped:
+    #   - branch uuids → the branch sid;
+    #   - agent uuids → the agent's immediate parent sid (matches the
+    #     pre-D11 ``hier.get("parent_session_id")`` resolution);
+    #   - trunk uuids → omitted from the map (lookup returns None,
+    #     TemplateMessage.render_session_id falls back to
+    #     meta.session_id at read time).
+    # Replaces the pre-D11 ``current_render_session`` loop variable.
+    # See ``_build_uuid_to_render_sid`` for the latent-bug fix this
+    # closes at non-FULL detail.
+    uuid_to_render_sid = _build_uuid_to_render_sid(session_hierarchy)
 
     # uuid → entry map for branch-preview scanning. ``_build_branch_header``
     # walks each branch's DAG-line uuids (from ``session_hierarchy[sid]
@@ -3784,59 +3853,59 @@ def _render_messages(
         if entry_uuid:
             uuid_to_entry.setdefault(entry_uuid, entry)
 
-    # Track which sessions have had headers added
+    # Track which sessions have had headers added.
     seen_sessions: set[str] = set()
-    # Track current effective render session (for branch assignment)
-    current_render_session: Optional[str] = None
 
     for message in messages:
         message_type = message.type
-
-        # Determine if this message belongs to an agent sidechain session.
-        # Agent messages use the parent session's render_session_id so they
-        # stay grouped with the correct session (trunk or branch).
         msg_session_id = getattr(message, "sessionId", "") or ""
-        agent_parent_session: Optional[str] = None
-        if is_agent_session(msg_session_id):
-            # Use session hierarchy to find the actual parent (may be a branch
-            # pseudo-session if the anchor is inside a within-session fork)
-            if session_hierarchy:
-                hier = session_hierarchy.get(msg_session_id, {})
-                agent_parent_session = hier.get("parent_session_id")
-            if not agent_parent_session:
-                # Fallback: extract original session from synthetic ID
-                agent_parent_session = get_parent_session_id(msg_session_id)
+        message_uuid = getattr(message, "uuid", "") or ""
 
-        # Check if this message starts a new branch (within-session fork)
-        # Must happen before system/summary handling so branch state is
-        # correct when tagging those messages with render_session_id.
-        message_uuid = getattr(message, "uuid", "")
-        if message_uuid and message_uuid in branch_start_uuids:
-            branch_sid = branch_start_uuids[message_uuid]
-            if branch_sid not in seen_sessions:
-                seen_sessions.add(branch_sid)
-                current_render_session = branch_sid
+        # Pre-D11 inline derivation (``current_render_session`` +
+        # agent-parent resolution) collapsed into one map lookup.
+        # ``None`` for trunk uuids — the TemplateMessage's
+        # ``_render_session_id`` stays unset and falls back to
+        # ``meta.session_id`` at read time.
+        effective_session: Optional[str] = uuid_to_render_sid.get(message_uuid)
 
-                branch_header_content = _build_branch_header(
-                    branch_sid,
-                    message,
-                    session_hierarchy,
-                    session_summaries,
-                    session_team_names,
-                    uuid_to_entry,
-                    ctx,
-                )
-                branch_header = TemplateMessage(branch_header_content)
-                branch_header.render_session_id = branch_sid
-                msg_index = ctx.register(branch_header)
-                ctx.session_first_message[branch_sid] = msg_index
+        # Branch header: fires off the SAME map-driven trigger that
+        # assigns ``render_session_id``. A branch sid contains ``@``;
+        # agent messages whose parent is a branch ALSO have such a
+        # mapping, but the branch header is owned by the branch's own
+        # entries — skip the trigger when the message's own sessionId
+        # is an agent (``#agent-`` in the id), so the agent's
+        # presence inside a branch doesn't double-create a header
+        # for that branch via an out-of-order agent entry. (The
+        # branch's own first surviving entry always precedes its
+        # agents in the message stream because
+        # ``_integrate_agent_entries`` splices agents at the anchor
+        # tool_result, which is itself a branch-line entry.)
+        if (
+            effective_session
+            and "@" in effective_session
+            and effective_session not in seen_sessions
+            and not is_agent_session(msg_session_id)
+        ):
+            seen_sessions.add(effective_session)
+            branch_header_content = _build_branch_header(
+                effective_session,
+                message,
+                session_hierarchy,
+                session_summaries,
+                session_team_names,
+                uuid_to_entry,
+                ctx,
+            )
+            branch_header = TemplateMessage(branch_header_content)
+            branch_header.render_session_id = effective_session
+            msg_index = ctx.register(branch_header)
+            ctx.session_first_message[effective_session] = msg_index
 
         # Handle system messages (already filtered in pass 1)
         if isinstance(message, SystemTranscriptEntry):
             system_content = create_system_message(message)
             if system_content:
                 system_msg = TemplateMessage(system_content)
-                effective_session = agent_parent_session or current_render_session
                 if effective_session:
                     system_msg.render_session_id = effective_session
                 ctx.register(system_msg)
@@ -3849,7 +3918,6 @@ def _render_messages(
             attachment_content = create_attachment_message(message)
             if attachment_content:
                 attachment_msg = TemplateMessage(attachment_content)
-                effective_session = agent_parent_session or current_render_session
                 if effective_session:
                     attachment_msg.render_session_id = effective_session
                 ctx.register(attachment_msg)
@@ -3915,7 +3983,10 @@ def _render_messages(
         if session_id not in seen_sessions:
             seen_sessions.add(session_id)
             if not is_agent:
-                current_render_session = None  # Reset branch tracking
+                # Pre-D11 also reset ``current_render_session`` here;
+                # the new map-driven derivation needs no reset (each
+                # uuid carries its own render_session_id via the
+                # ``uuid_to_render_sid`` lookup above).
                 session_header_content = _build_trunk_header(
                     session_id,
                     session_summary,
@@ -3985,7 +4056,6 @@ def _render_messages(
                     continue
 
                 chunk_msg = TemplateMessage(content_model)
-                effective_session = agent_parent_session or current_render_session
                 if effective_session:
                     chunk_msg.render_session_id = effective_session
                 ctx.register(chunk_msg)
@@ -4036,7 +4106,6 @@ def _render_messages(
                     continue
 
                 tool_msg = TemplateMessage(tool_result.content)
-                effective_session = agent_parent_session or current_render_session
                 if effective_session:
                     tool_msg.render_session_id = effective_session
                 ctx.register(tool_msg)
