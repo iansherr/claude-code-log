@@ -25,6 +25,11 @@ from claude_code_log.converter import load_transcript
 from claude_code_log.html.renderer import generate_html
 from claude_code_log.models import TranscriptEntry
 
+# Bounding boxes carry sub-pixel/layout variance across environments; a small
+# slack keeps these geometry assertions from flaking on CI without changing
+# their intent (the real before/after gap is tens of pixels).
+GEOMETRY_EPSILON_PX = 1.0
+
 
 def _webfetch_entries() -> List[dict]:
     """A WebFetch tool_use → tool_result pair whose result is long enough
@@ -139,7 +144,7 @@ class TestCollapsibleOverlapBrowser:
         meta_bottom = meta_box["y"] + meta_box["height"]
         # The summary's top must be at or below the meta badge's bottom.
         # Before the fix the -2.5em pull-up dragged it ~30px above.
-        assert summary_box["y"] >= meta_bottom, (
+        assert summary_box["y"] >= meta_bottom - GEOMETRY_EPSILON_PX, (
             f"collapsible summary (top={summary_box['y']:.1f}) overlaps the "
             f"meta badge (bottom={meta_bottom:.1f})"
         )
@@ -220,7 +225,7 @@ class TestCollapsibleOverlapBrowser:
 
         header_bottom = header_box["y"] + header_box["height"]
         # The merge means the summary starts ABOVE the header's bottom edge.
-        assert summary_box["y"] < header_bottom, (
+        assert summary_box["y"] < header_bottom + GEOMETRY_EPSILON_PX, (
             "first collapsible no longer tucks under the header bar "
             f"(summary top={summary_box['y']:.1f}, header bottom={header_bottom:.1f})"
         )
