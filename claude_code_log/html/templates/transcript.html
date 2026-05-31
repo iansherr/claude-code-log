@@ -132,7 +132,7 @@
         </div>
         {% endif %}
     </div>
-    {% else %}
+    {% elif message.should_render %}
     {%- set msg_css_class = css_class_from_message(message) %}
     {% set markdown = message.content.has_markdown if message.content else false %}
     <div class='message {{ msg_css_class }}{% if message.is_paired %} {{ message.pair_role }}{% endif %}' data-message-id='{{ message.message_id }}' id='msg-{{ message.message_id }}'>
@@ -180,7 +180,7 @@
         {% endif %}
     </div>
     {% endif %}
-    {% if message.junction_forward_links %}
+    {% if message.junction_forward_links and message.should_render %}
     {# Fork point element — rendered OUTSIDE the message box as a structural navigation element #}
     <div class='fork-point'>
         <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
