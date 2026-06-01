@@ -353,6 +353,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -4097,6 +4108,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='eb000000-0000-4000-8000-000000000001' id='msg-d-0'>
           <div class='header'>Session: eb000000</div>
           
@@ -4114,11 +4127,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -4147,11 +4162,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span title="ID: tu_Task_async_001">🔧 Task <span class='tool-summary'>Coverage analysis</span> <span class='tool-subagent'>(Explore)</span> <span class='task-async-hint'>[async <a class='task-id-forward-link' href='#msg-d-7'><code>#cccc333</code></a>]</span></span>
@@ -4166,13 +4183,15 @@
           <div class='content'><div class="task-prompt markdown"><p>Analyze the coverage gaps and report back with a summary.</p>
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Run</dt><dd>background</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span title="ID: tu_Task_async_001"></span>
@@ -4204,11 +4223,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant sidechain' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🔗 Sub-assistant</span>
@@ -4223,19 +4244,21 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Reading the source files now...</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span title="ID: tu_TaskOutput_001">🔍 TaskOutput <a class='task-id-backlink' href='#msg-d-2'><code>#cccc333</code></a></span>
@@ -4249,13 +4272,15 @@
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
           <div class='content'><dl class="teammate-tool-card task-output-card"><dt>Block</dt><dd><code>true</code></dd><dt>Timeout</dt><dd><code>60000 ms</code></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tu_TaskOutput_001"></span>
@@ -4269,13 +4294,15 @@
           <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
           <div class='content'><dl class="teammate-tool-card task-output-card"><dt>Retrieval</dt><dd><code>success</code></dd><dt>Type</dt><dd><code>local_agent</code></dd><dt>Status</dt><dd><span class='task-status status-in_progress'>in_progress</span></dd><dt>Transcript</dt><dd><code>/tmp/claude-1000/synthetic/tasks/cccc333.output</code></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message user task-notification' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span>🔄 Async result <span class='tool-summary'>Agent &quot;Coverage analysis&quot; completed</span></span>
@@ -4289,13 +4316,15 @@
           <div class='debug-info'>11111111-000 &rarr; 11111111-000</div>
           <div class='content'><dl class="teammate-tool-card task-notification-card"><dt>Task ID</dt><dd><a class='task-notification-backlink' href='#msg-d-2'><code>cccc333</code></a></dd><dt>Status</dt><dd><span class='task-status status-completed'>completed</span></dd><dt>Tokens</dt><dd><code>23,099</code></dd><dt>Tool uses</dt><dd><code>2</code></dd><dt>Duration</dt><dd><code>15.5s</code></dd><dt>Transcript</dt><dd><code>/tmp/claude-1000/synthetic/tasks/cccc333.output</code></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -4310,21 +4339,22 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Coverage report received. Done.</p>
   </div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -4913,11 +4943,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -5013,24 +5048,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -6146,6 +6183,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -9890,6 +9938,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='eb000000-0000-4000-8000-000000000001' id='msg-d-0'>
           <div class='header'>Session: eb000000</div>
           
@@ -9907,11 +9957,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -9936,11 +9988,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span title="ID: tu_Task_async_001">🔧 Task <span class='tool-summary'>Coverage analysis</span> <span class='tool-subagent'>(Explore)</span> <span class='task-async-hint'>[async <code>#cccc333</code>]</span></span>
@@ -9955,13 +10009,15 @@
           <div class='content'><div class="task-prompt markdown"><p>Analyze the coverage gaps and report back with a summary.</p>
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Run</dt><dd>background</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span title="ID: tu_Task_async_001"></span>
@@ -9983,33 +10039,17 @@
   <p>All uncovered branches are now exercised.</p>
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Agent</dt><dd><code>cccc333</code></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
       
-      <div class='message user task-notification' data-message-id='d-4' id='msg-d-4'>
-          <div class='header'>
-              <span></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:06:00.000Z'>2026-04-19 10:06:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 11111111-000</div>
-          <div class='content'></div>
-          
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -10024,21 +10064,22 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Coverage report received. Done.</p>
   </div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -10627,11 +10668,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -10727,24 +10773,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -14043,6 +14091,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -17787,6 +17846,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='test_session' id='msg-d-0'>
           <div class='header'>Session: test_ses</div>
           
@@ -17804,11 +17865,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -17833,11 +17896,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -17873,19 +17938,21 @@
   </code></pre>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span>🤷 User</span>
@@ -17910,11 +17977,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
@@ -17928,13 +17997,15 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span title="ID: tool_001"></span>
@@ -17948,13 +18019,15 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -17983,19 +18056,21 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span>🤷 User</span>
@@ -18020,11 +18095,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tool_002">💻 Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
@@ -18038,13 +18115,15 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span title="ID: tool_002"></span>
@@ -18060,13 +18139,15 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -18091,19 +18172,21 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-11' id='msg-d-11'>
           <div class='header'>
               <span>🤷 User</span>
@@ -18118,15 +18201,16 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
   </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -18715,11 +18799,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -18815,24 +18904,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -19948,6 +20039,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -23692,6 +23794,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='ef000000-0000-4000-8000-000000000001' id='msg-d-0'>
           <div class='header'>Session: ef000000<span class="session-team-badge" style="--cc-color: var(--cc-purple); --cc-color-bg: var(--cc-purple-bg);"><span class="session-team-icon">👥</span>Team: test-coverage</span></div>
           
@@ -23709,11 +23813,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -23742,11 +23848,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span title="ID: tu_TeamCreate_001">🛠️ TeamCreate</span>
@@ -23760,13 +23868,15 @@
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
           <div class='content'><dl class="teammate-tool-card team-card"><dt>Team</dt><dd>test-coverage</dd><dt>Agent type</dt><dd>team-lead</dd><dt>Description</dt><dd>Parallel test coverage work</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span title="ID: tu_TeamCreate_001"></span>
@@ -23780,13 +23890,15 @@
           <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
           <div class='content'><dl class="teammate-tool-card team-card team-create-output"><dt>Team</dt><dd>test-coverage</dd><dt>Lead</dt><dd>team-lead@test-coverage</dd><dt>Config</dt><dd><code>/home/synthetic/teams/test-coverage/config.json</code></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_use' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
               <span title="ID: tu_TaskCreate_alice">🛠️ Task <code>#1</code> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[created]</span></span>
@@ -23802,33 +23914,17 @@
   <p>Raise relay.py coverage.</p>
   </div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
       
-      <div class='message tool_result pair_last' data-message-id='d-5' id='msg-d-5'>
-          <div class='header'>
-              <span title="ID: tu_TaskCreate_alice"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:05:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:05:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'></div>
-          
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message tool_use' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span title="ID: tu_TaskCreate_bob">🛠️ Task <code>#2</code> <span class='tool-summary'>Add server tests</span> <span class='task-action'>[created]</span></span>
@@ -23844,33 +23940,17 @@
   <p>Raise server.py coverage.</p>
   </div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
       
-      <div class='message tool_result pair_last' data-message-id='d-7' id='msg-d-7'>
-          <div class='header'>
-              <span title="ID: tu_TaskCreate_bob"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:07:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:07:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'></div>
-          
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message tool_use' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tu_TaskUpdate_001">🛠️ Task <a class='task-id-backlink' href='#msg-d-4'><code>#1</code></a> <span class='tool-summary'>Add relay tests</span> <span class='task-action'>[updated]</span></span>
@@ -23884,33 +23964,17 @@
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
           <div class='content'><dl class="teammate-tool-card task-update-card"><dt>Owner</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Status</dt><dd><span class='task-status status-in_progress'>in_progress</span></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
       
-      <div class='message tool_result pair_last' data-message-id='d-9' id='msg-d-9'>
-          <div class='header'>
-              <span title="ID: tu_TaskUpdate_001"></span>
-              <div class='header-info'>
-                  <div class='timestamp-row'>
-                      <span class='timestamp' data-timestamp='2026-04-19T10:09:00.000Z' data-duration='took 1m 0s'>2026-04-19 10:09:00</span>
-                  </div>
-                  
-              </div>
-          </div>
-          <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
-          <div class='content'></div>
-          
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span title="ID: tu_Task_alice">🔧 Task <span class='tool-summary'>Run alice&#x27;s test work</span> <span class='tool-subagent'>(general-purpose)</span></span>
@@ -23925,13 +23989,15 @@
           <div class='content'><div class="task-prompt markdown"><p>You are <strong>alice</strong>, a teammate in the test-coverage team. Add unit tests for the relay module and report back.</p>
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Teammate</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Team</dt><dd>test-coverage</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-11' id='msg-d-11'>
           <div class='header'>
               <span title="ID: tu_Task_alice"></span>
@@ -23956,11 +24022,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant sidechain' data-message-id='d-13' id='msg-d-13'>
           <div class='header'>
               <span>🔗 Sub-assistant</span>
@@ -23975,13 +24043,15 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Starting relay coverage work.</p>
   </div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant sidechain' data-message-id='d-14' id='msg-d-14'>
           <div class='header'>
               <span>🔗 Sub-assistant</span>
@@ -23996,19 +24066,21 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Relay module coverage is now 96%.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-15' id='msg-d-15'>
           <div class='header'>
               <span title="ID: tu_Task_bob">🔧 Task <span class='tool-summary'>Run bob&#x27;s test work</span> <span class='tool-subagent'>(general-purpose)</span></span>
@@ -24023,13 +24095,15 @@
           <div class='content'><div class="task-prompt markdown"><p>You are <strong>bob</strong>, a teammate in the test-coverage team. Add unit tests for the server module and report back.</p>
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Teammate</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></dd><dt>Team</dt><dd>test-coverage</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-16' id='msg-d-16'>
           <div class='header'>
               <span title="ID: tu_Task_bob"></span>
@@ -24054,11 +24128,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user teammate sidechain' data-message-id='d-17' id='msg-d-17'>
           <div class='header'>
               <span>Teammate</span>
@@ -24073,13 +24149,15 @@
           <div class='content markdown'><div class="teammate-message" style="--cc-color: var(--cc-cyan); --cc-color-bg: var(--cc-cyan-bg);"><div class="teammate-message-header"><span class="teammate-badge" style="--cc-color: var(--cc-cyan); --cc-color-bg: var(--cc-cyan-bg);"><span class="teammate-icon">▎</span>team-lead</span><span class="teammate-summary">task spawn</span></div><div class="teammate-body"><p>You are <strong>bob</strong>, a teammate in the test-coverage team. Add unit tests for the server module and report back.</p>
   </div></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant sidechain' data-message-id='d-18' id='msg-d-18'>
           <div class='header'>
               <span>🔗 Sub-assistant</span>
@@ -24094,13 +24172,15 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Starting server coverage work.</p>
   </div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant sidechain' data-message-id='d-19' id='msg-d-19'>
           <div class='header'>
               <span>🔗 Sub-assistant</span>
@@ -24115,25 +24195,27 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Server module coverage is now 88%.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-          </div>
-          
-      </div>
-      
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user teammate' data-message-id='d-20' id='msg-d-20'>
           <div class='header'>
               <span>Teammate</span>
@@ -24152,13 +24234,15 @@
   </ul>
   </div></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message user teammate' data-message-id='d-21' id='msg-d-21'>
           <div class='header'>
               <span>Teammate</span>
@@ -24185,11 +24269,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-22' id='msg-d-22'>
           <div class='header'>
               <span title="ID: tu_TaskList_001">🛠️ TaskList</span>
@@ -24203,13 +24289,15 @@
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
           <div class='content'></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-23' id='msg-d-23'>
           <div class='header'>
               <span title="ID: tu_TaskList_001"></span>
@@ -24223,13 +24311,15 @@
           <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
           <div class='content'><table class='task-list'><thead><tr><th class='task-id'>#</th><th class='task-status'>Status</th><th class='task-subject'>Subject</th><th class='task-owner'>Owner</th></tr></thead><tbody><tr><td class='task-id'>#1</td><td class='task-status status-completed'>completed</td><td class='task-subject'>Add relay tests</td><td class='task-owner'><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></td></tr><tr><td class='task-id'>#2</td><td class='task-status status-completed'>completed</td><td class='task-subject'>Add server tests</td><td class='task-owner'><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></td></tr></tbody></table></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-24' id='msg-d-24'>
           <div class='header'>
               <span title="ID: tu_SendMessage_001">✉️ SendMessage <span class='tool-summary'>to <span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></span></span>
@@ -24244,13 +24334,15 @@
           <div class='content'><div class="send-message-type">Type: <code>shutdown_request</code></div><div class="send-message-body markdown"><p>Thanks alice — shutting down.</p>
   </div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-25' id='msg-d-25'>
           <div class='header'>
               <span title="ID: tu_SendMessage_001"></span>
@@ -24264,13 +24356,15 @@
           <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
           <div class='content'><dl class="teammate-tool-card send-message-card"><dt>Status</dt><dd>Sent</dd><dt>Target</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Request</dt><dd><code>shutdown-0001@alice</code></dd><dt>Message</dt><dd>Shutdown request sent to alice. Request ID: shutdown-0001@alice</dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-26' id='msg-d-26'>
           <div class='header'>
               <span title="ID: tu_TeamDelete_001">🛠️ TeamDelete</span>
@@ -24284,13 +24378,15 @@
           <div class='debug-info'>22222222-000 &rarr; 11111111-000</div>
           <div class='content'><div class="teammate-tool-card team-card team-delete-input"></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-27' id='msg-d-27'>
           <div class='header'>
               <span title="ID: tu_TeamDelete_001"></span>
@@ -24304,13 +24400,15 @@
           <div class='debug-info'>11111111-000 &rarr; 22222222-000</div>
           <div class='content'><dl class="teammate-tool-card team-card team-delete-output teammate-refused"><dt>Status</dt><dd>Refused</dd><dt>Team</dt><dd>test-coverage</dd><dt>Message</dt><dd>Cannot cleanup team with 1 active member(s): bob. Use SendMessage shutdown_request first.</dd><dt>Active members</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></dd></dl></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-28' id='msg-d-28'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -24325,21 +24423,22 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Team test-coverage has one member still active. Shut down bob before retrying.</p>
   </div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -24928,11 +25027,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -25028,24 +25132,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -26161,6 +26267,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -29905,6 +30022,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='edge_cases' id='msg-d-0'>
           <div class='header'>Session: Tested various edge cases including markdown formatting, long text, tool errors, system messages, command outputs, special characters and emojis. All message types render correctly in the transcript viewer. • edge_cas</div>
           
@@ -29922,11 +30041,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -29951,11 +30072,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -30010,19 +30133,21 @@
   <p>The markdown renderer handles all of this automatically!</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span>🤷 User</span>
@@ -30047,11 +30172,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
               <span title="ID: tool_edge_001">🛠️ FailingTool</span>
@@ -30070,13 +30197,15 @@
               </tr>
           </table></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result error pair_last' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span title="ID: tool_edge_001">🚨 Error</span>
@@ -30090,19 +30219,21 @@
           <div class='debug-info'>edge_005</div>
           <div class='content'><pre>Error: Tool execution failed with error: Command not found</pre></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user slash-command pair_first' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤷 Slash Command</span>
@@ -30118,13 +30249,15 @@
   line breaks
   </pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message user command-output pair_last' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span></span>
@@ -30157,11 +30290,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -30188,11 +30323,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span title="ID: tool_edge_002">🛠️ MultiEdit</span>
@@ -30206,25 +30343,27 @@
           <div class='debug-info'>edge_009</div>
           <div class='content'><div class='multiedit-tool-content'><div class='multiedit-file-path'>📝 /tmp/complex_example.py</div><div class='multiedit-count'>Applying 1 edits</div><div class='multiedit-item'><div class='multiedit-item-header'>Edit #1</div><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>#!/usr/bin/env python3</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>Complex example with multiple operations.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>&quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import json</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>import sys</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>from typing import List, Dict, Any</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def process_data(items: List[Dict[str, Any]]) -&gt; None:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    Process a list of data items.</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    &quot;&quot;&quot;</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    for item in items:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        print(f&quot;Processing: {item[&#x27;name&#x27;]}&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        if item.get(&#x27;active&#x27;, False):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Active&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        else:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            print(f&quot;  Status: Inactive&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>if __name__ == &quot;__main__&quot;:</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    sample_data = [</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 1&quot;, &quot;active&quot;: True},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 2&quot;, &quot;active&quot;: False},</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        {&quot;name&quot;: &quot;Item 3&quot;, &quot;active&quot;: True}</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    ]</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    process_data(sample_data)</div></div></div></div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-          </div>
-          
-      </div>
-      
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤷 User</span>
@@ -30239,13 +30378,15 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</p>
   </div><pre class='user-raw'>Testing special characters: café, naïve, résumé, 中文, العربية, русский, 🎉 emojis 🚀 and symbols ∑∆√π∞</pre></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-13' id='msg-d-13'>
           <div class='header'>
               <span>🤷 User</span>
@@ -30260,19 +30401,22 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>wow error</p>
   </div><pre class='user-raw'>wow error</pre></div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-11' data-session-id='todowrite_session' id='msg-d-11'>
           <div class='header'>Session: todowrit</div>
           
@@ -30286,11 +30430,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use' data-message-id='d-12' id='msg-d-12'>
           <div class='header'>
               <span title="ID: toolu_todowrite_002">🛠️ TodoWrite</span>
@@ -30345,15 +30491,16 @@
               </tr>
           </table></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -30942,11 +31089,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -31042,24 +31194,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -32175,6 +32329,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -35980,6 +36145,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='session_b' id='msg-d-0'>
           <div class='header'>Session: session_</div>
           
@@ -35997,11 +36164,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36026,11 +36195,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -36047,19 +36218,21 @@
           <div class='content markdown'><div class="assistant-text markdown"><p>Indeed! This message is from a different JSONL file, which should help test the session divider logic. Only the first session should show a divider.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36074,19 +36247,22 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>Perfect! This should appear without any session divider above it.</p>
   </div><pre class='user-raw'>Perfect! This should appear without any session divider above it.</pre></div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-4' data-session-id='test_session' id='msg-d-4'>
           <div class='header'>Session: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. • test_ses</div>
           
@@ -36104,11 +36280,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36133,11 +36311,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -36173,19 +36353,21 @@
   </code></pre>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36210,11 +36392,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
@@ -36228,13 +36412,15 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span title="ID: tool_001"></span>
@@ -36248,13 +36434,15 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -36283,19 +36471,21 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-11' id='msg-d-11'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36320,11 +36510,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-12' id='msg-d-12'>
           <div class='header'>
               <span title="ID: tool_002">💻 Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
@@ -36338,13 +36530,15 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-13' id='msg-d-13'>
           <div class='header'>
               <span title="ID: tool_002"></span>
@@ -36360,13 +36554,15 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-14' id='msg-d-14'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -36391,19 +36587,21 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-15' id='msg-d-15'>
           <div class='header'>
               <span>🤷 User</span>
@@ -36418,15 +36616,16 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
   </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -37015,11 +37214,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -37115,24 +37319,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
@@ -38248,6 +38454,17 @@
       }
   }
   /* Message and content styles */
+  
+  /* Structural wrapper around a message card and its nested .children
+     (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+     border/background/shadow/margins live on .message and must frame only the
+     card, not the subtree. The wrapper is a plain full-width block so the
+     per-type horizontal margins on .message resolve against the full content
+     width (absolute type-based positioning), not a parent card's inset. */
+  .message-node {
+      /* structural only — intentionally no visual properties */
+  }
+  
   .message {
       margin-bottom: 1em;
       padding: var(--message-padding);
@@ -41992,6 +42209,8 @@
       
       
       <div class="session-divider"></div>
+      
+      <div class='message-node'>
       <div class='message session-header' data-message-id='d-0' data-session-id='test_session' id='msg-d-0'>
           <div class='header'>Session: User learned about Python decorators, including basic decorators and parameterized decorators. Created and ran examples showing how decorators work with functions. User is now ready to implement their own timing decorator. • test_ses</div>
           
@@ -42009,11 +42228,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message user' data-message-id='d-1' id='msg-d-1'>
           <div class='header'>
               <span>🤷 User</span>
@@ -42038,11 +42259,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-2' id='msg-d-2'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -42078,19 +42301,21 @@
   </code></pre>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-3' id='msg-d-3'>
           <div class='header'>
               <span>🤷 User</span>
@@ -42115,11 +42340,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-4' id='msg-d-4'>
           <div class='header'>
               <span title="ID: tool_001">📝 Edit <span class='tool-summary'>/tmp/decorator_example.py</span></span>
@@ -42133,13 +42360,15 @@
           <div class='debug-info'>msg_004</div>
           <div class='content'><div class='edit-tool-content'><div class='edit-diff'><div class='diff-line diff-added'><span class='diff-marker'>+</span>def repeat(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    def decorator(func):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        def wrapper(*args, **kwargs):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            for _ in range(times):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>                result = func(*args, **kwargs)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>            return result</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>        return wrapper</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    return decorator</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>@repeat(3)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>def greet(name):</div><div class='diff-line diff-added'><span class='diff-marker'>+</span>    print(f&quot;Hello, {name}!&quot;)</div><div class='diff-line diff-added'><span class='diff-marker'>+</span></div><div class='diff-line diff-added'><span class='diff-marker'>+</span>greet(&quot;Alice&quot;)</div></div></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-5' id='msg-d-5'>
           <div class='header'>
               <span title="ID: tool_001"></span>
@@ -42153,13 +42382,15 @@
           <div class='debug-info'>msg_005</div>
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-6' id='msg-d-6'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -42188,19 +42419,21 @@
   <p>When you run this code, it will print &quot;Hello, Alice!&quot; three times.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-7' id='msg-d-7'>
           <div class='header'>
               <span>🤷 User</span>
@@ -42225,11 +42458,13 @@
               
           </div>
           
+      </div>
+      
+      <div class='children'>
           
-          <div class='children'>
-              
       
       
+      <div class='message-node'>
       <div class='message tool_use pair_first' data-message-id='d-8' id='msg-d-8'>
           <div class='header'>
               <span title="ID: tool_002">💻 Bash <span class='tool-summary'>Run the decorator example to show output</span></span>
@@ -42243,13 +42478,15 @@
           <div class='debug-info'>msg_008</div>
           <div class='content'><div class='bash-tool-content'><pre class='bash-tool-command'>python /tmp/decorator_example.py</pre></div></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message tool_result pair_last' data-message-id='d-9' id='msg-d-9'>
           <div class='header'>
               <span title="ID: tool_002"></span>
@@ -42265,13 +42502,15 @@
   Hello, Alice!
   Hello, Alice!</pre></div>
           
-          
+      </div>
+      
+      
       </div>
       
       
       
       
-      
+      <div class='message-node'>
       <div class='message assistant' data-message-id='d-10' id='msg-d-10'>
           <div class='header'>
               <span>🤖 Assistant</span>
@@ -42296,19 +42535,21 @@
   <p>The pattern is always the same: decorator factory → decorator → wrapper function.</p>
   </div></div>
           
-          
+      </div>
+      
+      
+      </div>
+      
+      
+      </div>
+      
+      
       </div>
       
       
       
-          </div>
-          
-      </div>
       
-      
-      
-      
-      
+      <div class='message-node'>
       <div class='message user' data-message-id='d-11' id='msg-d-11'>
           <div class='header'>
               <span>🤷 User</span>
@@ -42323,15 +42564,16 @@
           <div class='content'><div class='user-content'><button type='button' class='user-view-toggle' aria-label='Toggle between Markdown and raw view' title='Toggle Markdown / raw view'>raw</button><div class='user-md'><p>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</p>
   </div><pre class='user-raw'>This is really helpful! Let me try to implement a timing decorator myself. Can you help me if I get stuck?</pre></div></div>
           
-          
       </div>
       
       
-      
-          </div>
-          
       </div>
       
+      
+      </div>
+      
+      
+      </div>
       
       
   
@@ -42920,11 +43162,16 @@
                   return document.querySelector('.message[data-message-id="' + sel + '"]');
               }
               function getChildrenContainer(messageEl) {
-                  return messageEl ? messageEl.querySelector(':scope > .children') : null;
+                  // .children is now a SIBLING of the card inside the shared
+                  // .message-node wrapper (dissociated DOM), not a descendant.
+                  const wrapper = messageEl ? messageEl.parentElement : null;
+                  return wrapper ? wrapper.querySelector(':scope > .children') : null;
               }
               function getImmediateChildMessages(messageEl) {
                   const cc = getChildrenContainer(messageEl);
-                  return cc ? Array.from(cc.querySelectorAll(':scope > .message')) : [];
+                  // Each child is wrapped in its own .message-node; its card is
+                  // that wrapper's direct .message child.
+                  return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
               }
               function setSectionState(section, folded, icon) {
                   if (!section) return;
@@ -43020,24 +43267,26 @@
               setInitialFoldState();
   
               // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-              // jumped to from the session index) is actually visible. Ancestry
-              // is now DOM nesting, so walk up the .children/.message chain and
-              // reveal each ancestor's children container.
+              // jumped to from the session index) is actually visible. In the
+              // dissociated DOM a card's ancestors are .message-node and
+              // .children wrappers, NOT the parent .message cards — so walk up
+              // and reveal each hidden .children container, syncing the
+              // controlling card's fold bar (its sibling within the node).
               function unfoldAncestorsOf(hash) {
                   if (!hash || !hash.startsWith('#msg-')) return;
                   const target = document.getElementById(hash.slice(1));
                   if (!target) return;
                   let node = target.parentElement;
                   while (node) {
-                      if (node.classList && node.classList.contains('message')) {
-                          const cc = getChildrenContainer(node);
-                          if (cc && cc.style.display === 'none') {
-                              cc.style.display = '';
-                              const foldBar = node.querySelector(':scope > .fold-bar');
-                              if (foldBar) {
-                                  setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
-                                  setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
-                              }
+                      if (node.classList && node.classList.contains('children')
+                          && node.style.display === 'none') {
+                          node.style.display = '';
+                          const wrapper = node.parentElement; // .message-node
+                          const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                          const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                          if (foldBar) {
+                              setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                              setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
                           }
                       }
                       node = node.parentElement;
