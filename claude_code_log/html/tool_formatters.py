@@ -18,18 +18,20 @@ import base64
 import binascii
 import json
 import re
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from .utils import (
     escape_html,
     render_collapsible_code,
     render_file_content_collapsible,
     render_markdown_collapsible,
+    render_markdown_inline,
 )
 from ..utils import strip_error_tags
 from ..models import (
     AskUserQuestionInput,
     AskUserQuestionItem,
+    AskUserQuestionOption,
     AskUserQuestionOutput,
     BashInput,
     BashOutput,
@@ -71,35 +73,48 @@ from .renderer_code import render_single_diff
 # -- AskUserQuestion Tool -----------------------------------------------------
 
 
-def _render_question_item(q: AskUserQuestionItem) -> str:
-    """Render a single question item to HTML."""
-    html_parts: list[str] = ['<div class="question-block">']
-
-    # Header (if present)
-    if q.header:
-        escaped_header = escape_html(q.header)
-        html_parts.append(f'<div class="question-header">{escaped_header}</div>')
-
-    # Question text with Q: label
-    question_text = escape_html(q.question)
-    html_parts.append(
-        f'<div class="question-text"><span class="qa-label">Q:</span> {question_text}</div>'
+def _render_question_heading(header: Optional[str], question: str) -> list[str]:
+    """Header chip + ``Q:`` line. Question text and header are LLM-authored,
+    so render them as inline Markdown (issue #180)."""
+    parts: list[str] = []
+    if header:
+        parts.append(
+            f'<div class="question-header">{render_markdown_inline(header)}</div>'
+        )
+    parts.append(
+        f'<div class="question-text"><span class="qa-label">Q:</span> '
+        f"{render_markdown_inline(question)}</div>"
     )
+    return parts
 
-    # Options (if present)
+
+def _render_option_li(opt: AskUserQuestionOption, selected: bool) -> str:
+    """One option ``<li>``; ``selected`` marks the user's choice (issue #180).
+
+    Label and description are LLM-authored Markdown, rendered inline."""
+    li_class = "question-option selected" if selected else "question-option"
+    check = (
+        '<span class="option-check" aria-hidden="true">✓</span> ' if selected else ""
+    )
+    if opt.description:
+        desc_html = f'<span class="option-desc"> — {render_markdown_inline(opt.description)}</span>'
+    else:
+        desc_html = ""
+    label = render_markdown_inline(opt.label)
+    return f'<li class="{li_class}">{check}<strong>{label}</strong>{desc_html}</li>'
+
+
+def _render_question_item(q: AskUserQuestionItem) -> str:
+    """Render a single (unanswered) question item to HTML."""
+    html_parts: list[str] = ['<div class="question-block">']
+    html_parts.extend(_render_question_heading(q.header, q.question))
+
     if q.options:
         select_hint = "(select multiple)" if q.multiSelect else "(select one)"
         html_parts.append(f'<div class="question-options-hint">{select_hint}</div>')
         html_parts.append('<ul class="question-options">')
         for opt in q.options:
-            label = escape_html(opt.label)
-            if opt.description:
-                desc_html = f'<span class="option-desc"> — {escape_html(opt.description)}</span>'
-            else:
-                desc_html = ""
-            html_parts.append(
-                f'<li class="question-option"><strong>{label}</strong>{desc_html}</li>'
-            )
+            html_parts.append(_render_option_li(opt, selected=False))
         html_parts.append("</ul>")
 
     html_parts.append("</div>")  # Close question-block
@@ -141,19 +156,18 @@ def format_askuserquestion_result(content: str) -> str:
 
     Returns HTML with styled Q&A blocks matching the input styling.
     """
-    # Check if this is a successful answer
-    if not content.startswith("User has answered your question"):
-        # Return as-is for errors or unexpected format
-        return ""
-
-    # Extract the Q&A portion between the colon and the final sentence
-    # Pattern: 'User has answered your questions: "Q"="A", "Q"="A". You can now...'
+    # Extract the Q&A portion between the colon and the final sentence. The
+    # summary sentence has used two wordings across harness versions (#180):
+    # 'User has answered your questions: "Q"="A", ... . You can now continue...'
+    # 'Your questions have been answered: "Q"="A", ... . You can now continue...'
     match = re.match(
-        r"User has answered your questions?: (.+)\. You can now continue",
+        r"(?:User has answered your questions?|Your questions have been answered): "
+        r"(.+)\. You can now continue",
         content,
         re.DOTALL,
     )
     if not match:
+        # Return as-is for errors or unexpected format
         return ""
 
     qa_portion = match.group(1)
@@ -524,29 +538,73 @@ def format_task_output(output: TaskOutput) -> str:
     return "".join(parts)
 
 
-def format_askuserquestion_output(output: AskUserQuestionOutput) -> str:
-    """Format AskUserQuestion tool result with styled Q&A pairs.
+def _answer_selections(answer: str, multi_select: bool) -> set[str]:
+    """Return the set of option labels the answer selected.
 
-    Args:
-        output: Parsed AskUserQuestionOutput with Q&A pairs
-
-    Returns:
-        HTML string with styled question/answer blocks
+    Single-select answers equal one option label verbatim (so an exact match
+    handles labels that themselves contain a comma). Multi-select answers join
+    the chosen labels with ", " — split on that delimiter and match each part.
     """
+    selections = {answer.strip()}
+    if multi_select:
+        selections.update(part.strip() for part in answer.split(", "))
+    return {s for s in selections if s}
+
+
+def format_askuserquestion_output(
+    output: AskUserQuestionOutput,
+    questions_by_text: Optional[dict[str, AskUserQuestionItem]] = None,
+) -> str:
+    """Format AskUserQuestion tool result with styled, answered Q&A blocks.
+
+    Each answered question renders the offered options with the chosen one(s)
+    highlighted — a self-contained "what was offered → what was picked" card
+    (issue #180). Options/header come from the answer's own structured data, or
+    from ``questions_by_text`` (the paired tool_use input) when the result text
+    alone didn't carry them (text-fallback and clarify-rejection paths).
+
+    Selection handling:
+    - An answer matching an offered option highlights that option.
+    - A free-form answer (matches no option) renders as an extra *selected*
+      block after the options, so the user's typed reply is shown as the choice.
+    - An empty answer (the user left that question unanswered) shows the options
+      with none selected.
+    """
+    questions_by_text = questions_by_text or {}
     html_parts: list[str] = [
         '<div class="askuserquestion-content askuserquestion-result">'
     ]
 
     for qa in output.answers:
-        escaped_q = escape_html(qa.question)
-        escaped_a = escape_html(qa.answer)
+        paired = questions_by_text.get(qa.question)
+        header = qa.header or (paired.header if paired else None)
+        options = qa.options or (paired.options if paired else [])
+        multi_select = qa.multi_select or (paired.multiSelect if paired else False)
+
         html_parts.append('<div class="question-block answered">')
-        html_parts.append(
-            f'<div class="question-text"><span class="qa-label">Q:</span> {escaped_q}</div>'
+        html_parts.extend(_render_question_heading(header, qa.question))
+
+        selections = (
+            _answer_selections(qa.answer, multi_select) if qa.answer else set[str]()
         )
-        html_parts.append(
-            f'<div class="answer-text"><span class="qa-label answer">A:</span> {escaped_a}</div>'
-        )
+        matched_any = False
+        if options:
+            html_parts.append('<ul class="question-options">')
+            for opt in options:
+                is_selected = opt.label in selections
+                matched_any = matched_any or is_selected
+                html_parts.append(_render_option_li(opt, selected=is_selected))
+            html_parts.append("</ul>")
+
+        if qa.answer and not matched_any:
+            # Free-form reply (or no options to match against): show the typed
+            # answer as the selected block so it reads as the user's choice.
+            html_parts.append(
+                '<ul class="question-options"><li class="question-option selected">'
+                '<span class="option-check" aria-hidden="true">✓</span> '
+                f"<strong>{render_markdown_inline(qa.answer)}</strong></li></ul>"
+            )
+
         html_parts.append("</div>")
 
     html_parts.append("</div>")

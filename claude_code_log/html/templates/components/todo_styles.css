@@ -174,6 +174,25 @@
     font-size: 0.9em;
 }
 
+/* The option the user actually chose (issue #180): highlight it within the
+   answered card so the result reads as "offered → picked" on its own. */
+.question-option.selected {
+    background-color: var(--answer-bg);
+    border-color: var(--user-color);
+    border-left: 3px solid var(--user-color);
+}
+
+.question-option.selected .option-check {
+    color: var(--user-color);
+    font-weight: 700;
+}
+
+/* Only dim unchosen options in the answered/result card — the input question
+   card has no selection, so its options must stay full-opacity. */
+.askuserquestion-result .question-option:not(.selected) {
+    opacity: 0.7;
+}
+
 /* ExitPlanMode tool styling */
 .plan-content {
     font-family: var(--font-ui);

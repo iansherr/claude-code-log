@@ -15,6 +15,7 @@ HTML-specific output.
 
 import functools
 import html
+import re
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -307,6 +308,32 @@ def render_markdown(text: str) -> str:
     with timing_stat("_markdown_timings"):
         renderer = _get_markdown_renderer()
         return str(renderer(text))
+
+
+_INLINE_PARA_BOUNDARY_RE = re.compile(r"</p>\s*<p>")
+
+
+def render_markdown_inline(text: str) -> str:
+    """Render markdown collapsed to inline-safe HTML.
+
+    Question/option text from AskUserQuestion is LLM-authored, so it carries
+    real Markdown (inline code, emphasis, links). Callers embed the result
+    inside inline wrappers (``<strong>``, ``<li>``), so this unwraps the
+    enclosing ``<p>`` and folds any paragraph boundaries into ``<br>`` —
+    a multi-paragraph free-form reply must not emit block ``<p>`` inside an
+    inline element.
+
+    Uses the ``escape=True`` renderer so raw HTML in the text (``<script>``,
+    ``<option>``, …) is escaped to literal characters rather than injected —
+    these short fields were previously HTML-escaped, so keep that contract.
+    """
+    with timing_stat("_markdown_timings"):
+        renderer = _get_user_markdown_renderer()
+        rendered = str(renderer(text)).strip()
+    if rendered.startswith("<p>") and rendered.endswith("</p>"):
+        inner = rendered[len("<p>") : -len("</p>")]
+        return _INLINE_PARA_BOUNDARY_RE.sub("<br>", inner)
+    return rendered
 
 
 @functools.lru_cache(maxsize=1)

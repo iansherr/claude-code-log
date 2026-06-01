@@ -1745,10 +1745,21 @@ class GrepOutput:
 
 @dataclass
 class AskUserQuestionAnswer:
-    """Single Q&A pair from AskUserQuestion result."""
+    """Single Q&A pair from AskUserQuestion result.
+
+    When the structured ``toolUseResult`` is available it also carries the
+    originating question's ``header`` / ``options`` / ``multi_select`` so the
+    answer can be rendered as a self-contained card (the offered options with
+    the chosen one highlighted) instead of a bare Q→A line.
+    """
 
     question: str
     answer: str
+    header: Optional[str] = None
+    options: list[AskUserQuestionOption] = field(
+        default_factory=lambda: list[AskUserQuestionOption]()
+    )
+    multi_select: bool = False
 
 
 @dataclass

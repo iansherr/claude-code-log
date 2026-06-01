@@ -26,6 +26,7 @@ from ..models import (
     TaskNotificationMessage,
     TeammateMessage,
     ThinkingMessage,
+    ToolResultMessage,
     ToolUseMessage,
     TranscriptEntry,
     UnknownMessage,
@@ -34,6 +35,7 @@ from ..models import (
     UserTextMessage,
     # Tool input types
     AskUserQuestionInput,
+    AskUserQuestionItem,
     BashInput,
     EditInput,
     ExitPlanModeInput,
@@ -88,6 +90,7 @@ from ..models import (
 )
 from ..renderer import (
     Renderer,
+    RenderingContext,
     TemplateMessage,
     generate_template_messages,
     prepare_projects_index,
@@ -342,6 +345,10 @@ class HtmlRenderer(Renderer):
         # the id; it's minted on creation and only appears on the
         # tool_result).
         self._task_id_by_tool_use: dict[str, dict[str, str]] = {}
+        # RenderingContext snapshot for the current render, so format methods
+        # can resolve a message's pair partner (pair_first/pair_last) by index
+        # — mirrors MarkdownRenderer._ctx. Reset each render.
+        self._ctx: Optional[RenderingContext] = None
 
     # -------------------------------------------------------------------------
     # Private Utility Methods
@@ -356,6 +363,83 @@ class HtmlRenderer(Renderer):
         """
         sid = message.meta.session_id if message.meta else ""
         return self._teammate_colors_by_session.get(sid, {})
+
+    def _askuserquestion_questions_for(
+        self, message: TemplateMessage
+    ) -> dict[str, "AskUserQuestionItem"]:
+        """Map question-text → original question for *message*'s pair partner.
+
+        Used by the AskUserQuestion result formatter to recover the offered
+        options/header when its own structured data lacks them (text-fallback
+        and clarify-rejection paths), by reaching into the paired tool_use's
+        ``AskUserQuestionInput``.
+        """
+        if self._ctx is None or message.pair_first is None:
+            return {}
+        pair_msg = self._ctx.get(message.pair_first)
+        if pair_msg is None or not isinstance(pair_msg.content, ToolUseMessage):
+            return {}
+        input_content = pair_msg.content.input
+        if not isinstance(input_content, AskUserQuestionInput):
+            return {}
+        return {q.question: q for q in input_content.questions if q.question}
+
+    def _collapse_askuserquestion_pairs(self, ctx: RenderingContext) -> None:
+        """Make answered AskUserQuestion results self-contained, single cards.
+
+        For each result paired with its tool_use: bake the offered
+        options/header/multiSelect from the input onto the result's answers (so
+        the result card shows the full question even on the text-fallback and
+        clarify-rejection paths), then drop the result's pair role so it renders
+        as a standalone card. The paired input card is ghosted separately by
+        ``format_AskUserQuestionInput`` / ``title_ToolUseMessage`` — its
+        ``pair_last`` link stays intact so that ghosting still fires (#180).
+        """
+        for msg in ctx.messages:
+            content = msg.content
+            if not isinstance(content, ToolResultMessage):
+                continue
+            output = content.output
+            if not isinstance(output, AskUserQuestionOutput):
+                continue
+            if msg.pair_first is None:
+                continue
+            input_msg = ctx.get(msg.pair_first)
+            if input_msg is None or not isinstance(input_msg.content, ToolUseMessage):
+                continue
+            input_content = input_msg.content.input
+            if not isinstance(input_content, AskUserQuestionInput):
+                continue
+            qmap = {q.question: q for q in input_content.questions if q.question}
+            for ans in output.answers:
+                q = qmap.get(ans.question)
+                if q is None:
+                    continue
+                if not ans.options:
+                    ans.options = list(q.options)
+                if ans.header is None:
+                    ans.header = q.header
+                if not ans.multi_select:
+                    ans.multi_select = q.multiSelect
+            # Render the result standalone — no dangling "second half of a pair"
+            # merge band now that its companion input card is ghosted.
+            msg.pair_first = None
+            msg.pair_duration = None
+
+    def _paired_answer_supersedes(self, message: TemplateMessage) -> bool:
+        """True when *message* (an AskUserQuestion tool_use) is paired with a
+        result that already re-renders the questions + the user's choice.
+
+        In that case the input card is pure duplication and is ghosted. When
+        there is no such pair (e.g. a transcript captured while still blocked
+        on the question), the input card stays.
+        """
+        if self._ctx is None or not message.is_first_in_pair:
+            return False
+        result_msg = self._ctx.get(message.pair_last) if message.pair_last else None
+        if result_msg is None or not isinstance(result_msg.content, ToolResultMessage):
+            return False
+        return isinstance(result_msg.content.output, AskUserQuestionOutput)
 
     def _format_image(self, image: ImageContent) -> str:
         """Format image based on export mode."""
@@ -528,9 +612,15 @@ class HtmlRenderer(Renderer):
         return format_todowrite_input(input)
 
     def format_AskUserQuestionInput(
-        self, input: AskUserQuestionInput, _: TemplateMessage
+        self, input: AskUserQuestionInput, message: TemplateMessage
     ) -> str:
-        """Format → questions as definition list."""
+        """Format → questions as definition list.
+
+        Ghosted (empty) when a paired result already re-renders the questions
+        plus the user's choice — see ``_paired_answer_supersedes``.
+        """
+        if self._paired_answer_supersedes(message):
+            return ""
         return format_askuserquestion_input(input)
 
     def format_ExitPlanModeInput(
@@ -640,10 +730,16 @@ class HtmlRenderer(Renderer):
         return base + extras if extras else base
 
     def format_AskUserQuestionOutput(
-        self, output: AskUserQuestionOutput, _: TemplateMessage
+        self, output: AskUserQuestionOutput, message: TemplateMessage
     ) -> str:
-        """Format → user's answers as definition list."""
-        return format_askuserquestion_output(output)
+        """Format → each question with its options, the chosen one highlighted.
+
+        Options/headers missing from the result's own data (text-fallback and
+        clarify-rejection paths) are recovered from the paired tool_use input.
+        """
+        return format_askuserquestion_output(
+            output, self._askuserquestion_questions_for(message)
+        )
 
     def format_ExitPlanModeOutput(
         self, output: ExitPlanModeOutput, _: TemplateMessage
@@ -794,6 +890,20 @@ class HtmlRenderer(Renderer):
     ) -> str:
         """Title → '❓ Asking questions...'."""
         return "❓ Asking questions..."
+
+    def title_ToolUseMessage(
+        self, content: ToolUseMessage, message: TemplateMessage
+    ) -> str:
+        """Tool-use title, with one ghost case: an AskUserQuestion whose paired
+        result already re-renders the questions returns an empty title so the
+        whole input card elides (empty title + empty body + no children) —
+        ``title_ToolUseMessage`` otherwise falls back to the tool name, which
+        would leave a bare residual card."""
+        if isinstance(
+            content.input, AskUserQuestionInput
+        ) and self._paired_answer_supersedes(message):
+            return ""
+        return super().title_ToolUseMessage(content, message)
 
     def title_TaskInput(self, input: TaskInput, message: TemplateMessage) -> str:
         """Title → '🔧 Task <desc> (subagent_type) [async #<id>]'.
@@ -1305,6 +1415,10 @@ class HtmlRenderer(Renderer):
         self._task_id_by_tool_use = {
             sid: dict(ids) for sid, ids in ctx.task_id_for_tool_use.items()
         }
+        # Snapshot the context so format methods can resolve pair partners.
+        self._ctx = ctx
+        # Collapse answered AskUserQuestion pairs into a single result card (#180).
+        self._collapse_askuserquestion_pairs(ctx)
 
         # Flatten tree via pre-order traversal, formatting content along the way
         with log_timing("Content formatting (pre-order)", t_start):
