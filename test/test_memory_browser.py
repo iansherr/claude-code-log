@@ -16,7 +16,10 @@ from playwright.sync_api import Page, expect
 from claude_code_log.converter import load_transcript
 from claude_code_log.html.renderer import generate_html
 
-MEMORY_FIXTURE = Path("test/test_data/memory_interactions.jsonl")
+# File-relative so the tests don't depend on the pytest working directory.
+_DATA = Path(__file__).parent / "test_data"
+MEMORY_FIXTURE = _DATA / "memory_interactions.jsonl"
+MEMORY_SIDECHAIN_FIXTURE = _DATA / "memory_sidechain.jsonl"
 
 
 class TestMemoryFilterBrowser:
@@ -30,8 +33,8 @@ class TestMemoryFilterBrowser:
             except FileNotFoundError:
                 pass
 
-    def _html(self, title: str) -> Path:
-        messages = load_transcript(MEMORY_FIXTURE)
+    def _html(self, title: str, fixture: Path = MEMORY_FIXTURE) -> Path:
+        messages = load_transcript(fixture)
         html_content = generate_html(messages, title)
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".html", delete=False, encoding="utf-8"
@@ -117,8 +120,55 @@ class TestMemoryFilterBrowser:
         page.wait_for_selector("#timeline-container", state="attached")
         page.wait_for_selector(".vis-timeline", timeout=30000)
         page.wait_for_selector(".vis-item", timeout=5000)
-        page.wait_for_timeout(1000)  # let groups render
 
-        # The dedicated memory lane label should appear.
+        # Wait on the actual condition (the lane label rendering) rather than a
+        # fixed sleep, so this can't flake on a slow group render.
         memory_lane = page.locator('.vis-label:has-text("🧠 Memory")')
+        memory_lane.first.wait_for(state="attached", timeout=10000)
         assert memory_lane.count() > 0, "Timeline should have a 🧠 Memory lane"
+
+    @pytest.mark.browser
+    def test_memory_in_sidechain_stays_filterable(self, page: Page):
+        """Regression (CR #204): a memory interaction inside a sidechain must
+        stay governed by the memory toggle, not get clobbered by sidechain.
+        Isolating memory (filter=memory) keeps the sidechain memory Read
+        visible while hiding the plain sidechain assistant message."""
+        temp_file = self._html("Memory In Sidechain", MEMORY_SIDECHAIN_FIXTURE)
+        page.goto(f"file://{temp_file}?filter=memory")
+        page.wait_for_load_state("networkidle")
+
+        # The memory Read lives inside a sidechain (classes: tool_use memory
+        # sidechain). With only memory active it must be VISIBLE.
+        sidechain_memory = page.locator(
+            ".message.memory.sidechain:not(.filtered-hidden)"
+        )
+        assert sidechain_memory.count() > 0, (
+            "Memory interaction inside a sidechain should stay visible when "
+            "isolating memory"
+        )
+
+        # A plain (non-memory) sidechain message must be hidden under filter=memory.
+        plain_sidechain = page.locator(
+            ".message.sidechain:not(.memory):not(.filtered-hidden)"
+        )
+        assert plain_sidechain.count() == 0, (
+            "Non-memory sidechain messages should be hidden when isolating memory"
+        )
+
+    @pytest.mark.browser
+    def test_memory_in_sidechain_timeline_lane(self, page: Page):
+        """Regression (CR #204): a memory-in-sidechain interaction lands in the
+        🧠 Memory timeline lane, not the Sub-assistant lane."""
+        temp_file = self._html("Memory Sidechain Lane", MEMORY_SIDECHAIN_FIXTURE)
+        page.goto(f"file://{temp_file}")
+
+        page.locator("#toggleTimeline").click()
+        page.wait_for_selector("#timeline-container", state="attached")
+        page.wait_for_selector(".vis-timeline", timeout=30000)
+        page.wait_for_selector(".vis-item", timeout=5000)
+
+        memory_lane = page.locator('.vis-label:has-text("🧠 Memory")')
+        memory_lane.first.wait_for(state="attached", timeout=10000)
+        assert memory_lane.count() > 0, (
+            "Memory-in-sidechain should produce a 🧠 Memory lane"
+        )

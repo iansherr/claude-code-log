@@ -34,15 +34,20 @@ NON_MEM = "/home/u/proj/memory/notes.md"
 MEM_WIN = r"C:\Users\u\.claude\projects\-C--Users-u-proj\memory\MEMORY.md"
 
 
-def _meta() -> MessageMeta:
+def _meta(is_sidechain: bool = False) -> MessageMeta:
     return MessageMeta(
-        uuid="test-uuid", session_id="test", timestamp="2025-01-01T00:00:00Z"
+        uuid="test-uuid",
+        session_id="test",
+        timestamp="2025-01-01T00:00:00Z",
+        is_sidechain=is_sidechain,
     )
 
 
-def _tool_use(tool_name: str, tool_input: object) -> TemplateMessage:
+def _tool_use(
+    tool_name: str, tool_input: object, is_sidechain: bool = False
+) -> TemplateMessage:
     content = ToolUseMessage(
-        meta=_meta(),
+        meta=_meta(is_sidechain),
         input=tool_input,  # type: ignore[arg-type]
         tool_use_id="toolu_test",
         tool_name=tool_name,
@@ -204,3 +209,13 @@ class TestMemoryCssModifier:
         """Bash is out of scope for v1 even if a memory path appears."""
         msg = _tool_result("Bash", MEM)
         assert "memory" not in css_class_from_message(msg).split()
+
+    def test_memory_in_sidechain_keeps_both_classes(self):
+        """A memory interaction inside a sidechain carries BOTH `memory` and
+        `sidechain` classes, so it stays 🧠-filterable (the JS treats memory as
+        the primary dimension and keeps it in the memory lane). Regression for
+        the CR finding that sidechain clobbered the memory classification."""
+        msg = _tool_use("Read", ReadInput(file_path=MEM), is_sidechain=True)
+        classes = css_class_from_message(msg).split()
+        assert "memory" in classes
+        assert "sidechain" in classes

@@ -57,14 +57,16 @@
                 const classList = Array.from(messageEl.classList);
                 let messageType = 'system'; // Default fallback
 
-                // Check for sidechain first (sub-assistant messages)
-                if (classList.includes('sidechain')) {
-                    messageType = 'sidechain';
-                } else if (classList.includes('memory')) {
-                    // Auto-memory interactions (Read/Write/Edit on a memory/
-                    // path, #192) get their own lane, gated by the 'memory'
-                    // filter toggle — kept in lockstep with applyFilter.
+                // Auto-memory interactions (Read/Write/Edit on a memory/ path,
+                // #192) are a primary, independent dimension: checked BEFORE
+                // sidechain so a memory interaction inside a sidechain still
+                // lands in the 🧠 Memory lane (governed by the 'memory' toggle),
+                // rather than being clobbered into the sidechain lane. Kept in
+                // lockstep with applyFilter, which treats 'memory' the same way.
+                if (classList.includes('memory')) {
                     messageType = 'memory';
+                } else if (classList.includes('sidechain')) {
+                    messageType = 'sidechain';
                 } else if (classList.some(c => c.startsWith('system-'))) {
                     // Drift-proof: any `system-*` modifier (system-info,
                     // system-warning, system-error, system-away-summary, …)
@@ -172,8 +174,11 @@
 
                 // Check for sidechain context regardless of primary message type
                 // Note: Sidechain user messages (Sub-assistant prompts) are now skipped
-                // since they duplicate the Task tool input prompt
-                if (classList.includes('sidechain')) {
+                // since they duplicate the Task tool input prompt.
+                // Exclude memory messages: memory is the higher-priority primary
+                // dimension (#192), so a memory-in-sidechain interaction stays in
+                // the 🧠 Memory lane instead of being overridden to sidechain.
+                if (classList.includes('sidechain') && !classList.includes('memory')) {
                     // Override group for sidechain messages, but preserve the content
                     messageType = 'sidechain';
 

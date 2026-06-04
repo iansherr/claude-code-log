@@ -510,8 +510,18 @@
                 allMessages.forEach(message => {
                     let shouldShow = false;
 
-                    // Special handling for sidechain messages
-                    if (message.classList.contains('sidechain')) {
+                    // Memory is a primary, independent dimension (#192): a
+                    // memory-tagged message is governed SOLELY by the 'memory'
+                    // toggle, regardless of sidechain/tool context. This makes
+                    // "isolate memory" (only memory on) and "hide memory"
+                    // (memory off) work uniformly — including for memory
+                    // interactions that occur inside a sidechain, which must
+                    // stay 🧠-filterable rather than being clobbered by the
+                    // sidechain rule below. Kept in lockstep with the timeline,
+                    // which puts memory in its own lane ahead of sidechain.
+                    if (message.classList.contains('memory')) {
+                        shouldShow = expandedTypes.includes('memory');
+                    } else if (message.classList.contains('sidechain')) {
                         // For sidechain messages, show if both sidechain filter is active AND their message type filter is active
                         const sidechainActive = expandedTypes.includes('sidechain');
                         const messageTypeActive = expandedTypes.some(type =>
@@ -521,16 +531,6 @@
                     } else {
                         // For non-sidechain messages, show if any of their types are active
                         shouldShow = expandedTypes.some(type => message.classList.contains(type));
-                    }
-
-                    // Memory is a cross-cutting modifier on tool messages (#192):
-                    // a memory-tagged message additionally requires the 'memory'
-                    // toggle to be active. Because 'memory' is itself an
-                    // expandable type, turning everything else off but leaving
-                    // 'memory' on isolates memory interactions; turning 'memory'
-                    // off while 'tool' stays on hides them from the tool stream.
-                    if (shouldShow && message.classList.contains('memory')) {
-                        shouldShow = expandedTypes.includes('memory');
                     }
 
                     if (shouldShow) {
