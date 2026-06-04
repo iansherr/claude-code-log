@@ -4185,7 +4185,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -4246,12 +4245,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -4274,7 +4271,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -4296,7 +4292,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -4317,7 +4312,6 @@
           <div class='content'><dl class="teammate-tool-card task-notification-card"><dt>Task ID</dt><dd><a class='task-notification-backlink' href='#msg-d-2'><code>cccc333</code></a></dd><dt>Status</dt><dd><span class='task-status status-completed'>completed</span></dd><dt>Tokens</dt><dd><code>23,099</code></dd><dt>Tool uses</dt><dd><code>2</code></dd><dt>Duration</dt><dd><code>15.5s</code></dd><dt>Transcript</dt><dd><code>/tmp/claude-1000/synthetic/tasks/cccc333.output</code></dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -4341,18 +4335,15 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -4964,7 +4955,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -10011,7 +10004,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -10041,7 +10033,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -10066,18 +10057,15 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -10689,7 +10677,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -17940,12 +17930,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -17999,7 +17987,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -18020,7 +18007,6 @@
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -18058,12 +18044,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -18117,7 +18101,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -18140,7 +18123,6 @@
   Hello, Alice!</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -18174,12 +18156,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -18203,12 +18183,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -18820,7 +18798,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -23870,7 +23850,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -23891,7 +23870,6 @@
           <div class='content'><dl class="teammate-tool-card team-card team-create-output"><dt>Team</dt><dd>test-coverage</dd><dt>Lead</dt><dd>team-lead@test-coverage</dd><dt>Config</dt><dd><code>/home/synthetic/teams/test-coverage/config.json</code></dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -23915,7 +23893,6 @@
   </div></div>
           
       </div>
-      
       
       </div>
       
@@ -23942,7 +23919,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -23965,7 +23941,6 @@
           <div class='content'><dl class="teammate-tool-card task-update-card"><dt>Owner</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Status</dt><dd><span class='task-status status-in_progress'>in_progress</span></dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -23990,7 +23965,6 @@
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Teammate</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Team</dt><dd>test-coverage</dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -24045,7 +24019,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -24068,12 +24041,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -24096,7 +24067,6 @@
   </div><dl class="teammate-tool-card teammate-spawn-card"><dt>Teammate</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></dd><dt>Team</dt><dd>test-coverage</dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -24151,7 +24121,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -24173,7 +24142,6 @@
   </div></div>
           
       </div>
-      
       
       </div>
       
@@ -24197,18 +24165,15 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -24235,7 +24200,6 @@
   </div></div></div>
           
       </div>
-      
       
       </div>
       
@@ -24291,7 +24255,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -24312,7 +24275,6 @@
           <div class='content'><table class='task-list'><thead><tr><th class='task-id'>#</th><th class='task-status'>Status</th><th class='task-subject'>Subject</th><th class='task-owner'>Owner</th></tr></thead><tbody><tr><td class='task-id'>#1</td><td class='task-status status-completed'>completed</td><td class='task-subject'>Add relay tests</td><td class='task-owner'><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></td></tr><tr><td class='task-id'>#2</td><td class='task-status status-completed'>completed</td><td class='task-subject'>Add server tests</td><td class='task-owner'><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></td></tr></tbody></table></div>
           
       </div>
-      
       
       </div>
       
@@ -24336,7 +24298,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -24357,7 +24318,6 @@
           <div class='content'><dl class="teammate-tool-card send-message-card"><dt>Status</dt><dd>Sent</dd><dt>Target</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-blue); --cc-color-bg: var(--cc-blue-bg);"><span class="teammate-icon">▎</span>alice</span></dd><dt>Request</dt><dd><code>shutdown-0001@alice</code></dd><dt>Message</dt><dd>Shutdown request sent to alice. Request ID: shutdown-0001@alice</dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -24380,7 +24340,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -24401,7 +24360,6 @@
           <div class='content'><dl class="teammate-tool-card team-card team-delete-output teammate-refused"><dt>Status</dt><dd>Refused</dd><dt>Team</dt><dd>test-coverage</dd><dt>Message</dt><dd>Cannot cleanup team with 1 active member(s): bob. Use SendMessage shutdown_request first.</dd><dt>Active members</dt><dd><span class="teammate-badge" style="--cc-color: var(--cc-green); --cc-color-bg: var(--cc-green-bg);"><span class="teammate-icon">▎</span>bob</span></dd></dl></div>
           
       </div>
-      
       
       </div>
       
@@ -24425,18 +24383,15 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -25048,7 +25003,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -30135,12 +30092,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -30199,7 +30154,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -30221,12 +30175,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -30250,7 +30202,6 @@
   </pre></div>
           
       </div>
-      
       
       </div>
       
@@ -30345,18 +30296,15 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -30380,7 +30328,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -30403,12 +30350,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -30493,12 +30438,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -31110,7 +31053,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -36220,12 +36165,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -36249,12 +36192,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -36355,12 +36296,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -36414,7 +36353,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -36435,7 +36373,6 @@
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -36473,12 +36410,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -36532,7 +36467,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -36555,7 +36489,6 @@
   Hello, Alice!</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -36589,12 +36522,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -36618,12 +36549,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -37235,7 +37164,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {
@@ -42303,12 +42234,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -42362,7 +42291,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -42383,7 +42311,6 @@
           <div class='content'><pre>File created successfully at: /tmp/decorator_example.py</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -42421,12 +42348,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -42480,7 +42405,6 @@
           
       </div>
       
-      
       </div>
       
       
@@ -42503,7 +42427,6 @@
   Hello, Alice!</pre></div>
           
       </div>
-      
       
       </div>
       
@@ -42537,12 +42460,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -42566,12 +42487,10 @@
           
       </div>
       
-      
       </div>
       
       
       </div>
-      
       
       </div>
       
@@ -43183,7 +43102,9 @@
               }
               // Apply a fold state to a message by toggling its OWN .children
               // container. DOM nesting means hiding that container hides the whole
-              // subtree (fork-points included), so we only touch this message.
+              // subtree — including the fork-point marker, which the template
+              // renders INSIDE .children precisely so it folds with the subtree
+              // rather than orphaning. So we only touch this message.
               //   'folded' = hide children; 'first' = show immediate children but
               //   fold each of their subtrees; 'open' = show all descendants.
               function applyFoldState(messageEl, state) {

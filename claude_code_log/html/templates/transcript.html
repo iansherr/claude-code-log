@@ -131,20 +131,22 @@
         </div>
         {% endif %}
     </div>
-    {% if message.children %}
+    {% if message.children or message.junction_forward_links %}
     <div class='children'>
-        {% for child in message.children %}{{ render_message(child) }}{% endfor %}
-    </div>
-    {% endif %}
-    {% if message.junction_forward_links %}
-    {# Fork point element — structural navigation marker, sibling of the card #}
-    <div class='fork-point'>
-        <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
-        <div class='fork-point-branches'>
-            {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
-            <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
-            {% endfor %}
+        {% for child in message.children %}{{ render_message(child) }}{% endfor %}{% if message.junction_forward_links %}
+        {# Fork point — rendered INSIDE .children so it folds together with the
+           subtree (folding hides .children). For a childless junction it is the
+           sole occupant. The opening tag is glued to endfor so non-junction
+           nodes emit no extra whitespace. #}
+        <div class='fork-point'>
+            <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
+            <div class='fork-point-branches'>
+                {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
+                <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
     </div>
     {% endif %}
     </div>
@@ -191,20 +193,22 @@
         </div>
         {% endif %}
     </div>
-    {% if message.children %}
+    {% if message.children or message.junction_forward_links %}
     <div class='children'>
-        {% for child in message.children %}{{ render_message(child) }}{% endfor %}
-    </div>
-    {% endif %}
-    {% if message.junction_forward_links %}
-    {# Fork point element — structural navigation marker, sibling of the card #}
-    <div class='fork-point'>
-        <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
-        <div class='fork-point-branches'>
-            {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
-            <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
-            {% endfor %}
+        {% for child in message.children %}{{ render_message(child) }}{% endfor %}{% if message.junction_forward_links %}
+        {# Fork point — rendered INSIDE .children so it folds together with the
+           subtree (folding hides .children). For a childless junction it is the
+           sole occupant. The opening tag is glued to endfor so non-junction
+           nodes emit no extra whitespace. #}
+        <div class='fork-point'>
+            <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
+            <div class='fork-point-branches'>
+                {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
+                <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
     </div>
     {% endif %}
     </div>
@@ -705,7 +709,9 @@
             }
             // Apply a fold state to a message by toggling its OWN .children
             // container. DOM nesting means hiding that container hides the whole
-            // subtree (fork-points included), so we only touch this message.
+            // subtree — including the fork-point marker, which the template
+            // renders INSIDE .children precisely so it folds with the subtree
+            // rather than orphaning. So we only touch this message.
             //   'folded' = hide children; 'first' = show immediate children but
             //   fold each of their subtrees; 'open' = show all descendants.
             function applyFoldState(messageEl, state) {
