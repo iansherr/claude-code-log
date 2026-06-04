@@ -1257,25 +1257,31 @@ class HtmlRenderer(Renderer):
             return f"🔄 Async result <code>#{escape_html(content.task_id)}</code>"
         return "🔄 Async result"
 
-    def _flatten_preorder(
+    def _annotate_tree_for_render(
         self, roots: list[TemplateMessage]
-    ) -> list[Tuple[TemplateMessage, str, str, str]]:
-        """Flatten message tree via pre-order traversal, formatting each message.
+    ) -> list[TemplateMessage]:
+        """Format every message in the tree, annotating it in place.
 
-        Traverses the tree depth-first (pre-order), computes title and formats
-        content to HTML, building a flat list of (message, title, html, timestamp) tuples.
+        Walks the tree depth-first (pre-order), computing each message's
+        title + HTML + timestamp and storing them on the message
+        (``rendered_title`` / ``rendered_html`` / ``rendered_timestamp``)
+        so the recursive template macro can render the tree directly as
+        nested DOM. Returns the root messages unchanged (the tree is
+        rendered by recursing over ``message.children``).
 
-        Also tracks and reports timing statistics for Markdown and Pygments operations
-        when DEBUG_TIMING is enabled.
+        Previously this flattened the tree into a list of tuples for a
+        flat template loop with ``d-N`` ancestry CSS classes; the nested
+        DOM removes that flattening (see work/rendering-next.md §1).
+
+        Also tracks and reports timing statistics for Markdown and Pygments
+        operations when DEBUG_TIMING is enabled.
 
         Args:
             roots: Root messages (typically session headers) with children populated
 
         Returns:
-            Flat list of (message, title, html_content, formatted_timestamp) tuples
+            The same root messages, each subtree annotated for rendering.
         """
-        flat: list[Tuple[TemplateMessage, str, str, str]] = []
-
         # Initialize timing tracking for expensive operations
         markdown_timings: list[Tuple[float, str]] = []
         pygments_timings: list[Tuple[float, str]] = []
@@ -1302,14 +1308,17 @@ class HtmlRenderer(Renderer):
             title = self.title_content(msg)
             html = self.format_content(msg)
             formatted_ts = format_timestamp(msg.meta.timestamp if msg.meta else None)
+            msg.rendered_title = title
+            msg.rendered_html = html
+            msg.rendered_timestamp = formatted_ts
             # Skip messages with nothing to show — e.g. TaskCreate /
             # TaskUpdate tool_results whose output formatter returns "".
             # Without this they render as a bare timestamp-only card.
-            # Children still render at the same flat-list level since
-            # the recursion below is unconditional.
-            if title or html or msg.children:
-                flat.append((msg, title, html, formatted_ts))
-            else:
+            # A skipped node is always a leaf (the condition includes
+            # ``msg.children``), so the macro simply emits no card for it
+            # and there are no orphaned descendants to reparent.
+            msg.should_render = bool(title or html or msg.children)
+            if not msg.should_render:
                 # Skipped message: if it's the second half of a pair
                 # (msg.pair_first → first message's index), clear the
                 # first half's `pair_last` so it loses its `pair_first`
@@ -1336,7 +1345,7 @@ class HtmlRenderer(Renderer):
                 ]
             )
 
-        return flat
+        return roots
 
     def generate(
         self,
@@ -1422,9 +1431,10 @@ class HtmlRenderer(Renderer):
         # Collapse answered AskUserQuestion pairs into a single result card (#180).
         self._collapse_askuserquestion_pairs(ctx)
 
-        # Flatten tree via pre-order traversal, formatting content along the way
+        # Format every message (pre-order), annotating the tree in place
+        # so the template can recurse over it as nested DOM.
         with log_timing("Content formatting (pre-order)", t_start):
-            template_messages = self._flatten_preorder(root_messages)
+            render_roots = self._annotate_tree_for_render(root_messages)
 
         # Render template
         with log_timing("Template environment setup", t_start):
@@ -1437,7 +1447,7 @@ class HtmlRenderer(Renderer):
             html_output = str(
                 template.render(
                     title=title,
-                    messages=template_messages,
+                    roots=render_roots,
                     sessions=session_nav,
                     combined_transcript_link=combined_transcript_link,
                     library_version=get_library_version(),

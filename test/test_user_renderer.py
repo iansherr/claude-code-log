@@ -475,9 +475,16 @@ class TestRegularUserMessageRendering:
             messages = load_transcript(test_file_path)
             html = generate_html(messages, "Test Regular")
 
-            # Should have user class without special modifiers (class includes session ID)
+            # Should have user class without special modifiers. With
+            # nested-DOM rendering the message div no longer carries d-N
+            # ancestry classes, so the class string ends right after the
+            # type ("user") — match the bare close or a trailing modifier.
             assert "Hello, can you help me with Python?" in html
-            # Check that it's a user message (class includes session ID suffix)
-            assert "class='message user " in html or 'class="message user ' in html
+            assert (
+                "class='message user'" in html
+                or "class='message user " in html
+                or 'class="message user"' in html
+                or 'class="message user ' in html
+            )
         finally:
             test_file_path.unlink()

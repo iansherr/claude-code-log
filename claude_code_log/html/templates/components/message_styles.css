@@ -1,4 +1,15 @@
 /* Message and content styles */
+
+/* Structural wrapper around a message card and its nested .children
+   (dissociated nested DOM, issue #174). Carries NO box styling: the card's
+   border/background/shadow/margins live on .message and must frame only the
+   card, not the subtree. The wrapper is a plain full-width block so the
+   per-type horizontal margins on .message resolve against the full content
+   width (absolute type-based positioning), not a parent card's inset. */
+.message-node {
+    /* structural only — intentionally no visual properties */
+}
+
 .message {
     margin-bottom: 1em;
     padding: var(--message-padding);

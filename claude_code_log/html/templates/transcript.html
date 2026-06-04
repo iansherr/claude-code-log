@@ -97,10 +97,17 @@
     {{ render_session_nav(sessions, "toc") }}
     {% endif %}
 
-    {% for message, message_title, html_content, formatted_timestamp in messages %}
+    {% macro render_message(message) %}
+    {%- set message_title = message.rendered_title %}
+    {%- set html_content = message.rendered_html %}
+    {%- set formatted_timestamp = message.rendered_timestamp %}
     {% if is_session_header(message) %}
     {% if not message.is_branch_header %}<div class="session-divider"></div>{% endif %}
-    <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
+    {# Structural wrapper: the message card and its nested .children render as
+       SIBLINGS here, so the card's border/background/margins frame only the
+       card itself, not the whole subtree (issue #174 nested-DOM follow-up). #}
+    <div class='message-node'>
+    <div class='message session-header{% if message.is_branch_header %} branch-header{% endif %}' data-message-id='{{ message.message_id }}' data-session-id='{{ message.session_id }}' id='msg-{{ message.message_id }}'{% if message.branch_depth %} style='margin-left: {{ message.branch_depth * 2 }}em'{% endif %}>
         <div class='header'>{% if message.is_branch_header %}&#x21b3; {% else %}Session: {% endif %}{{ html_content|safe }}</div>
         {% if message.has_children %}
         <div class='fold-bar' data-message-id='{{ message.message_id }}' data-border-color='session-header'>
@@ -124,10 +131,30 @@
         </div>
         {% endif %}
     </div>
-    {% else %}
+    {% if message.children or message.junction_forward_links %}
+    <div class='children'>
+        {% for child in message.children %}{{ render_message(child) }}{% endfor %}{% if message.junction_forward_links %}
+        {# Fork point — rendered INSIDE .children so it folds together with the
+           subtree (folding hides .children). For a childless junction it is the
+           sole occupant. The opening tag is glued to endfor so non-junction
+           nodes emit no extra whitespace. #}
+        <div class='fork-point'>
+            <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
+            <div class='fork-point-branches'>
+                {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
+                <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    </div>
+    {% elif message.should_render %}
     {%- set msg_css_class = css_class_from_message(message) %}
     {% set markdown = message.content.has_markdown if message.content else false %}
-    <div class='message {{ msg_css_class }}{% if message.is_paired %} {{ message.pair_role }}{% endif %}{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}' data-message-id='{{ message.message_id }}' id='msg-{{ message.message_id }}'>
+    <div class='message-node'>
+    <div class='message {{ msg_css_class }}{% if message.is_paired %} {{ message.pair_role }}{% endif %}' data-message-id='{{ message.message_id }}' id='msg-{{ message.message_id }}'>
         <div class='header'>
             {% set msg_emoji = get_message_emoji(message) -%}
             <span{% if message.title_hint %} title="{{ message.title_hint }}"{% endif %}>{% if message_title %}{%
@@ -166,19 +193,29 @@
         </div>
         {% endif %}
     </div>
-    {% endif %}
-    {% if message.junction_forward_links %}
-    {# Fork point element — rendered OUTSIDE the message box as a structural navigation element #}
-    <div class='fork-point{% for ancestor_index in message.ancestry %} d-{{ ancestor_index }}{% endfor %}'>
-        <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
-        <div class='fork-point-branches'>
-            {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
-            <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
-            {% endfor %}
+    {% if message.children or message.junction_forward_links %}
+    <div class='children'>
+        {% for child in message.children %}{{ render_message(child) }}{% endfor %}{% if message.junction_forward_links %}
+        {# Fork point — rendered INSIDE .children so it folds together with the
+           subtree (folding hides .children). For a childless junction it is the
+           sole occupant. The opening tag is glued to endfor so non-junction
+           nodes emit no extra whitespace. #}
+        <div class='fork-point'>
+            <div class='fork-point-header'>&#x2442; Fork point{% if message.fork_point_preview %} &bull; {{ message.fork_point_preview }}{% endif %}</div>
+            <div class='fork-point-branches'>
+                {% for branch_sid, branch_idx, branch_preview in message.junction_forward_links %}
+                <a href='#msg-d-{{ branch_idx }}' class='fork-point-branch'>&#x21b3; Branch{% if branch_preview %} &bull; {{ branch_preview }}{% endif %}</a>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
     </div>
     {% endif %}
-    {% endfor %}
+    </div>
+    {% endif %}
+    {% endmacro %}
+
+    {% for root in roots %}{{ render_message(root) }}{% endfor %}
 
     <button class="timeline-toggle floating-btn" id="toggleTimeline" title="Show timeline">📆</button>
     <button class="filter-messages floating-btn" id="filterMessages" title="Search & Filter">🔍</button>
@@ -644,210 +681,93 @@
                 section.setAttribute('title', tooltip);
             }
 
-            function handleFoldOne(targetId, isFolded, sectionElement) {
-                // Find all messages in the document
-                const allMessages = document.querySelectorAll('.message');
-
-                // Find immediate children: messages that have targetId as their LAST ancestor
-                const immediateChildren = Array.from(allMessages).filter(msg => {
-                    const classList = Array.from(msg.classList);
-                    // Check if targetId is in the class list (ancestor)
-                    if (!classList.includes(targetId)) return false;
-
-                    // Check if it's an immediate child by finding all ancestor IDs
-                    // Ancestor IDs use unified d-XXX format
-                    const ancestorIds = classList.filter(cls => cls.startsWith('d-'));
-                    const lastAncestor = ancestorIds[ancestorIds.length - 1];
-                    return lastAncestor === targetId;
-                });
-
-                if (isFolded) {
-                    // Unfold: show immediate children
-                    immediateChildren.forEach(msg => {
-                        msg.style.display = '';
-
-                        // Set newly revealed children to folded state
-                        const foldBar = msg.querySelector('.fold-bar');
-                        if (foldBar) {
-                            const foldOneBtn = foldBar.querySelector('.fold-one-level');
-                            const foldAllBtn = foldBar.querySelector('.fold-all-levels');
-
-                            if (foldOneBtn) {
-                                foldOneBtn.classList.add('folded');
-                                foldOneBtn.querySelector('.fold-icon').textContent = '▶';
-                                updateTooltip(foldOneBtn);
-                            }
-                            if (foldAllBtn) {
-                                foldAllBtn.classList.add('folded');
-                                foldAllBtn.querySelector('.fold-icon').textContent = '▶▶';
-                                updateTooltip(foldAllBtn);
-                            }
-                        }
-                    });
-                    sectionElement.classList.remove('folded');
-                    sectionElement.querySelector('.fold-icon').textContent = '▼';
-                    updateTooltip(sectionElement);
-                    // Note: Second button stays ▶▶ (we haven't unfolded everything)
-                } else {
-                    // Fold: hide ALL descendants (same approach as handleFoldAll for O(n) performance)
-                    const allDescendants = document.querySelectorAll(`.message.${targetId}`);
-                    allDescendants.forEach(msg => {
-                        msg.style.display = 'none';
-                    });
-                    sectionElement.classList.add('folded');
-                    sectionElement.querySelector('.fold-icon').textContent = '▶';
-                    updateTooltip(sectionElement);
-
-                    // Coordinate: If we folded immediate children, all descendants are hidden
-                    // So update the "fold all" button to ▶▶ state
-                    const foldBar = sectionElement.parentElement;
-                    const foldAllSection = foldBar.querySelector('.fold-all-levels');
-                    if (foldAllSection) {
-                        foldAllSection.classList.add('folded');
-                        foldAllSection.querySelector('.fold-icon').textContent = '▶▶';
-                        updateTooltip(foldAllSection);
-                    }
+            // --- DOM-nesting fold helpers (replaced the d-N ancestry-class scheme) ---
+            function getMessageEl(messageId) {
+                if (!messageId) return null;
+                const sel = (window.CSS && CSS.escape) ? CSS.escape(messageId) : messageId;
+                return document.querySelector('.message[data-message-id="' + sel + '"]');
+            }
+            function getChildrenContainer(messageEl) {
+                // .children is now a SIBLING of the card inside the shared
+                // .message-node wrapper (dissociated DOM), not a descendant.
+                const wrapper = messageEl ? messageEl.parentElement : null;
+                return wrapper ? wrapper.querySelector(':scope > .children') : null;
+            }
+            function getImmediateChildMessages(messageEl) {
+                const cc = getChildrenContainer(messageEl);
+                // Each child is wrapped in its own .message-node; its card is
+                // that wrapper's direct .message child.
+                return cc ? Array.from(cc.querySelectorAll(':scope > .message-node > .message')) : [];
+            }
+            function setSectionState(section, folded, icon) {
+                if (!section) return;
+                if (folded) section.classList.add('folded');
+                else section.classList.remove('folded');
+                const iconEl = section.querySelector('.fold-icon');
+                if (iconEl) iconEl.textContent = icon;
+                updateTooltip(section);
+            }
+            // Apply a fold state to a message by toggling its OWN .children
+            // container. DOM nesting means hiding that container hides the whole
+            // subtree — including the fork-point marker, which the template
+            // renders INSIDE .children precisely so it folds with the subtree
+            // rather than orphaning. So we only touch this message.
+            //   'folded' = hide children; 'first' = show immediate children but
+            //   fold each of their subtrees; 'open' = show all descendants.
+            function applyFoldState(messageEl, state) {
+                const cc = getChildrenContainer(messageEl);
+                const foldBar = messageEl.querySelector(':scope > .fold-bar');
+                const oneSection = foldBar ? foldBar.querySelector('.fold-one-level') : null;
+                const allSection = foldBar ? foldBar.querySelector('.fold-all-levels') : null;
+                if (state === 'folded') {
+                    if (cc) cc.style.display = 'none';
+                    setSectionState(oneSection, true, '▶');
+                    setSectionState(allSection, true, '▶▶');
+                } else if (state === 'first') {
+                    if (cc) cc.style.display = '';
+                    getImmediateChildMessages(messageEl).forEach(child => applyFoldState(child, 'folded'));
+                    setSectionState(oneSection, false, '▼');
+                    setSectionState(allSection, true, '▶▶');
+                } else {  // 'open'
+                    if (cc) cc.style.display = '';
+                    getImmediateChildMessages(messageEl).forEach(child => applyFoldState(child, 'open'));
+                    setSectionState(oneSection, false, '▼');
+                    setSectionState(allSection, false, '▼▼');
                 }
+            }
+
+            function handleFoldOne(targetId, isFolded, sectionElement) {
+                const messageEl = getMessageEl(targetId);
+                if (!messageEl) return;
+                // Currently folded → reveal first level; else collapse fully.
+                applyFoldState(messageEl, isFolded ? 'first' : 'folded');
             }
 
             function handleFoldAll(targetId, isFolded, sectionElement) {
-                // Find all descendants (messages with targetId in their class list)
-                const descendants = document.querySelectorAll(`.message.${targetId}`);
-
-                if (isFolded) {
-                    // Unfold: show all descendants (State A/B → State C)
-                    descendants.forEach(msg => {
-                        msg.style.display = '';
-
-                        // Also update fold bars of all descendants to unfolded state
-                        const foldBar = msg.querySelector('.fold-bar');
-                        if (foldBar) {
-                            const foldOneBtn = foldBar.querySelector('.fold-one-level');
-                            const foldAllBtn = foldBar.querySelector('.fold-all-levels');
-
-                            if (foldOneBtn) {
-                                foldOneBtn.classList.remove('folded');
-                                foldOneBtn.querySelector('.fold-icon').textContent = '▼';
-                                updateTooltip(foldOneBtn);
-                            }
-                            if (foldAllBtn) {
-                                foldAllBtn.classList.remove('folded');
-                                foldAllBtn.querySelector('.fold-icon').textContent = '▼▼';
-                                updateTooltip(foldAllBtn);
-                            }
-                        }
-                    });
-                    sectionElement.classList.remove('folded');
-                    sectionElement.querySelector('.fold-icon').textContent = '▼▼';
-                    updateTooltip(sectionElement);
-
-                    // Coordinate: If we unfolded all levels, immediate children are now visible
-                    // So update the "fold one" button to ▼ state
-                    const foldBar = sectionElement.parentElement;
-                    const foldOneSection = foldBar.querySelector('.fold-one-level');
-                    if (foldOneSection) {
-                        foldOneSection.classList.remove('folded');
-                        foldOneSection.querySelector('.fold-icon').textContent = '▼';
-                        updateTooltip(foldOneSection);
-                    }
-                } else {
-                    // Fold: show first level only, hide deeper descendants (State C → State B)
-                    descendants.forEach(msg => {
-                        const classList = Array.from(msg.classList);
-                        const ancestorIds = classList.filter(cls => cls.startsWith('d-'));
-                        const lastAncestor = ancestorIds[ancestorIds.length - 1];
-
-                        // Show immediate children, hide non-immediate children
-                        if (lastAncestor === targetId) {
-                            msg.style.display = '';  // Show immediate child
-
-                            // Set immediate children to folded state
-                            const foldBar = msg.querySelector('.fold-bar');
-                            if (foldBar) {
-                                const foldOneBtn = foldBar.querySelector('.fold-one-level');
-                                const foldAllBtn = foldBar.querySelector('.fold-all-levels');
-
-                                if (foldOneBtn) {
-                                    foldOneBtn.classList.add('folded');
-                                    foldOneBtn.querySelector('.fold-icon').textContent = '▶';
-                                    updateTooltip(foldOneBtn);
-                                }
-                                if (foldAllBtn) {
-                                    foldAllBtn.classList.add('folded');
-                                    foldAllBtn.querySelector('.fold-icon').textContent = '▶▶';
-                                    updateTooltip(foldAllBtn);
-                                }
-                            }
-                        } else {
-                            msg.style.display = 'none';  // Hide deeper descendants
-                        }
-                    });
-                    sectionElement.classList.add('folded');
-                    sectionElement.querySelector('.fold-icon').textContent = '▶▶';
-                    updateTooltip(sectionElement);
-
-                    // Coordinate: First level is now visible, so update "fold one" button to ▼ state
-                    const foldBar = sectionElement.parentElement;
-                    const foldOneSection = foldBar.querySelector('.fold-one-level');
-                    if (foldOneSection) {
-                        foldOneSection.classList.remove('folded');
-                        foldOneSection.querySelector('.fold-icon').textContent = '▼';
-                        updateTooltip(foldOneSection);
-                    }
-                }
+                const messageEl = getMessageEl(targetId);
+                if (!messageEl) return;
+                // Currently folded → open all levels; else collapse to first level.
+                applyFoldState(messageEl, isFolded ? 'open' : 'first');
             }
 
-            // Set initial fold state on page load
+            // Set initial fold state on page load. Each message sets only its
+            // OWN children container + fold buttons, so iteration order is
+            // irrelevant — DOM nesting encodes the hierarchy.
             function setInitialFoldState() {
-                // Get all messages once
                 const allMessages = document.querySelectorAll('.message');
-
-                // Build hierarchy lookup structure in a single pass - O(n)
-                const messagesByParentId = {};  // Maps parent ID -> immediate children elements
-                const allDescendantsByParentId = {};  // Maps parent ID -> all descendant elements
-
                 allMessages.forEach(msg => {
-                    const classList = Array.from(msg.classList);
-                    const ancestorIds = classList.filter(cls => cls.startsWith('d-'));
-
-                    if (ancestorIds.length > 0) {
-                        const lastAncestor = ancestorIds[ancestorIds.length - 1];
-
-                        // Track immediate children
-                        if (!messagesByParentId[lastAncestor]) {
-                            messagesByParentId[lastAncestor] = [];
-                        }
-                        messagesByParentId[lastAncestor].push(msg);
-
-                        // Track all descendants
-                        ancestorIds.forEach(ancestorId => {
-                            if (!allDescendantsByParentId[ancestorId]) {
-                                allDescendantsByParentId[ancestorId] = [];
-                            }
-                            allDescendantsByParentId[ancestorId].push(msg);
-                        });
-                    }
-                });
-
-                // Now process each message using cached hierarchy - O(n)
-                allMessages.forEach(msg => {
-                    const messageId = msg.getAttribute('data-message-id');
-                    if (!messageId) return;
-
+                    const foldBar = msg.querySelector(':scope > .fold-bar');
+                    if (!foldBar) return;
+                    const oneSection = foldBar.querySelector('.fold-one-level');
+                    const allSection = foldBar.querySelector('.fold-all-levels');
                     const isSession = msg.classList.contains('session-header');
                     const isUser = msg.classList.contains('user');
-                    const foldBar = msg.querySelector('.fold-bar');
 
-                    if (!foldBar) return;
-
-                    const foldOneSection = foldBar.querySelector('.fold-one-level');
-                    const foldAllSection = foldBar.querySelector('.fold-all-levels');
-
-                    // Check if user message has only tools (no assistant/system/thinking children)
+                    // A user whose immediate children are all tools collapses
+                    // fully, like a non-session/non-user message.
                     let hasOnlyTools = false;
                     if (isUser) {
-                        const immediateChildren = messagesByParentId[messageId] || [];
-
+                        const immediateChildren = getImmediateChildMessages(msg);
                         const hasNonToolChildren = immediateChildren.some(child =>
                             child.classList.contains('assistant') ||
                             child.classList.contains('system') ||
@@ -856,68 +776,17 @@
                         hasOnlyTools = immediateChildren.length > 0 && !hasNonToolChildren;
                     }
 
-                    // Sessions and user messages (unless they have only tools): unfolded at first level
+                    const cc = getChildrenContainer(msg);
                     if ((isSession || isUser) && !hasOnlyTools) {
-                        // First level is visible (▼), all levels are not (▶▶)
-                        if (foldOneSection) {
-                            foldOneSection.classList.remove('folded');
-                            foldOneSection.querySelector('.fold-icon').textContent = '▼';
-                            updateTooltip(foldOneSection);
-                        }
-                        if (foldAllSection) {
-                            foldAllSection.classList.add('folded');
-                            foldAllSection.querySelector('.fold-icon').textContent = '▶▶';
-                            updateTooltip(foldAllSection);
-                        }
-
-                        // Show immediate children, hide deeper descendants
-                        const allDescendants = allDescendantsByParentId[messageId] || [];
-                        const immediateChildren = messagesByParentId[messageId] || [];
-
-                        allDescendants.forEach(descendant => {
-                            // Show immediate children, hide non-immediate children
-                            if (immediateChildren.includes(descendant)) {
-                                descendant.style.display = '';  // Show immediate child
-
-                                // Set immediate children to folded state (▶/▶▶)
-                                const childFoldBar = descendant.querySelector('.fold-bar');
-                                if (childFoldBar) {
-                                    const childFoldOne = childFoldBar.querySelector('.fold-one-level');
-                                    const childFoldAll = childFoldBar.querySelector('.fold-all-levels');
-
-                                    if (childFoldOne) {
-                                        childFoldOne.classList.add('folded');
-                                        childFoldOne.querySelector('.fold-icon').textContent = '▶';
-                                        updateTooltip(childFoldOne);
-                                    }
-                                    if (childFoldAll) {
-                                        childFoldAll.classList.add('folded');
-                                        childFoldAll.querySelector('.fold-icon').textContent = '▶▶';
-                                        updateTooltip(childFoldAll);
-                                    }
-                                }
-                            } else {
-                                descendant.style.display = 'none';  // Hide deeper descendants
-                            }
-                        });
+                        // First level visible (▼), deeper levels folded (▶▶)
+                        if (cc) cc.style.display = '';
+                        setSectionState(oneSection, false, '▼');
+                        setSectionState(allSection, true, '▶▶');
                     } else {
-                        // Assistant, system, thinking, tools, sidechains, OR user messages with only tools: fully folded
-                        if (foldOneSection) {
-                            foldOneSection.classList.add('folded');
-                            foldOneSection.querySelector('.fold-icon').textContent = '▶';
-                            updateTooltip(foldOneSection);
-                        }
-                        if (foldAllSection) {
-                            foldAllSection.classList.add('folded');
-                            foldAllSection.querySelector('.fold-icon').textContent = '▶▶';
-                            updateTooltip(foldAllSection);
-                        }
-
-                        // Hide all descendants
-                        const allDescendants = allDescendantsByParentId[messageId] || [];
-                        allDescendants.forEach(descendant => {
-                            descendant.style.display = 'none';
-                        });
+                        // Fully folded
+                        if (cc) cc.style.display = 'none';
+                        setSectionState(oneSection, true, '▶');
+                        setSectionState(allSection, true, '▶▶');
                     }
                 });
             }
@@ -926,32 +795,30 @@
             setInitialFoldState();
 
             // Unfold any folded ancestors so an anchor target (e.g. a tool_use
-            // jumped to from the session index) is actually visible. Ancestor
-            // message_ids appear as `d-X` classes on the target, outer-first.
+            // jumped to from the session index) is actually visible. In the
+            // dissociated DOM a card's ancestors are .message-node and
+            // .children wrappers, NOT the parent .message cards — so walk up
+            // and reveal each hidden .children container, syncing the
+            // controlling card's fold bar (its sibling within the node).
             function unfoldAncestorsOf(hash) {
                 if (!hash || !hash.startsWith('#msg-')) return;
                 const target = document.getElementById(hash.slice(1));
                 if (!target) return;
-                const ancestorIds = Array.from(target.classList).filter(
-                    cls => cls.startsWith('d-')
-                );
-                ancestorIds.forEach(id => {
-                    const ancestorMsg = document.querySelector(
-                        `.message[data-message-id="${id}"]`
-                    );
-                    if (!ancestorMsg) return;
-                    const foldBar = ancestorMsg.querySelector('.fold-bar');
-                    if (!foldBar) return;
-                    // Single-level parents only render `.fold-one-level.full-width`
-                    // — no `.fold-all-levels` exists — so anchors under those
-                    // folded ancestors stay hidden unless we fall back.
-                    const foldControl =
-                        foldBar.querySelector('.fold-all-levels') ||
-                        foldBar.querySelector('.fold-one-level.full-width');
-                    if (foldControl && foldControl.classList.contains('folded')) {
-                        foldControl.click();
+                let node = target.parentElement;
+                while (node) {
+                    if (node.classList && node.classList.contains('children')
+                        && node.style.display === 'none') {
+                        node.style.display = '';
+                        const wrapper = node.parentElement; // .message-node
+                        const card = wrapper ? wrapper.querySelector(':scope > .message') : null;
+                        const foldBar = card ? card.querySelector(':scope > .fold-bar') : null;
+                        if (foldBar) {
+                            setSectionState(foldBar.querySelector('.fold-one-level'), false, '▼');
+                            setSectionState(foldBar.querySelector('.fold-all-levels'), false, '▼▼');
+                        }
                     }
-                });
+                    node = node.parentElement;
+                }
                 // Re-trigger the browser's scroll-to-anchor now that
                 // the target is no longer display:none.
                 if (target.scrollIntoView) {

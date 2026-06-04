@@ -260,6 +260,17 @@ class TemplateMessage:
         # Children for tree-based rendering
         self.children: list["TemplateMessage"] = []
 
+        # Per-render annotations populated by the HTML renderer's tree walk
+        # (HtmlRenderer._annotate_tree_for_render). The recursive template
+        # macro reads these instead of receiving a flat (msg, title, html,
+        # ts) tuple. ``should_render`` is False for leaf nodes that format
+        # to nothing (e.g. TaskCreate/TaskUpdate tool_results) so the macro
+        # emits no card for them.
+        self.rendered_title: str = ""
+        self.rendered_html: str = ""
+        self.rendered_timestamp: str = ""
+        self.should_render: bool = True
+
         # Within-session fork tracking: effective session/branch ID for grouping
         self._render_session_id: Optional[str] = None
 

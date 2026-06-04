@@ -324,5 +324,65 @@ class TestTemplateRendering:
             )  # Allow for the markdown script and search script
 
 
+class TestNestedDomSkipsEmptyLeaves:
+    """Pinning test for the nested-DOM ``should_render`` skip (PR0, #174).
+
+    The flat ``_flatten_preorder`` renderer dropped leaf messages that
+    formatted to nothing (e.g. TaskCreate/TaskUpdate tool_results whose
+    output formatter returns ``""``) so they didn't show as bare,
+    timestamp-only cards. The nested-DOM rewrite moved that decision onto
+    ``TemplateMessage.should_render`` (computed in
+    ``HtmlRenderer._annotate_tree_for_render``) which the recursive
+    ``render_message`` macro must honour.
+
+    Regression guard: if the macro ever renders unconditionally again
+    (e.g. ``{% elif message.should_render %}`` reverted to ``{% else %}``),
+    these empty-formatting tool_results reappear as empty cards and this
+    test fails.
+    """
+
+    def test_empty_formatting_tool_results_emit_no_card(self):
+        """``task_id_linking.jsonl`` contains TaskCreate/TaskUpdate
+        tool_results that format to empty HTML. Their message cards
+        (``id='msg-d-<idx>'``) must be absent from the rendered output."""
+        from claude_code_log.html.renderer import HtmlRenderer
+        from claude_code_log.renderer import generate_template_messages
+
+        test_file = Path(__file__).parent / "test_data" / "task_id_linking.jsonl"
+        messages = load_transcript(test_file)
+
+        # Identify the nodes the renderer marks should_render=False by
+        # running the same annotation the HTML path uses.
+        roots, _nav, _ctx = generate_template_messages(messages)
+        renderer = HtmlRenderer(image_export_mode="placeholder")
+        renderer._annotate_tree_for_render(roots)
+
+        suppressed_ids: list[str] = []
+
+        def collect(node):
+            if not node.should_render and node.message_id:
+                suppressed_ids.append(node.message_id)
+            for child in node.children:
+                collect(child)
+
+        for root in roots:
+            collect(root)
+
+        # The fixture must actually exercise the skip, else the guard is
+        # vacuous.
+        assert suppressed_ids, (
+            "fixture no longer contains empty-formatting tool_results; "
+            "pick another fixture that does so this guard stays meaningful"
+        )
+
+        html = generate_html(messages, "Task ID Linking")
+
+        for mid in suppressed_ids:
+            assert f"id='msg-{mid}'" not in html, (
+                f"empty-formatting node {mid} rendered a card — the "
+                f"should_render skip regressed in the template macro"
+            )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

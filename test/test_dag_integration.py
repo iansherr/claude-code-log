@@ -627,6 +627,60 @@ class TestWithinSessionForkRealData:
         total_in_daglines = sum(len(dl.uuids) for dl in tree.sessions.values())
         assert total_in_daglines == len(tree.nodes)
 
+    def test_fork_point_rendered_inside_children_container(self) -> None:
+        """Every ``.fork-point`` marker must render INSIDE a ``.children``
+        container so it folds together with the subtree (CodeRabbit on
+        PR #191). With the dissociated nested DOM the fold logic hides a
+        node's ``.children``; a fork-point left as a *sibling* of
+        ``.children`` would stay visible when the node is folded —
+        orphaned branch UI. Walk the rendered DOM and assert each
+        fork-point has a ``.children`` ancestor.
+        """
+        from pathlib import Path
+        from html.parser import HTMLParser
+        from claude_code_log.converter import load_transcript
+        from claude_code_log.html.renderer import generate_html
+
+        fixture = Path(__file__).parent / "test_data" / "dag_within_fork.jsonl"
+        entries = load_transcript(fixture)
+        html = generate_html(entries)
+
+        class ForkWalker(HTMLParser):
+            def __init__(self) -> None:
+                super().__init__()
+                self.classes_stack: list[set[str]] = []
+                self.fork_total = 0
+                self.fork_inside_children = 0
+
+            def handle_starttag(self, tag, attrs):
+                # Track only <div> nesting so pushes here stay balanced with
+                # the <div>-only pops in handle_endtag — otherwise non-div
+                # tags would leave stale ancestors on the stack and a
+                # fork-point OUTSIDE .children could be miscounted as inside.
+                if tag != "div":
+                    return
+                classes = set((dict(attrs).get("class") or "").split())
+                if "fork-point" in classes:
+                    self.fork_total += 1
+                    if any("children" in c for c in self.classes_stack):
+                        self.fork_inside_children += 1
+                self.classes_stack.append(classes)
+
+            def handle_endtag(self, tag):
+                if tag == "div" and self.classes_stack:
+                    self.classes_stack.pop()
+
+        walker = ForkWalker()
+        walker.feed(html)
+
+        # The fixture has a within-session fork → at least one fork-point.
+        assert walker.fork_total >= 1, "expected dag_within_fork to render a fork-point"
+        # Every fork-point must be nested inside a .children container.
+        assert walker.fork_inside_children == walker.fork_total, (
+            f"{walker.fork_total - walker.fork_inside_children} fork-point(s) "
+            f"rendered OUTSIDE a .children container (would orphan on fold)"
+        )
+
 
 # =============================================================================
 # Test: Agent transcript DAG integration
