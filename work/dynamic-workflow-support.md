@@ -1,7 +1,12 @@
 # Plan: support dynamic-workflow transcripts (issue #174)
 
-**Status:** draft for greenlight — *no implementation yet*.
-**Branch:** `dev/dynamic-workflow-support` (off `main`).
+**Status:** greenlit & in progress — PR0 (nested DOM, #191) and PR1
+(parsing/models, #203) have landed; PR2 (tool-input + async-body rendering)
+is underway. *The §1–§9 narrative below was written 2026-05-31 and describes
+the pre-implementation baseline as of that date; it is kept as the design
+record rather than rewritten per landed PR.*
+**Branch (original plan):** `dev/dynamic-workflow-support` (off `main`);
+implementation lands as the per-PR branches in the §9 sequence.
 **Scope:** parse & render Claude Code *dynamic Workflow* runs so a
 workflow tool_use no longer collapses to a single async-launch card +
 final-answer blob, but shows its phases and the dozens of sub-agents
@@ -119,8 +124,11 @@ v1, though the recursive loader handles it for free if it ever appears).
 
 ## 2. What the code does today (and where it breaks)
 
-`grep -rni workflow claude_code_log/` → **0 hits.** No workflow handling
-exists. Concretely:
+*As of 2026-05-31 (pre-implementation baseline):* `grep -rni workflow
+claude_code_log/` → **0 hits**; no workflow handling existed. (PR1 / #203
+has since added `claude_code_log/workflow.py`, which parses runs into
+`WorkflowRun` models but does not yet render them.) The gaps this plan
+addresses were, concretely:
 
 1. **The Workflow tool_use** (`name:"Workflow"`, `input.script` = JS)
    falls through `create_tool_input` to the raw `ToolUseContent`
