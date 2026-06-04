@@ -14,6 +14,8 @@ from pathlib import Path
 from claude_code_log.converter import load_transcript
 from claude_code_log.html.renderer import generate_html
 from claude_code_log.html.utils import render_async_result_body
+from claude_code_log.markdown.renderer import MarkdownRenderer
+from claude_code_log.workflow import parse_workflow_meta
 
 TRUNK = (
     Path(__file__).parent
@@ -84,3 +86,50 @@ class TestAsyncResultBodyJson:
         # Heuristic is specifically `{"` — a lone "{" (e.g. prose) is markdown.
         out = render_async_result_body("{ not really json", "x")
         assert 'class="highlight"' not in out
+
+
+class TestWorkflowToolInputMarkdown:
+    """D3 parity for the Markdown renderer — registering Workflow in
+    TOOL_INPUT_MODELS is format-neutral, so the script must NOT vanish from
+    Markdown output (regression guard, monk PR2 review)."""
+
+    def _md(self) -> str:
+        return MarkdownRenderer().generate(load_transcript(TRUNK))
+
+    def test_script_present_in_markdown(self) -> None:
+        md = self._md()
+        # The script body (and its meta) must render, not disappear.
+        assert "demo-review" in md
+        assert "export const meta" in md
+        assert "```js" in md  # fenced as JavaScript
+
+    def test_meta_header_in_markdown(self) -> None:
+        md = self._md()
+        assert "Review changed files across dimensions" in md  # description
+        assert "Map" in md and "Synthesize" in md  # phase titles
+
+
+class TestWorkflowMetaParsing:
+    """Unit tests for the shared meta parser (issue #174)."""
+
+    def test_name_description_phases(self) -> None:
+        script = (
+            "export const meta = {\n"
+            "  name: 'demo',\n"
+            "  description: 'A demo',\n"
+            "  phases: [{ title: 'Map' }, { title: 'Synthesize' }],\n"
+            "}\n"
+        )
+        assert parse_workflow_meta(script) == ("demo", "A demo", ["Map", "Synthesize"])
+
+    def test_bracket_in_phase_detail_does_not_truncate_phases(self) -> None:
+        # N1 regression: a ']' inside a phase detail must not cut the list short.
+        script = (
+            "export const meta = {\n"
+            "  phases: [{ title: 'Scan', detail: 'grep [logs]' }, { title: 'Fix' }],\n"
+            "}\n"
+        )
+        assert parse_workflow_meta(script)[2] == ["Scan", "Fix"]
+
+    def test_no_meta_block_returns_empty(self) -> None:
+        assert parse_workflow_meta("const x = 1\nawait agent('hi')\n") == ("", "", [])

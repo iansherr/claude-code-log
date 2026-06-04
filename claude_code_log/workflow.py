@@ -26,9 +26,48 @@ import with ``converter``.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, cast
+
+_WF_META_RE = re.compile(r"meta\s*=\s*\{(.*?)\n\}", re.DOTALL)
+_WF_NAME_RE = re.compile(r"\bname\s*:\s*['\"]([^'\"]*)['\"]")
+_WF_DESC_RE = re.compile(r"\bdescription\s*:\s*['\"]([^'\"]*)['\"]")
+_WF_PHASES_KEY_RE = re.compile(r"\bphases\s*:")
+_WF_TITLE_RE = re.compile(r"title\s*:\s*['\"]([^'\"]+)['\"]")
+
+
+def parse_workflow_meta(script: str) -> tuple[str, str, list[str]]:
+    """Best-effort ``(name, description, phase_titles)`` from a Workflow
+    script's ``export const meta = {...}`` block — a display aid shared by
+    the HTML and Markdown renderers (issue #174).
+
+    Assumes the canonical top-level form the Workflow tool mandates: a
+    column-0 ``export const meta = { ... \\n}`` (the closing-brace anchor is
+    at column 0; an indented close yields no header). All lookups are scoped
+    to the meta-block slice, so they can't pick up ``name:``/``title:``
+    elsewhere in the orchestrator body. Phase titles are collected from every
+    ``title:`` *after* the ``phases:`` key, so a ``detail`` string containing
+    ``]`` doesn't truncate the list. Returns empty values when the block or a
+    field isn't found.
+    """
+    block_m = _WF_META_RE.search(script)
+    if not block_m:
+        return "", "", []
+    block = block_m.group(1)
+    name_m = _WF_NAME_RE.search(block)
+    desc_m = _WF_DESC_RE.search(block)
+    phases: list[str] = []
+    phases_key = _WF_PHASES_KEY_RE.search(block)
+    if phases_key:
+        phases = _WF_TITLE_RE.findall(block[phases_key.end() :])
+    return (
+        name_m.group(1) if name_m else "",
+        desc_m.group(1) if desc_m else "",
+        phases,
+    )
+
 
 if TYPE_CHECKING:
     from claude_code_log.models import TranscriptEntry

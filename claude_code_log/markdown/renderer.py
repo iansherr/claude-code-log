@@ -64,6 +64,7 @@ from ..models import (
     SkillInput,
     WebSearchInput,
     WebFetchInput,
+    WorkflowToolInput,
     MonitorInput,
     MonitorOutput,
     ScheduleWakeupInput,
@@ -1027,6 +1028,38 @@ class MarkdownRenderer(Renderer):
         if len(input.prompt) > 100:
             return self._code_fence(input.prompt)
         return ""
+
+    def format_WorkflowToolInput(
+        self, input: WorkflowToolInput, _: TemplateMessage
+    ) -> str:
+        """Format → optional one-line meta header + the JS script in a fenced
+        ```js block (issue #174).
+
+        Registering ``Workflow`` in TOOL_INPUT_MODELS is format-neutral, so
+        this method is required for parity — without it the Markdown renderer
+        would emit nothing for the script (a regression from the pre-PR
+        ToolUseContent ``**script:**`` fallback).
+        """
+        from ..workflow import parse_workflow_meta
+
+        script = input.script or ""
+        name, description, phases = parse_workflow_meta(script)
+
+        parts: list[str] = []
+        header_bits: list[str] = []
+        if name:
+            header_bits.append(f"**{name}**")
+        if description:
+            header_bits.append(description)
+        header = " — ".join(header_bits)
+        if phases:
+            phase_text = "_(phases: " + ", ".join(phases) + ")_"
+            header = f"{header} {phase_text}" if header else phase_text
+        if header:
+            parts.append(header)
+        if script.strip():
+            parts.append(self._code_fence(script, "js"))
+        return "\n\n".join(parts)
 
     def format_MonitorInput(self, input: MonitorInput, _: TemplateMessage) -> str:
         """Format → bullet list of fields with the command in a fenced block.
