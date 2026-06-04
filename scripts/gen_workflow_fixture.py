@@ -41,7 +41,10 @@ AGENTS = [
     {
         "agentId": "ag000001",
         "label": "review:loader",
-        "phaseIndex": 0,
+        # Real runs use a 1-BASED phaseIndex on agents (and on workflow_phase
+        # nodes), while the phases[] array is 0-based. Mirror that here so the
+        # fixture exercises the offset: title-based assignment must win.
+        "phaseIndex": 1,
         "phaseTitle": "Map",
         "model": "claude-sonnet-4-6",
         "result": {
@@ -54,7 +57,7 @@ AGENTS = [
     {
         "agentId": "ag000002",
         "label": "review:hierarchy",
-        "phaseIndex": 0,
+        "phaseIndex": 1,
         "phaseTitle": "Map",
         "model": "claude-sonnet-4-6",
         "result": {
@@ -67,7 +70,7 @@ AGENTS = [
     {
         "agentId": "ag000003",
         "label": "synthesize",
-        "phaseIndex": 1,
+        "phaseIndex": 2,
         "phaseTitle": "Synthesize",
         "model": "claude-opus-4-8",
         "result": "## Plan\n\nLand parsing first, then render workflow runs on the nested DOM.",
@@ -208,7 +211,7 @@ def _journal() -> list[dict]:
 def _run_snapshot() -> dict:
     progress: list[dict] = []
     for p_idx, title in enumerate(["Map", "Synthesize"]):
-        progress.append({"type": "workflow_phase", "index": p_idx, "title": title})
+        progress.append({"type": "workflow_phase", "index": p_idx + 1, "title": title})
     for idx, a in enumerate(AGENTS):
         result = a["result"]
         preview = (

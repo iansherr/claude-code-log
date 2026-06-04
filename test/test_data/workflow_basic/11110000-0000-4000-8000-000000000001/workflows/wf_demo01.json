@@ -23,19 +23,19 @@
   "workflowProgress": [
     {
       "type": "workflow_phase",
-      "index": 0,
+      "index": 1,
       "title": "Map"
     },
     {
       "type": "workflow_phase",
-      "index": 1,
+      "index": 2,
       "title": "Synthesize"
     },
     {
       "type": "workflow_agent",
       "index": 0,
       "label": "review:loader",
-      "phaseIndex": 0,
+      "phaseIndex": 1,
       "phaseTitle": "Map",
       "agentId": "ag000001",
       "model": "claude-sonnet-4-6",
@@ -50,7 +50,7 @@
       "type": "workflow_agent",
       "index": 1,
       "label": "review:hierarchy",
-      "phaseIndex": 0,
+      "phaseIndex": 1,
       "phaseTitle": "Map",
       "agentId": "ag000002",
       "model": "claude-sonnet-4-6",
@@ -65,7 +65,7 @@
       "type": "workflow_agent",
       "index": 2,
       "label": "synthesize",
-      "phaseIndex": 1,
+      "phaseIndex": 2,
       "phaseTitle": "Synthesize",
       "agentId": "ag000003",
       "model": "claude-opus-4-8",

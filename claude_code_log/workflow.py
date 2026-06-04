@@ -77,6 +77,12 @@ class WorkflowRun:
     ``phases`` is populated only when ``<runId>.json`` was found
     (``has_snapshot``); each phase references the same WorkflowAgent objects
     as ``agents``. ``result`` is the run's final answer (snapshot ``result``).
+
+    ``agent_count`` is the snapshot's self-reported ``agentCount`` and may be
+    LESS than ``len(agents)``: the journal lists every launched agent, while
+    the snapshot counts only those that produced a result (retried/abandoned
+    agents appear in ``agents`` but not in ``agent_count`` — e.g. 42 vs 40 on
+    the §1 reference run).
     """
 
     run_id: str
@@ -263,9 +269,17 @@ def _group_into_phases(
 ) -> list[WorkflowPhase]:
     """Build phases from snapshot ``phases[]`` and assign agents to them.
 
-    Agents map to a phase by ``phase_index`` (falling back to a title
-    match). Returns ``[]`` when there is no snapshot — the WIP/journal-only
-    view groups agents only as the flat ``agents`` list.
+    Agents map to a phase by ``phase_title`` (authoritative), falling back
+    to ``phase_index``. Title is preferred because the two carry *different
+    index bases* in real data: the ``phases[]`` array is 0-based, but each
+    agent's ``phaseIndex`` (and the ``workflow_phase`` node ``index``) is
+    1-based — so indexing ``phases[phase_index]`` directly shifts every
+    agent one phase over. Titles ("Map"/"Verify"/...) match across both and
+    sidestep the offset entirely. ``phase_index`` is used only when the
+    title is missing/unmatched (treated as 0-based, best effort).
+
+    Returns ``[]`` when there is no snapshot — the WIP/journal-only view
+    groups agents only as the flat ``agents`` list.
     """
     if not phases_meta:
         return []
@@ -277,9 +291,11 @@ def _group_into_phases(
     ]
     title_to_idx = {p.title: p.index for p in phases if p.title}
     for agent in agents:
-        idx = agent.phase_index
-        if idx is None and agent.phase_title:
-            idx = title_to_idx.get(agent.phase_title)
+        idx: Optional[int] = None
+        if agent.phase_title and agent.phase_title in title_to_idx:
+            idx = title_to_idx[agent.phase_title]
+        elif agent.phase_index is not None and 0 <= agent.phase_index < len(phases):
+            idx = agent.phase_index
         if idx is not None and 0 <= idx < len(phases):
             phases[idx].agents.append(agent)
     return phases

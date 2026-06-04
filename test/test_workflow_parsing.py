@@ -81,7 +81,9 @@ class TestAgents:
         run = _parsed()
         a1 = run.agents[0]
         assert a1.label == "review:loader"
-        assert a1.phase_index == 0
+        # Real runs carry a 1-BASED phaseIndex on agents (the fixture mirrors
+        # this); phase grouping must therefore key off phase_title, not index.
+        assert a1.phase_index == 1
         assert a1.phase_title == "Map"
         assert a1.model == "claude-sonnet-4-6"
         assert a1.state == "done"
@@ -101,6 +103,20 @@ class TestPhases:
         assert [p.title for p in run.phases] == ["Map", "Synthesize"]
         assert [a.agent_id for a in run.phases[0].agents] == ["ag000001", "ag000002"]
         assert [a.agent_id for a in run.phases[1].agents] == ["ag000003"]
+
+    def test_one_based_phase_index_does_not_shift_membership(self) -> None:
+        """Regression guard (found against a real 42-agent run): agents carry a
+        1-based phaseIndex while phases[] is 0-based. Indexing phases[] by the
+        raw phaseIndex would shift every agent one phase over (Map→Synthesize
+        here). Membership must be resolved by title, so the Map-titled agents
+        land in phase 0 even though their phase_index is 1."""
+        run = _parsed()
+        map_phase = run.phases[0]
+        assert map_phase.title == "Map"
+        # Their raw index (1) does NOT equal their phase's array index (0) ...
+        assert all(a.phase_index == 1 for a in map_phase.agents)
+        # ... yet they are correctly grouped under Map by title.
+        assert {a.agent_id for a in map_phase.agents} == {"ag000001", "ag000002"}
 
     def test_phase_agents_are_the_same_objects_as_flat_list(self) -> None:
         run = _parsed()
