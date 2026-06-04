@@ -2,6 +2,7 @@
 """Convert Claude transcript JSONL files to HTML."""
 
 import contextlib
+import itertools
 import json
 import logging
 import re
@@ -128,7 +129,13 @@ def _scan_sidechain_uuids(directory: Path) -> set[str]:
     warnings when main-chain entries reference sidechain parents.
     """
     uuids: set[str] = set()
-    for f in directory.glob("*/subagents/*.jsonl"):
+    # ``*/subagents/*.jsonl`` covers ordinary sub-agent/teammate files;
+    # ``*/subagents/workflows/*/*.jsonl`` covers dynamic-workflow side-channel
+    # transcripts (issue #174) — their agent UUIDs are otherwise unseen and
+    # would raise false orphan warnings. ``journal.jsonl`` has no ``uuid`` so
+    # scanning it is harmless.
+    workflow_files = directory.glob("*/subagents/workflows/*/*.jsonl")
+    for f in itertools.chain(directory.glob("*/subagents/*.jsonl"), workflow_files):
         try:
             with open(f, "r", encoding="utf-8", errors="replace") as fh:
                 for line in fh:
