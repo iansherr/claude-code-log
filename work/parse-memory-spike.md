@@ -21,11 +21,10 @@ short path; "N days old" recall badge deferred; Bash refs skipped).
 
 ## Follow-ups (deferred, not in v1)
 
-- **Custom `autoMemoryDirectory` / Windows paths** — the path-anchored regex
-  is forward-slash anchored and assumes the default location, so a custom
-  `autoMemoryDirectory` or Windows backslash paths won't be detected. Make the
-  location/separator configurable if this comes up. (Both noted as code
-  comments on `_MEMORY_PATH_RE`.)
+- **Custom `autoMemoryDirectory`** relocates memory outside the default path,
+  so the path-anchored regex won't detect it. Needs config plumbing — deferred.
+  (Noted on `_MEMORY_PATH_RE`.) Windows backslash paths *are* handled
+  (separators normalized before matching; covered by a test).
 - **Render the memory directory itself** (issue Q2) — standalone browser of
   `MEMORY.md` + topic files. Bigger feature; deferred.
 - **"N days old" recall badge** from the `<system-reminder>` age marker.

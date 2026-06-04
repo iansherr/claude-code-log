@@ -30,6 +30,8 @@ MEM = "/home/u/.claude/projects/-home-u-proj/memory/MEMORY.md"
 MEM_SUB = "/home/u/.claude/projects/-home-u-proj/memory/topics/debugging.md"
 # A project's own bare memory/ dir must NOT match (false-positive guard).
 NON_MEM = "/home/u/proj/memory/notes.md"
+# Windows backslash form of a memory path (windows-latest CI).
+MEM_WIN = r"C:\Users\u\.claude\projects\-C--Users-u-proj\memory\MEMORY.md"
 
 
 def _meta() -> MessageMeta:
@@ -69,6 +71,12 @@ class TestIsMemoryPath:
     def test_bare_memory_dir_not_matched(self):
         """A project's own memory/ dir is not under .claude/projects/<slug>/."""
         assert not is_memory_path(NON_MEM)
+
+    def test_windows_backslash_path_matches(self):
+        """Backslash separators (windows-latest) are normalized before match."""
+        assert is_memory_path(MEM_WIN)
+        assert memory_short_path(MEM_WIN) == "MEMORY.md"
+        assert is_memory_tool("Read", MEM_WIN)
 
     def test_unrelated_paths_not_matched(self):
         assert not is_memory_path("/home/u/proj/src/main.py")

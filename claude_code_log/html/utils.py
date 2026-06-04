@@ -61,12 +61,13 @@ if TYPE_CHECKING:
 # bare ``memory/`` substring so a project's own ``memory/`` folder can't yield
 # false positives (issue #192).
 #
-# Limitations (acceptable for v1; see work/parse-memory-spike.md):
-#  - A custom ``autoMemoryDirectory`` setting relocates memory outside this
-#    path and won't be detected.
-#  - Forward-slash anchored, so Windows backslash paths
-#    (…\.claude\projects\slug\memory\…) won't match.
-# Both could be addressed by making the location/separator configurable later.
+# The regex is forward-slash anchored; ``_normalize_sep`` folds Windows
+# backslash paths to forward slashes first so detection works on windows-latest
+# (transcript file_paths may use the native separator).
+#
+# Limitation (acceptable for v1; see work/parse-memory-spike.md): a custom
+# ``autoMemoryDirectory`` setting relocates memory outside this path and won't
+# be detected — that needs config plumbing, so it stays deferred.
 _MEMORY_PATH_RE = re.compile(r"/\.claude/projects/[^/]+/memory/")
 
 
@@ -76,9 +77,17 @@ _MEMORY_PATH_RE = re.compile(r"/\.claude/projects/[^/]+/memory/")
 _MEMORY_TOOL_NAMES = frozenset({"Read", "Write", "Edit"})
 
 
+def _normalize_sep(file_path: str) -> str:
+    """Fold Windows backslash separators to forward slashes for matching."""
+    return file_path.replace("\\", "/")
+
+
 def is_memory_path(file_path: Optional[str]) -> bool:
     """True if ``file_path`` lives inside an auto-memory directory."""
-    return bool(file_path) and _MEMORY_PATH_RE.search(file_path) is not None
+    return (
+        bool(file_path)
+        and _MEMORY_PATH_RE.search(_normalize_sep(file_path)) is not None
+    )
 
 
 def is_memory_tool(tool_name: Optional[str], file_path: Optional[str]) -> bool:
@@ -95,11 +104,13 @@ def memory_short_path(file_path: str) -> str:
     """Return the path relative to the ``memory/`` directory.
 
     e.g. ``…/memory/MEMORY.md`` -> ``MEMORY.md``,
-    ``…/memory/sub/topic.md`` -> ``sub/topic.md``. Falls back to the full
+    ``…/memory/sub/topic.md`` -> ``sub/topic.md``. Separators are normalized to
+    ``/`` (so Windows paths render consistently). Falls back to the normalized
     path if the marker isn't found (shouldn't happen for memory paths).
     """
-    parts = _MEMORY_PATH_RE.split(file_path, maxsplit=1)
-    return parts[-1] if len(parts) > 1 else file_path
+    normalized = _normalize_sep(file_path)
+    parts = _MEMORY_PATH_RE.split(normalized, maxsplit=1)
+    return parts[-1] if len(parts) > 1 else normalized
 
 
 # -- CSS Class Registry -------------------------------------------------------
