@@ -68,6 +68,8 @@ from ..models import (
     WebSearchOutput,
     WebFetchInput,
     WebFetchOutput,
+    WorkflowAgentMessage,
+    WorkflowPhaseMessage,
     WorkflowToolInput,
     WriteInput,
     WriteOutput,
@@ -1225,6 +1227,74 @@ def format_workflow_input(workflow_input: WorkflowToolInput) -> str:
     return f"{header}{body}"
 
 
+# -- Workflow run tree: phase + agent cards (issue #174 PR3) -------------------
+
+
+def format_workflow_phase_content(content: WorkflowPhaseMessage) -> str:
+    """Format a spliced workflow *phase* card body: the phase ``detail`` plus
+    its agent count. The phase title is the card heading (``title_content``)."""
+    parts: list[str] = []
+    if content.detail:
+        parts.append(
+            f"<span class='workflow-phase-detail'>{escape_html(content.detail)}</span>"
+        )
+    if content.agent_count:
+        unit = "agent" if content.agent_count == 1 else "agents"
+        parts.append(
+            f"<span class='workflow-phase-count'>{content.agent_count} {unit}</span>"
+        )
+    if not parts:
+        return ""
+    return f"<div class='workflow-phase-meta'>{''.join(parts)}</div>"
+
+
+def format_workflow_agent_content(content: WorkflowAgentMessage) -> str:
+    """Format a spliced workflow *agent* card body: a metadata chrome line
+    (model / state / tokens / tool calls) above the agent's result — a
+    ``StructuredOutput`` dict pretty-printed + highlighted as JSON, a plain
+    string rendered as collapsible Markdown. The agent's side-channel
+    transcript renders separately as this node's ``.children``."""
+    meta_bits: list[str] = []
+    if content.model:
+        meta_bits.append(
+            f"<span class='workflow-agent-model'>{escape_html(content.model)}</span>"
+        )
+    if content.state:
+        meta_bits.append(
+            f"<span class='workflow-agent-state'>{escape_html(content.state)}</span>"
+        )
+    if content.tokens is not None:
+        meta_bits.append(
+            f"<span class='workflow-agent-tokens'>{content.tokens} tokens</span>"
+        )
+    if content.tool_calls is not None:
+        unit = "call" if content.tool_calls == 1 else "calls"
+        meta_bits.append(
+            f"<span class='workflow-agent-tools'>{content.tool_calls} tool {unit}</span>"
+        )
+    parts: list[str] = []
+    if meta_bits:
+        parts.append(f"<div class='workflow-agent-meta'>{''.join(meta_bits)}</div>")
+
+    result = content.result
+    if isinstance(result, (dict, list)):
+        # Pretty-print + JSON-highlight via the shared async-result helper
+        # (it re-parses the `{"`/`[`-shaped text and indents it).
+        parts.append(
+            render_async_result_body(
+                json.dumps(result, ensure_ascii=False), "workflow-agent-result"
+            )
+        )
+    elif isinstance(result, str) and result.strip():
+        parts.append(render_markdown_collapsible(result, "workflow-agent-result"))
+    elif content.result_preview:
+        parts.append(
+            f"<span class='workflow-agent-result-preview'>"
+            f"{escape_html(content.result_preview)}</span>"
+        )
+    return "".join(parts)
+
+
 # -- Public Exports -----------------------------------------------------------
 
 __all__ = [
@@ -1243,6 +1313,8 @@ __all__ = [
     "format_websearch_input",
     "format_webfetch_input",
     "format_workflow_input",
+    "format_workflow_phase_content",
+    "format_workflow_agent_content",
     "format_monitor_input",
     "format_schedulewakeup_input",
     "format_croncreate_input",

@@ -69,6 +69,8 @@ from ..models import (
     SkillInput,
     WebSearchInput,
     WebFetchInput,
+    WorkflowAgentMessage,
+    WorkflowPhaseMessage,
     WorkflowToolInput,
     MonitorInput,
     MonitorOutput,
@@ -1069,6 +1071,52 @@ class MarkdownRenderer(Renderer):
             parts.append(header)
         if script.strip():
             parts.append(self._code_fence(script, "js"))
+        return "\n\n".join(parts)
+
+    def format_WorkflowPhaseMessage(
+        self, content: WorkflowPhaseMessage, _: TemplateMessage
+    ) -> str:
+        """Format → a spliced workflow phase card body: detail + agent count
+        (issue #174 PR3). The phase title is the heading (``title_content``)."""
+        bits: list[str] = []
+        if content.detail:
+            bits.append(_protect_html_tags(content.detail))
+        if content.agent_count:
+            unit = "agent" if content.agent_count == 1 else "agents"
+            bits.append(f"_{content.agent_count} {unit}_")
+        return " — ".join(bits)
+
+    def format_WorkflowAgentMessage(
+        self, content: WorkflowAgentMessage, _: TemplateMessage
+    ) -> str:
+        """Format → a spliced workflow agent card body: a meta line (model /
+        state / tokens / tool calls) above the result — a StructuredOutput dict
+        fenced as JSON, a plain string emitted as Markdown (issue #174 PR3)."""
+        parts: list[str] = []
+        meta_bits: list[str] = []
+        if content.model:
+            meta_bits.append(f"model: `{_protect_html_tags(content.model)}`")
+        if content.state:
+            meta_bits.append(f"state: {_protect_html_tags(content.state)}")
+        if content.tokens is not None:
+            meta_bits.append(f"{content.tokens} tokens")
+        if content.tool_calls is not None:
+            unit = "call" if content.tool_calls == 1 else "calls"
+            meta_bits.append(f"{content.tool_calls} tool {unit}")
+        if meta_bits:
+            parts.append("_" + " · ".join(meta_bits) + "_")
+
+        result = content.result
+        if isinstance(result, (dict, list)):
+            parts.append(
+                self._code_fence(
+                    json.dumps(result, indent=2, ensure_ascii=False), "json"
+                )
+            )
+        elif isinstance(result, str) and result.strip():
+            parts.append(result)
+        elif content.result_preview:
+            parts.append(_protect_html_tags(content.result_preview))
         return "\n\n".join(parts)
 
     def format_MonitorInput(self, input: MonitorInput, _: TemplateMessage) -> str:

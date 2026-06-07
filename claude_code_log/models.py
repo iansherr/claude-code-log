@@ -1140,6 +1140,49 @@ class ToolUseMessage(MessageContent):
         return "tool_use"
 
 
+@dataclass
+class WorkflowPhaseMessage(MessageContent):
+    """Synthetic node (#174 PR3): a dynamic-workflow *phase* header card.
+
+    Spliced under a ``Workflow`` tool_use node (Strategy B — built post
+    ``_build_message_tree``, not parsed from the raw transcript). Its
+    ``.children`` are the phase's :class:`WorkflowAgentMessage` nodes. Built
+    from a parsed ``WorkflowPhase``; uses ``MessageMeta.empty()`` for meta.
+    """
+
+    title: str = ""
+    detail: str = ""
+    agent_count: int = 0
+
+    @property
+    def message_type(self) -> str:
+        return "workflow_phase"
+
+
+@dataclass
+class WorkflowAgentMessage(MessageContent):
+    """Synthetic node (#174 PR3): one dynamic-workflow *sub-agent* card.
+
+    Spliced under its :class:`WorkflowPhaseMessage` (or directly under the
+    Workflow tool_use when there's no snapshot/phase grouping). Its
+    ``.children`` are the agent's side-channel transcript messages. ``result``
+    is the agent's output — a dict for ``StructuredOutput`` agents, a string
+    for plain-text agents, or ``None`` while in flight.
+    """
+
+    label: str = ""
+    model: str = ""
+    state: str = ""
+    tokens: Optional[int] = None
+    tool_calls: Optional[int] = None
+    result: Any = None
+    result_preview: str = ""
+
+    @property
+    def message_type(self) -> str:
+        return "workflow_agent"
+
+
 # =============================================================================
 # Tool Input Models
 # =============================================================================

@@ -33,6 +33,8 @@ from ..models import (
     UserMemoryMessage,
     UserSlashCommandMessage,
     UserTextMessage,
+    WorkflowAgentMessage,
+    WorkflowPhaseMessage,
     # Tool input types
     AskUserQuestionInput,
     AskUserQuestionItem,
@@ -170,6 +172,8 @@ from .tool_formatters import (
     format_websearch_output,
     format_webfetch_input,
     format_workflow_input,
+    format_workflow_phase_content,
+    format_workflow_agent_content,
     format_webfetch_output,
     format_monitor_input,
     format_monitor_output,
@@ -582,6 +586,18 @@ class HtmlRenderer(Renderer):
     def format_UnknownMessage(self, content: UnknownMessage, _: TemplateMessage) -> str:
         """Format → <pre class='unknown'>JSON dump</pre>."""
         return format_unknown_content(content)
+
+    def format_WorkflowPhaseMessage(
+        self, content: WorkflowPhaseMessage, _: TemplateMessage
+    ) -> str:
+        """Format → spliced workflow phase card body (detail + agent count)."""
+        return format_workflow_phase_content(content)
+
+    def format_WorkflowAgentMessage(
+        self, content: WorkflowAgentMessage, _: TemplateMessage
+    ) -> str:
+        """Format → spliced workflow agent card body (meta line + result)."""
+        return format_workflow_agent_content(content)
 
     # -------------------------------------------------------------------------
     # Tool Input Formatters

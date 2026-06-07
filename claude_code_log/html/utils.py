@@ -47,6 +47,8 @@ from ..models import (
     UserSlashCommandMessage,
     UserSteeringMessage,
     UserTextMessage,
+    WorkflowAgentMessage,
+    WorkflowPhaseMessage,
 )
 from ..renderer_timings import timing_stat
 
@@ -190,6 +192,13 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     BashInputMessage: ["bash-input"],
     BashOutputMessage: ["bash-output"],
     UnknownMessage: ["unknown"],
+    # Dynamic-workflow synthetic nodes (#174 PR3): phase/agent cards spliced
+    # under a Workflow tool_use. The `tool_use` class keeps them visible under
+    # the runtime "Tool Use" filter toggle (the splice lives inside a tool_use
+    # subtree); the `workflow_phase`/`workflow_agent` modifiers drive styling
+    # and the timeline's dedicated detection branch.
+    WorkflowPhaseMessage: ["tool_use", "workflow_phase"],
+    WorkflowAgentMessage: ["tool_use", "workflow_agent"],
 }
 
 
@@ -320,6 +329,10 @@ def get_message_emoji(msg: "TemplateMessage") -> str:
         return "💭"
     elif msg_type == "image":
         return "🖼️"
+    elif msg_type == "workflow_phase":
+        return "🧩"
+    elif msg_type == "workflow_agent":
+        return "🤖"
     return ""
 
 

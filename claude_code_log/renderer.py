@@ -53,6 +53,8 @@ from .models import (
     ThinkingMessage,
     ToolResultMessage,
     ToolUseMessage,
+    WorkflowAgentMessage,
+    WorkflowPhaseMessage,
     WorkflowToolInput,
     UnknownMessage,
     UserMemoryMessage,
@@ -4524,6 +4526,18 @@ class Renderer:
         self, _content: ThinkingMessage, _message: TemplateMessage
     ) -> str:
         return "Thinking"
+
+    def title_WorkflowPhaseMessage(
+        self, content: WorkflowPhaseMessage, _: TemplateMessage
+    ) -> str:
+        # Format-neutral header label for a spliced workflow phase card
+        # (#174 PR3). The agent count + detail render in the body.
+        return f"Phase: {content.title}" if content.title else "Phase"
+
+    def title_WorkflowAgentMessage(
+        self, content: WorkflowAgentMessage, _: TemplateMessage
+    ) -> str:
+        return content.label or "Agent"
 
     def title_UnknownMessage(self, _content: UnknownMessage, _: TemplateMessage) -> str:
         return "Unknown Content"
