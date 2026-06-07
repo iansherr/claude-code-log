@@ -3604,7 +3604,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -3663,6 +3665,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -9490,7 +9501,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -9549,6 +9562,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -17458,7 +17480,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -17517,6 +17541,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -23459,7 +23492,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -23518,6 +23553,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -29727,7 +29771,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -29786,6 +29832,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -35840,7 +35895,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -35899,6 +35956,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
@@ -42014,7 +42080,9 @@
               'bash-input': { id: 'bash-input', content: '💻 Bash Input', style: 'background-color: #e8eaf6;' },
               'bash-output': { id: 'bash-output', content: '📄 Bash Output', style: 'background-color: #efebe9;' },
               'teammate': { id: 'teammate', content: '👥 Teammate', style: 'background-color: #e8f2fd;' },
-              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' }
+              'task-notification': { id: 'task-notification', content: '🔄 Async result', style: 'background-color: #e8f2fd;' },
+              'workflow_phase': { id: 'workflow_phase', content: '🧩 Workflow Phase', style: 'background-color: #fff8e1;' },
+              'workflow_agent': { id: 'workflow_agent', content: '🤖 Workflow Agent', style: 'background-color: #f3e5f5;' }
           };
   
           // Build timeline data from messages
@@ -42073,6 +42141,15 @@
                       // they'd land in the `user` group rather than getting
                       // their own 🔄 Async result row in the timeline.
                       messageType = 'task-notification';
+                  } else if (classList.includes('workflow_phase')) {
+                      // Spliced dynamic-workflow phase/agent cards (#174 PR3)
+                      // carry the `tool_use` class for filter visibility, so —
+                      // like `teammate`/`task-notification` — they need an
+                      // explicit branch before the generic `.find` below, else
+                      // they'd be swept into the 🛠️ Tool Use lane.
+                      messageType = 'workflow_phase';
+                  } else if (classList.includes('workflow_agent')) {
+                      messageType = 'workflow_agent';
                   } else {
                       // Look for standard message types
                       messageType = classList.find(cls =>
