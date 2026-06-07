@@ -2919,6 +2919,12 @@ def _graft_agent_sidechannel(
     """
     if not entries:
         return
+    # The side-channel is rendered at the default FULL detail regardless of the
+    # main render's detail level (the splice only fires at FULL/HIGH anyway —
+    # the Workflow tool_use host is dropped at LOW and below). So an agent's
+    # transcript may carry FULL-only content (e.g. system/hook entries) even at
+    # ``--detail high`` (monk PR3 review N2). Acceptable: the side-channel is an
+    # opt-in deep-dive under a fold.
     sub_roots, _sub_nav, _sub_ctx = generate_template_messages(entries)
     old_to_new: dict[int, int] = {}
 
