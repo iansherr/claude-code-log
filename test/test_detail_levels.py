@@ -271,7 +271,7 @@ class TestHighTemplateMessages:
         root_messages, _, ctx = generate_template_messages(
             messages, detail=DetailLevel.HIGH
         )
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "tool_use" in types
 
     def test_high_keeps_tool_result(self, tmp_path):
@@ -287,7 +287,7 @@ class TestHighTemplateMessages:
         root_messages, _, ctx = generate_template_messages(
             messages, detail=DetailLevel.HIGH
         )
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "tool_result" in types
 
     def test_high_keeps_thinking(self, tmp_path):
@@ -303,7 +303,7 @@ class TestHighTemplateMessages:
         root_messages, _, ctx = generate_template_messages(
             messages, detail=DetailLevel.HIGH
         )
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "thinking" in types
 
     def test_high_drops_system_messages(self, tmp_path):
@@ -317,7 +317,7 @@ class TestHighTemplateMessages:
         root_messages, _, ctx = generate_template_messages(
             messages, detail=DetailLevel.HIGH
         )
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "system" not in types
 
     def test_high_drops_slash_commands(self, tmp_path):
@@ -329,6 +329,8 @@ class TestHighTemplateMessages:
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
         _, _, ctx = generate_template_messages(messages, detail=DetailLevel.HIGH)
         for msg in ctx.messages:
+            if msg is None:
+                continue
             assert msg.content.__class__.__name__ not in (
                 "SlashCommandMessage",
                 "UserSlashCommandMessage",
@@ -360,6 +362,7 @@ class TestLowTemplateMessages:
         tool_names = [
             getattr(msg.content, "tool_name", None)
             for msg in ctx.messages
+            if msg is not None
             if msg.content.message_type in ("tool_use", "tool_result")
         ]
         assert "WebSearch" in tool_names
@@ -383,6 +386,7 @@ class TestLowTemplateMessages:
         tool_names = [
             getattr(msg.content, "tool_name", None)
             for msg in ctx.messages
+            if msg is not None
             if msg.content.message_type in ("tool_use", "tool_result")
         ]
         assert "Read" not in tool_names
@@ -398,7 +402,7 @@ class TestLowTemplateMessages:
         ]
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
         _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "thinking" not in types
 
     def test_low_keeps_user_and_assistant(self, tmp_path):
@@ -409,7 +413,7 @@ class TestLowTemplateMessages:
         ]
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
         _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "user" in types
         assert "assistant" in types
 
@@ -422,7 +426,7 @@ class TestLowTemplateMessages:
         ]
         messages = load_transcript(_write_jsonl(entries, tmp_path / "t.jsonl"))
         _, _, ctx = generate_template_messages(messages, detail=DetailLevel.LOW)
-        types = {msg.content.message_type for msg in ctx.messages}
+        types = {msg.content.message_type for msg in ctx.messages if msg is not None}
         assert "system" not in types
 
 
@@ -537,11 +541,12 @@ class TestMinimalTemplateMessages:
         steering = [
             msg.content
             for msg in ctx.messages
+            if msg is not None
             if isinstance(msg.content, UserSteeringMessage)
         ]
         assert len(steering) == 1, (
             f"MINIMAL should keep steering; got content types: "
-            f"{[type(m.content).__name__ for m in ctx.messages]}"
+            f"{[type(m.content).__name__ for m in ctx.messages if m is not None]}"
         )
 
     def test_minimal_removes_bash_messages(self, tmp_path):
@@ -585,6 +590,8 @@ class TestMinimalTemplateMessages:
         _collect_types(root_messages, all_types)
         # /exit should not appear as any type
         for msg in ctx.messages:
+            if msg is None:
+                continue
             assert "/exit" not in getattr(msg.content, "text", ""), (
                 f"Slash command '/exit' found in minimal output as {msg.type}"
             )
@@ -610,6 +617,8 @@ class TestMinimalTemplateMessages:
         )
         # No sidechain messages should remain
         for msg in ctx.messages:
+            if msg is None:
+                continue
             assert not msg.is_sidechain, f"Sidechain message found: {msg.type}"
 
     def test_minimal_vs_normal_fewer_messages(self, tmp_path):
@@ -637,8 +646,8 @@ class TestMinimalTemplateMessages:
             messages, detail=DetailLevel.MINIMAL
         )
 
-        normal_count = len(normal_ctx.messages)
-        minimal_count = len(minimal_ctx.messages)
+        normal_count = sum(1 for m in normal_ctx.messages if m is not None)
+        minimal_count = sum(1 for m in minimal_ctx.messages if m is not None)
         assert minimal_count < normal_count
 
 
@@ -967,8 +976,8 @@ class TestMinimalRealProjects:
                 messages, detail=DetailLevel.MINIMAL
             )
 
-            normal_count = len(normal_ctx.messages)
-            minimal_count = len(minimal_ctx.messages)
+            normal_count = sum(1 for m in normal_ctx.messages if m is not None)
+            minimal_count = sum(1 for m in minimal_ctx.messages if m is not None)
 
             # Real projects typically have many tool calls, so minimal should
             # have fewer messages. Some tiny projects might only have text.
@@ -1209,6 +1218,7 @@ class TestUserOnlyTemplateMessages:
         user_texts = [
             getattr(msg.content, "items", None)
             for msg in ctx.messages
+            if msg is not None
             if msg.type == "user"
         ]
         # Both user prompts survived
@@ -1251,11 +1261,12 @@ class TestUserOnlyTemplateMessages:
         steering_content = [
             msg.content
             for msg in ctx.messages
+            if msg is not None
             if isinstance(msg.content, UserSteeringMessage)
         ]
         assert len(steering_content) == 1, (
             f"Expected exactly one UserSteeringMessage, got content types: "
-            f"{[type(m.content).__name__ for m in ctx.messages]}"
+            f"{[type(m.content).__name__ for m in ctx.messages if m is not None]}"
         )
 
     def test_drops_tools_thinking_bash_slash(self, tmp_path):
@@ -1300,6 +1311,8 @@ class TestUserOnlyTemplateMessages:
             )
         # /exit slash command must not appear in any survivor
         for msg in ctx.messages:
+            if msg is None:
+                continue
             assert "/exit" not in getattr(msg.content, "text", ""), (
                 f"Slash command leaked into USER_ONLY as {msg.type}"
             )
@@ -1312,6 +1325,8 @@ class TestUserOnlyTemplateMessages:
 
         _, _, ctx = generate_template_messages(messages, detail=DetailLevel.USER_ONLY)
         for msg in ctx.messages:
+            if msg is None:
+                continue
             assert not msg.is_sidechain
 
     def test_preserves_session_headers(self, tmp_path):
@@ -1345,7 +1360,9 @@ class TestUserOnlyTemplateMessages:
         _, _, ctx_user = generate_template_messages(
             messages2, detail=DetailLevel.USER_ONLY
         )
-        assert len(ctx_user.messages) < len(ctx_min.messages)
+        ctx_user_count = sum(1 for m in ctx_user.messages if m is not None)
+        ctx_min_count = sum(1 for m in ctx_min.messages if m is not None)
+        assert ctx_user_count < ctx_min_count
 
 
 class TestSteeringHierarchy:
@@ -1404,11 +1421,12 @@ class TestSteeringHierarchy:
         steering = [
             msg.content
             for msg in ctx.messages
+            if msg is not None
             if isinstance(msg.content, UserSteeringMessage)
         ]
         assert len(steering) == 1, (
             f"Level {level.value} should keep UserSteeringMessage; got "
-            f"content types: {[type(m.content).__name__ for m in ctx.messages]}"
+            f"content types: {[type(m.content).__name__ for m in ctx.messages if m is not None]}"
         )
 
 
@@ -1444,11 +1462,13 @@ class TestSteeringStringContent:
         from claude_code_log.models import UserSteeringMessage
 
         steering = [
-            msg for msg in ctx.messages if isinstance(msg.content, UserSteeringMessage)
+            msg
+            for msg in ctx.messages
+            if msg is not None and isinstance(msg.content, UserSteeringMessage)
         ]
         assert len(steering) == 1, (
             f"String-content queue-op should become a UserSteeringMessage; "
-            f"got: {[type(m.content).__name__ for m in ctx.messages]}"
+            f"got: {[type(m.content).__name__ for m in ctx.messages if m is not None]}"
         )
 
 

@@ -624,6 +624,24 @@ Phase 1 + 2's combined effect).
    check that the symbol no longer exists (catches accidental
    re-introduction).
 
+### 6.3.1 Deferred follow-up — junction-link elision coverage
+
+`_repair_stale_anchor_refs` drops `junction_forward_links` entries
+whose `branch_idx` resolves to a ghost slot, and elides the entire
+fork-point indicator when fewer than 2 navigable branches remain.
+The Phase-2 test fixture in `test/test_ghost_repair.py` keeps both
+branches alive at USER_ONLY (the leaf user-replies survive), so the
+junction-population path never fires and the elision branch stays
+exercised only through the existing snapshot suite — same level of
+coverage as pre-Phase-2.
+
+A targeted regression test would build a fixture that ghosts an
+*entire branch's content* (every message in one of two branches),
+then assert: (a) the dropped branch's `junction_forward_links` tuple
+disappears, and (b) the fork-point indicator is fully elided because
+< 2 navigable branches remain. Not blocking the epic — landing it
+as a follow-up tightening pass after Phase 3.
+
 ### 6.4 Failing-on-pre-ghosting verification
 
 Per the D11 pattern: each phase's pinning test should FAIL on the

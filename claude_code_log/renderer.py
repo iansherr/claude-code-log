@@ -766,16 +766,15 @@ def generate_template_messages(
     with log_timing("Link junction forwards", t_start):
         _link_junction_forwards(ctx)
 
-    # Detail-level post-render: remove text-derived types per level.
-    # ``_filter_template_by_detail`` strips ghost (None) slots
-    # alongside non-visible content so the kept list passed to
-    # ``_reindex_filtered_context`` is None-free. Phase 2 of the
-    # ghosting epic will rewrite this pair into a single ghost-style
-    # pass and delete ``_reindex_filtered_context``.
+    # Detail-level post-render: ghost non-visible slots in place.
+    # ``_ghost_template_by_detail`` sets ``ctx.messages[i] = None``
+    # for each filtered slot and repairs anchor-target references
+    # (``session_first_message``, ``parent_message_index``,
+    # ``junction_forward_links``) so dropped fork-points don't leave
+    # dead ``#msg-d-{N}`` links. See ``work/ghosting-epic-plan.md`` §3.2.
     if detail != DetailLevel.FULL:
         with log_timing(f"Detail post-render filter ({detail.value})", t_start):
-            filtered = _filter_template_by_detail(ctx.messages, detail)
-            _reindex_filtered_context(ctx, filtered)
+            _ghost_template_by_detail(ctx, detail)
 
     # Prepare session navigation data (uses ctx for session header indices)
     session_nav: list[dict[str, Any]] = []
@@ -2750,7 +2749,7 @@ def _link_async_notifications(
       and that's fine, because there's no duplicate left to remove.
 
     At MINIMAL/USER_ONLY the spawn fold is skipped entirely: the
-    Task tool_result is dropped by ``_filter_template_by_detail``,
+    Task tool_result is dropped by ``_ghost_template_by_detail``,
     so there's nothing to fold onto. We leave the notification card
     intact so the agent's answer remains visible somewhere — the
     notification body becomes the only surviving copy.
@@ -3161,7 +3160,7 @@ def _filter_messages(messages: list[TranscriptEntry]) -> list[TranscriptEntry]:
         # full detail. Non-hook attachment flavours produce ``None`` and
         # are silently dropped at registration time, mirroring the
         # pre-#128 PassthroughTranscriptEntry behaviour. Detail-level
-        # filtering happens later: ``_filter_template_by_detail`` drops
+        # filtering happens later: ``_ghost_template_by_detail`` drops
         # ``HookAttachmentMessage`` at HIGH and below.
         if isinstance(message, AttachmentTranscriptEntry):
             filtered.append(message)
@@ -3262,7 +3261,7 @@ def _filter_by_detail(
     elif detail == DetailLevel.LOW:
         strip_types = (ThinkingContent,)
         # ToolUseContent and ToolResultContent kept for _LOW_KEEP_TOOLS;
-        # others removed in post-render by _filter_template_by_detail.
+        # others removed in post-render by _ghost_template_by_detail.
     else:
         # HIGH: no content-item stripping needed
         strip_types = ()
@@ -3481,102 +3480,38 @@ def _drop_anchor_refs_into_ghosts(ctx: RenderingContext) -> None:
             msg.content.parent_message_index = None
 
 
-def _reindex_filtered_context(
-    ctx: RenderingContext, filtered: list[TemplateMessage]
-) -> None:
-    """Rebuild index references after the detail-level filter drops messages.
-
-    `RenderingContext.get(i)` treats `message_index` as a position in
-    `ctx.messages`, and several downstream passes (pair identification,
-    session nav) use stored `message_index` values to look things up.
-    When `_filter_template_by_detail` drops messages, the surviving
-    entries still carry their original indices — so `ctx.get()` returns
-    the wrong message and session navigation points at stale anchors.
-
-    Rewrite `ctx.messages` to the filtered list and remap every index
-    reference to the new positions. Entries whose targets were filtered
-    out are dropped (session_first_message) or unset (pair_first,
-    pair_last), letting later passes regenerate them from scratch.
-    """
-    index_remap: dict[int, int] = {}
-    for new_idx, msg in enumerate(filtered):
-        old_idx = msg.message_index
-        if old_idx is not None:
-            index_remap[old_idx] = new_idx
-        msg.message_index = new_idx
-        msg.content.message_index = new_idx
-        # Pair linkage is re-established post-filter by
-        # `_identify_message_pairs`; clear any stale references first.
-        msg.pair_first = None
-        msg.pair_middle = None
-        msg.pair_last = None
-
-    # ``ctx.messages`` is typed ``list[Optional[TemplateMessage]]``
-    # to support ghosting; the reindex rebuilds it from the
-    # non-ghost ``filtered`` list, which is naturally a subset of
-    # that wider type.
-    ctx.messages = list(filtered)
-    ctx.session_first_message = {
-        sid: new_idx
-        for sid, old_idx in ctx.session_first_message.items()
-        if (new_idx := index_remap.get(old_idx)) is not None
-    }
-
-    # Branch / child session headers cache the fork-point's index in
-    # ``parent_message_index`` (set at register time, drives the
-    # "from ⑂ Fork point" backlink). The reindex must update those
-    # references too — otherwise the backlink jumps to whatever message
-    # ends up at the stale index after the reindex shift, which manifests
-    # as the "Branch • c36e76a6 from #msg-d-510" mismatch when
-    # ``_pair_skill_tool_uses`` drops slash-command bodies.
-    #
-    # Same fix applies to ``junction_forward_links`` cached on fork-point
-    # template messages — populated in ``generate_template_messages``
-    # *before* the optional detail-level filter calls _reindex again, so
-    # the second reindex must remap each tuple's ``branch_idx`` (or drop
-    # the tuple if its target was filtered out) to keep the fork-point
-    # box's per-branch links pointing at the right ``msg-d-{N}`` anchor.
-    for msg in filtered:
-        if isinstance(msg.content, SessionHeaderMessage):
-            old_parent_idx = msg.content.parent_message_index
-            if old_parent_idx is not None:
-                msg.content.parent_message_index = index_remap.get(old_parent_idx)
-        if msg.junction_forward_links:
-            remapped: list[tuple[str, Optional[int], str]] = []
-            for branch_sid, old_branch_idx, link_suffix in msg.junction_forward_links:
-                if old_branch_idx is None:
-                    remapped.append((branch_sid, None, link_suffix))
-                    continue
-                new_branch_idx = index_remap.get(old_branch_idx)
-                if new_branch_idx is None:
-                    # Target message filtered out — drop the link.
-                    continue
-                remapped.append((branch_sid, new_branch_idx, link_suffix))
-            msg.junction_forward_links = remapped
-            # If the fork now has fewer than 2 navigable branches, mirror
-            # the elision the population pass does and drop the indicator.
-            if len(msg.junction_forward_links) < 2:
-                msg.junction_forward_links = []
-                msg.fork_point_preview = ""
-
-
-def _filter_template_by_detail(
-    messages: list[Optional[TemplateMessage]],
+def _ghost_template_by_detail(
+    ctx: RenderingContext,
     detail: DetailLevel,
-) -> list[TemplateMessage]:
-    """Post-render filter: remove TemplateMessage types per detail level.
+) -> None:
+    """Ghost (set to None) ctx.messages slots that aren't visible at ``detail``.
 
     Visibility is computed by :func:`_content_visible_at`, which delegates
     to each content class's ``visible_at`` predicate / ``detail_visibility``
     ClassVar. At ``LOW``, the ``_LOW_KEEP_TOOLS`` allowlist narrows
-    built-in tool messages further to a specific set of tool names.
+    built-in tool messages further to a specific set of tool names. At
+    ``MINIMAL`` / ``LOW`` / ``USER_ONLY`` sidechain messages are also
+    dropped.
 
-    Accepts ghost-aware input (None slots); ghosts are silently
-    skipped (they were already dropped from the visible render path
-    by an earlier pass — see ``work/ghosting-epic-plan.md``).
+    After ghosting, anchor-target references that pointed to now-ghosted
+    slots are repaired so ``#msg-d-{N}`` links don't dangle:
+
+    - ``ctx.session_first_message[sid]`` entries pointing at a ghost are
+      dropped (the session falls out of the nav).
+    - ``SessionHeaderMessage.parent_message_index`` is nulled when its
+      fork-point target is ghosted — the back-ref then renders as plain
+      text via the existing ``is not None`` guard in
+      ``html/system_formatters.py``.
+    - ``junction_forward_links`` tuples whose ``branch_idx`` target is
+      ghosted are dropped; if fewer than 2 navigable branches remain,
+      the indicator is elided (mirrors the population pass's invariant).
+
+    This replaces the kept-list + reindex pattern that
+    ``_reindex_filtered_context`` used pre-ghosting: indices stay stable,
+    only references to ghosted targets are sanitized in place. See
+    ``work/ghosting-epic-plan.md`` §3.2.
     """
-    result: list[TemplateMessage] = []
-    for msg in messages:
+    for idx, msg in enumerate(ctx.messages):
         if msg is None:
             continue
         visible = _content_visible_at(msg.content, detail)
@@ -3605,17 +3540,49 @@ def _filter_template_by_detail(
                 if tool_name not in _LOW_KEEP_TOOLS:
                     visible = False
 
-        if not visible:
-            continue
-
-        if (
+        if visible and (
             detail in (DetailLevel.MINIMAL, DetailLevel.LOW, DetailLevel.USER_ONLY)
             and msg.is_sidechain
         ):
-            continue
+            visible = False
 
-        result.append(msg)
-    return result
+        if not visible:
+            ctx.messages[idx] = None
+
+    _repair_stale_anchor_refs(ctx)
+
+
+def _repair_stale_anchor_refs(ctx: RenderingContext) -> None:
+    """Null/drop anchor-target references that point at ghosted slots.
+
+    Pure cleanup pass — call after any function that ghosts messages
+    which could be the target of a stored ``#msg-d-{N}`` anchor. Cheap
+    and idempotent; running it twice is a no-op.
+    """
+    ctx.session_first_message = {
+        sid: idx
+        for sid, idx in ctx.session_first_message.items()
+        if ctx.get(idx) is not None
+    }
+
+    for msg in _visible(ctx.messages):
+        if isinstance(msg.content, SessionHeaderMessage):
+            parent_idx = msg.content.parent_message_index
+            if parent_idx is not None and ctx.get(parent_idx) is None:
+                msg.content.parent_message_index = None
+        if msg.junction_forward_links:
+            kept: list[tuple[str, Optional[int], str]] = []
+            for branch_sid, branch_idx, link_suffix in msg.junction_forward_links:
+                if branch_idx is not None and ctx.get(branch_idx) is None:
+                    # Target message ghosted — drop the link.
+                    continue
+                kept.append((branch_sid, branch_idx, link_suffix))
+            msg.junction_forward_links = kept
+            # If the fork now has fewer than 2 navigable branches, mirror
+            # the elision the population pass does and drop the indicator.
+            if len(msg.junction_forward_links) < 2:
+                msg.junction_forward_links = []
+                msg.fork_point_preview = ""
 
 
 def _collect_session_info(

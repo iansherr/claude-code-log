@@ -498,6 +498,8 @@ class TestAsyncAgentsDetailLevels:
     @staticmethod
     def _spawning_task_output(ctx) -> TaskOutput | None:
         for tm in ctx.messages:
+            if tm is None:
+                continue
             content = tm.content
             if (
                 isinstance(content, ToolResultMessage)
@@ -512,6 +514,8 @@ class TestAsyncAgentsDetailLevels:
     @staticmethod
     def _notification(ctx) -> TaskNotificationMessage | None:
         for tm in ctx.messages:
+            if tm is None:
+                continue
             if (
                 isinstance(tm.content, TaskNotificationMessage)
                 and tm.content.task_id == ASYNC_AGENT_ID
@@ -586,7 +590,8 @@ class TestAsyncAgentsDetailLevels:
         tm_notif = next(
             tm
             for tm in ctx.messages
-            if isinstance(tm.content, TaskNotificationMessage)
+            if tm is not None
+            and isinstance(tm.content, TaskNotificationMessage)
             and tm.content.task_id == ASYNC_AGENT_ID
         )
 

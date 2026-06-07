@@ -1091,7 +1091,7 @@ class ToolResultMessage(MessageContent):
     """
 
     # Tool results — kept through LOW (narrowed there by the orthogonal
-    # tool-name keep-list in ``_filter_template_by_detail``), dropped at
+    # tool-name keep-list in ``_ghost_template_by_detail``), dropped at
     # MINIMAL and below.
     detail_visibility: ClassVar[DetailLevel] = DetailLevel.LOW
 
@@ -1122,7 +1122,7 @@ class ToolUseMessage(MessageContent):
     """
 
     # Tool invocations — kept through LOW (narrowed there by the orthogonal
-    # tool-name keep-list in ``_filter_template_by_detail``), dropped at
+    # tool-name keep-list in ``_ghost_template_by_detail``), dropped at
     # MINIMAL and below.
     detail_visibility: ClassVar[DetailLevel] = DetailLevel.LOW
 
