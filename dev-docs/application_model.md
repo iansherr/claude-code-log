@@ -221,8 +221,7 @@ stable — surviving messages keep their `message_index`, so there is no
 reindex; the rendered tree simply skips ghost slots. Earlier revisions
 ran a *second*, pre-render `_filter_by_detail` pass on `TranscriptEntry`
 plus a `_reindex_filtered_context` remap after every deletion; the
-ghosting model collapsed both into this one axis (see
-[`work/ghosting-epic-plan.md`](../work/ghosting-epic-plan.md)).
+ghosting model collapsed both into this one axis.
 
 Important interaction: `_pair_skill_tool_uses` also ghosts in place (the
 slash-command body and the redundant "Launching skill" tool_result).
