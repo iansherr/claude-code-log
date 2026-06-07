@@ -73,15 +73,80 @@ Splice pass (after `_build_message_tree`, before render):
 
 ## STATUS (2026-06-07) — steps 1-2 DONE, step 3 NOT STARTED
 
-Branch `dev/workflow-tree-render` (off main `af7dc29`):
-- `6155d0e` step 1 — load + attach `SessionTree.workflow_runs` + this doc.
-- `ac56ccb` step 2 — taskId linkage (`_link_workflow_runs`) +
+Branch `dev/wf-tree-render` (off main `4fe6788` — rebased from the original
+`dev/workflow-tree-render` which was off the now-stale `af7dc29`; #204/#205/#206/#208
+landed since). The 4 commits carried forward cleanly (no conflicts):
+- step 1 — load + attach `SessionTree.workflow_runs` + this doc.
+- step 2 — taskId linkage (`_link_workflow_runs`) +
   `resolve_workflow_header` (snapshot-first, warn-on-drift) used by both
   renderers; fixture tool_result content fixed to real-data shape.
-- (this commit) — step-3 implementation map below.
+- step-3 implementation map below.
+- (this commit) — revalidation deltas below.
 
-Steps 1-2 verified: 35 workflow tests, pyright 0, ruff clean. NOT pushed
+Steps 1-2 verified post-rebase: 19 workflow-rendering tests green. NOT pushed
 (keep fresh-PR-auto-CR for when PR3 is whole).
+
+## REVALIDATION (2026-06-07) — plan checked against current main `4fe6788`
+
+Re-read the live code (renderer.py / html/renderer.py / markdown/renderer.py /
+models.py / html/utils.py / timeline.html) before writing step-3 code. Wiring
+points all still present; five deltas vs the original (af7dc29-era) plan:
+
+1. **Allocator — use `ctx.register()`, which is *inherently* session-wide
+   monotonic.** `RenderingContext.register(msg)` does `msg_index =
+   len(self.messages); message.message_index = msg_index;
+   self.messages.append(...)`. Registering every synthetic + grafted node
+   through `ctx.register` therefore yields unique, ever-increasing indices
+   across ALL workflows in the session automatically — no manual `max()+1`
+   bookkeeping, and cboos's "single monotonic allocator" requirement is met by
+   construction. **Constraint:** run `_splice_workflow_runs` as the LAST pass in
+   `generate_template_messages` (after `_link_task_id_consumers`) so the
+   appended synthetic nodes can't perturb earlier ctx.messages-iterating passes.
+
+2. **`has_children` and `is_paired` are read-only `@property`s now**
+   (renderer.py L308/L313): `has_children == bool(self.children)`,
+   `is_paired` derives from `pair_first/pair_last`. The doc's "set
+   has_children / is_paired=False directly" is obsolete — just populate
+   `.children`; synthetic nodes have no pair fields so `is_paired` is already
+   False. Do NOT assign them.
+
+3. **`should_render` is recomputed at render time** —
+   `HtmlRenderer._annotate_tree_for_render` (html/renderer.py L1348) sets
+   `should_render = bool(title or html or msg.children)` while walking the tree
+   by `.children`; MarkdownRenderer._render_message just checks non-empty
+   title/body. So synthetic nodes need NOT set `should_render`; a non-empty
+   formatter output (or having children) makes them render.
+
+4. **Counts are ancestry-based and computed *before* the splice.**
+   `_mark_messages_with_children` (L2237) walks the flat list via `ancestry`
+   and runs before `_build_message_tree`. Our splice is post-tree, so we set
+   `immediate_children_count` / `total_descendants_count` (+ `_by_type`) on the
+   synthetic nodes with a small bottom-up recursive helper, and add the
+   subtree's descendant total to the host tool_use node (and propagate the delta
+   up the tool_use's existing ancestors via their `.children`-less count fields).
+   Do NOT re-run `_mark_messages_with_children` / `_build_message_tree` — the
+   latter clears every `.children` and rebuilds from ancestry, wiping the splice.
+
+5. **Render path confirmed: BOTH renderers walk `.children`** and dispatch via
+   `format_<ClassName>` / `title_<ClassName>` over `type(content).__mro__`
+   (renderer.py L4346/L4382). HTML: `_annotate_tree_for_render` → recursive
+   macro. Markdown: `_render_message` recurses `msg.children` (L2016). Title
+   methods (plain strings) go on the shared base renderer; `format_*` go on
+   `HtmlRenderer` (delegating to a `format_*_content` helper, the established
+   pattern) and on `MarkdownRenderer`.
+
+Current anchor line numbers (verified this session): `_build_message_tree` def
+L2291 / call L821; `_link_workflow_runs` def L2718 / call L860; splice goes
+after `_link_task_id_consumers` (call L886, before `return` L888).
+`CSS_CLASS_REGISTRY` html/utils.py L156; `_get_css_classes_from_content` L196.
+`WorkflowToolInput.workflow_run` models.py L1564; `MessageContent.meta` first
+(models.py L432); `MessageMeta.empty()` L398. Timeline `messageTypeGroups`
+timeline.html L24; detection chain L56-103.
+
+Fixture (`workflow_basic`, runId `wf_demo01`, has_snapshot): 2 phases
+(Map→Synthesize), 3 agents (ag000001/2 in Map → StructuredOutput dicts;
+ag000003 in Synthesize → markdown string). Each `agent-*.jsonl` has 3 entries
+(user, assistant, assistant). Drives the splice tests directly.
 
 ## Step 3 implementation map (wiring points located — build this next)
 
@@ -114,15 +179,12 @@ ctx)` called AFTER `_build_message_tree` (~L821), BEFORE
 `_link_async_notifications`; guard: only when a Workflow tool_use has
 `input.workflow_run`).
 
-  1. **ONE session-wide monotonic allocator** — establish a single
-     `next_index = max(existing message_index) + 1` ONCE before iterating the
-     workflow tool_uses, and advance it across EVERY splice. A session can hold
-     several Workflow tool_uses (even concurrent ones — not sane, but nothing
-     structurally forbids it); recomputing `max(original messages)+1`
-     independently per workflow would make run #2's synthetic nodes COLLIDE
-     with run #1's already-grafted ones. Equivalent safe alternative: recompute
-     the max over ALL messages *including already-grafted synthetic nodes* before
-     each run. Either way the counter must never reset between runs.
+  1. **Index allocation — use `ctx.register(node)`** (see REVALIDATION §1). It
+     assigns `len(ctx.messages)` and appends, so it IS a single session-wide
+     monotonic allocator by construction (cboos's requirement) — every synthetic
+     + grafted node registered through it gets a unique, ever-increasing index
+     across ALL workflows in the session, with no manual `max()+1`. Constraint:
+     splice runs LAST so the appends don't perturb earlier passes.
 
 Then, for each Workflow tool_use TemplateMessage with a linked run:
   2. For each `run.phases` (or flat `run.agents` when no snapshot): build a
@@ -130,9 +192,11 @@ Then, for each Workflow tool_use TemplateMessage with a linked run:
      TemplateMessage per agent; under each agent, render `agent.entries` and
      graft (see E). Allocate `message_index`/`message_id = d-{idx}` from the
      counter for EVERY synthetic + grafted node (re-index to avoid collision).
-  3. Set fold-state fields on each synthetic parent: `has_children`,
-     `immediate_children_count`, `total_descendants_count`, `should_render=True`,
-     `is_paired=False`, `ancestry`/`children` (children populated directly).
+  3. Set fold-state fields on each synthetic parent (see REVALIDATION §2-4):
+     populate `.children` directly (drives `has_children` property + render);
+     set `immediate_children_count` / `total_descendants_count` (+ `_by_type`)
+     via the bottom-up helper. Do NOT touch `has_children` / `is_paired` (read-only
+     properties) or `should_render` (recomputed by the render walk).
   4. Attach phase nodes as `.children` of the tool_use node (or its paired
      tool_result — pick the one that reads best; tool_use keeps it next to the
      script). Recompute the tool_use's `has_children`/counts.
