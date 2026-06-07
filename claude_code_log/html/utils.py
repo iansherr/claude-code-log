@@ -18,7 +18,7 @@ import html
 import json
 import re
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional, TYPE_CHECKING
 
 import mistune
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -52,6 +52,100 @@ from ..renderer_timings import timing_stat
 
 if TYPE_CHECKING:
     from ..renderer import TemplateMessage
+
+
+# -- Auto-memory detection ----------------------------------------------------
+# Claude's auto-memory (https://code.claude.com/docs/en/memory#auto-memory)
+# has no dedicated tool: it surfaces in transcripts as ordinary Read/Write/Edit
+# calls whose file_path points into the per-project memory directory. We anchor
+# on the full default path ``~/.claude/projects/<slug>/memory/`` rather than a
+# bare ``memory/`` substring so a project's own ``memory/`` folder can't yield
+# false positives (issue #192).
+#
+# The regex is forward-slash anchored; ``_normalize_sep`` folds Windows
+# backslash paths to forward slashes first so detection works on windows-latest
+# (transcript file_paths may use the native separator).
+#
+# Limitation (acceptable for v1; see work/parse-memory-spike.md): a custom
+# ``autoMemoryDirectory`` setting relocates memory outside this path and won't
+# be detected — that needs config plumbing, so it stays deferred.
+_MEMORY_PATH_RE = re.compile(r"/\.claude/projects/[^/]+/memory/")
+
+
+# File tools whose paths we flag as memory interactions. Bash references a
+# memory path inside its command string (not a typed field) and is rare, so
+# it's intentionally out of scope for v1 (issue #192).
+_MEMORY_TOOL_NAMES = frozenset({"Read", "Write", "Edit"})
+
+
+def _normalize_sep(file_path: str) -> str:
+    """Fold Windows backslash separators to forward slashes for matching."""
+    return file_path.replace("\\", "/")
+
+
+def is_memory_path(file_path: Optional[str]) -> bool:
+    """True if ``file_path`` lives inside an auto-memory directory."""
+    return (
+        bool(file_path)
+        and _MEMORY_PATH_RE.search(_normalize_sep(file_path)) is not None
+    )
+
+
+def is_memory_tool(tool_name: Optional[str], file_path: Optional[str]) -> bool:
+    """True if a tool call/result is an auto-memory interaction.
+
+    A file tool (Read/Write/Edit) acting on a path inside a ``memory/``
+    directory. Used to tag both the ``tool_use`` call and its paired
+    ``tool_result`` with the ``memory`` CSS modifier.
+    """
+    return tool_name in _MEMORY_TOOL_NAMES and is_memory_path(file_path)
+
+
+def memory_short_path(file_path: str) -> str:
+    """Return the path relative to the ``memory/`` directory.
+
+    e.g. ``…/memory/MEMORY.md`` -> ``MEMORY.md``,
+    ``…/memory/sub/topic.md`` -> ``sub/topic.md``. Separators are normalized to
+    ``/`` (so Windows paths render consistently). Falls back to the normalized
+    path if the marker isn't found (shouldn't happen for memory paths).
+    """
+    normalized = _normalize_sep(file_path)
+    parts = _MEMORY_PATH_RE.split(normalized, maxsplit=1)
+    return parts[-1] if len(parts) > 1 else normalized
+
+
+# Relative href/src in rendered memory-file markdown (e.g. a MEMORY.md link to
+# a sibling topic file: ``feedback_x.md``). Absolute URLs (scheme://), in-page
+# anchors (#…), root-absolute (/…) and protocol-relative (//…) are left alone.
+_RELATIVE_LINK_ATTR_RE = re.compile(r'((?:href|src)=")([^"#/][^":]*)(")', re.IGNORECASE)
+
+
+def resolve_memory_body_links(html: str, file_path: str) -> str:
+    """Anchor relative links in rendered memory-file markdown to the memory dir.
+
+    Memory files live at ``…/<slug>/memory/`` and link to sibling memory files
+    with bare relative paths. When that markdown is rendered into a transcript
+    page that lives one level up (``…/<slug>/``), the browser resolves those
+    links against the page's directory and drops the ``memory/`` segment (#192).
+    Rewriting them to ``file://`` URLs under the memory file's own directory
+    fixes the target and is independent of where the page is written.
+    """
+    dir_path = _normalize_sep(file_path).rsplit("/", 1)[0]
+    # file:// URLs need a leading slash before the path. POSIX paths already
+    # start with "/" (-> file:///home/...); a Windows drive-letter path
+    # (C:/Users/...) does not, so add one (-> file:///C:/Users/...).
+    if not dir_path.startswith("/"):
+        dir_path = "/" + dir_path
+    base = "file://" + dir_path
+
+    def _rewrite(m: "re.Match[str]") -> str:
+        target = m.group(2)
+        # Skip anything with a scheme (foo://…, mailto:) — the ``[^":]`` guard
+        # in the pattern already excludes ``:`` so only truly relative targets
+        # reach here, but keep the wrapper resilient.
+        return f"{m.group(1)}{base}/{target}{m.group(3)}"
+
+    return _RELATIVE_LINK_ATTR_RE.sub(_rewrite, html)
 
 
 # -- CSS Class Registry -------------------------------------------------------
@@ -113,8 +207,19 @@ def _get_css_classes_from_content(content: MessageContent) -> list[str]:
             # Dynamic modifiers based on content attributes
             if isinstance(content, SystemMessage):
                 result.append(f"system-{content.level}")
-            elif isinstance(content, ToolResultMessage) and content.is_error:
-                result.append("error")
+            elif isinstance(content, ToolResultMessage):
+                if content.is_error:
+                    result.append("error")
+                # Memory interaction (recalled memory): tag the result so the
+                # filter/timeline hide or isolate the whole call+result pair.
+                if is_memory_tool(content.tool_name, content.file_path):
+                    result.append("memory")
+            elif isinstance(content, ToolUseMessage):
+                # Memory interaction (writing/recalling memory): a Read/Write/
+                # Edit on a path inside the project's memory/ directory (#192).
+                file_path = getattr(content.input, "file_path", None)
+                if is_memory_tool(content.tool_name, file_path):
+                    result.append("memory")
             return result
     return []
 
@@ -495,27 +600,17 @@ def render_collapsible_code(
     </details>"""
 
 
-def render_markdown_collapsible(
+def _markdown_collapsible(
     raw_content: str,
     css_class: str,
-    line_threshold: int = 20,
-    preview_line_count: int = 5,
+    render_fn: "Callable[[str], str]",
+    line_threshold: int,
+    preview_line_count: int,
 ) -> str:
-    """Render markdown content, making it collapsible if it exceeds a line threshold.
-
-    For long content, creates a collapsible details element with a preview.
-    For short content, renders inline with the specified CSS class.
-
-    Args:
-        raw_content: The raw text content to render as markdown
-        css_class: CSS class for the wrapper div (e.g., "task-prompt", "task-result")
-        line_threshold: Number of lines above which content becomes collapsible (default 20)
-        preview_line_count: Number of lines to show in the preview (default 5)
-
-    Returns:
-        HTML string with rendered markdown, optionally wrapped in collapsible details
-    """
-    rendered_html = render_markdown(raw_content)
+    """Shared body for the collapsible-markdown helpers, parameterized by the
+    markdown render function (escape=False for assistant/tool output vs
+    escape=True for untrusted content)."""
+    rendered_html = render_fn(raw_content)
 
     lines = raw_content.splitlines()
     if len(lines) <= line_threshold:
@@ -528,12 +623,63 @@ def render_markdown_collapsible(
     if len(lines) > preview_line_count:
         preview_text += "\n\n..."
     # Render truncated markdown (produces valid HTML with proper tag closure)
-    preview_html = render_markdown(preview_text)
+    preview_html = render_fn(preview_text)
 
     collapsible = render_collapsible_code(
         preview_html, rendered_html, len(lines), is_markdown=True
     )
     return f'<div class="{css_class}">{collapsible}</div>'
+
+
+def render_markdown_collapsible(
+    raw_content: str,
+    css_class: str,
+    line_threshold: int = 20,
+    preview_line_count: int = 5,
+) -> str:
+    """Render markdown content, making it collapsible if it exceeds a line threshold.
+
+    For long content, creates a collapsible details element with a preview.
+    For short content, renders inline with the specified CSS class.
+
+    Uses the ``escape=False`` renderer — for assistant/tool-authored content
+    (Task results, WebSearch/WebFetch, plans) that may emit pre-formed HTML.
+    For untrusted content (e.g. memory files), use
+    ``render_user_markdown_collapsible`` instead.
+
+    Args:
+        raw_content: The raw text content to render as markdown
+        css_class: CSS class for the wrapper div (e.g., "task-prompt", "task-result")
+        line_threshold: Number of lines above which content becomes collapsible (default 20)
+        preview_line_count: Number of lines to show in the preview (default 5)
+
+    Returns:
+        HTML string with rendered markdown, optionally wrapped in collapsible details
+    """
+    return _markdown_collapsible(
+        raw_content, css_class, render_markdown, line_threshold, preview_line_count
+    )
+
+
+def render_user_markdown_collapsible(
+    raw_content: str,
+    css_class: str,
+    line_threshold: int = 20,
+    preview_line_count: int = 5,
+) -> str:
+    """Like ``render_markdown_collapsible`` but with HTML escaping enabled.
+
+    For content that is not trusted to emit pre-formed HTML — e.g. auto-memory
+    files (#192), whose markdown may contain literal ``<script>``/HTML that must
+    render as escaped text, not live DOM, when the transcript is opened.
+    """
+    return _markdown_collapsible(
+        raw_content,
+        css_class,
+        render_user_markdown,
+        line_threshold,
+        preview_line_count,
+    )
 
 
 def render_file_content_collapsible(

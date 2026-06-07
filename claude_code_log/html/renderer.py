@@ -190,7 +190,9 @@ from .utils import (
     escape_html,
     get_message_emoji,
     get_template_environment,
+    is_memory_path,
     is_session_header,
+    memory_short_path,
     render_markdown_collapsible,
 )
 
@@ -990,16 +992,34 @@ class HtmlRenderer(Renderer):
         return f"<span class='task-async-hint'>[async {id_html}]</span>"
 
     def title_EditInput(self, input: EditInput, message: TemplateMessage) -> str:
-        """Title → '📝 Edit <file_path>'."""
+        """Title → '📝 Edit <file_path>', or '🧠 Edit memory <short-path>'
+        when the path is inside an auto-memory directory (#192)."""
+        if is_memory_path(input.file_path):
+            return self._tool_title(
+                message, "🧠", f"memory {memory_short_path(input.file_path)}"
+            )
         return self._tool_title(message, "📝", input.file_path)
 
     def title_WriteInput(self, input: WriteInput, message: TemplateMessage) -> str:
-        """Title → '📝 Write <file_path>'."""
+        """Title → '📝 Write <file_path>', or '🧠 Write memory <short-path>'
+        when the path is inside an auto-memory directory (#192)."""
+        if is_memory_path(input.file_path):
+            return self._tool_title(
+                message, "🧠", f"memory {memory_short_path(input.file_path)}"
+            )
         return self._tool_title(message, "📝", input.file_path)
 
     def title_ReadInput(self, input: ReadInput, message: TemplateMessage) -> str:
-        """Title → '📄 Read <file_path>[, lines N-M]'."""
-        summary = input.file_path
+        """Title → '📄 Read <file_path>[, lines N-M]', or
+        '🧠 Read memory <short-path>[, lines N-M]' when the path is inside an
+        auto-memory directory (recalled memory, #192)."""
+        is_memory = is_memory_path(input.file_path)
+        icon = "🧠" if is_memory else "📄"
+        summary = (
+            f"memory {memory_short_path(input.file_path)}"
+            if is_memory
+            else input.file_path
+        )
         # Add line range info if available. ``offset`` in the Read tool's
         # input is the 1-based starting line number (matches what the
         # ``toolUseResult.file.startLine`` and the cat-n line numbers in
@@ -1013,7 +1033,7 @@ class HtmlRenderer(Renderer):
                 summary = f"{summary}, line {start}"
             else:
                 summary = f"{summary}, lines {start}-{end}"
-        return self._tool_title(message, "📄", summary)
+        return self._tool_title(message, icon, summary)
 
     def title_GlobInput(self, input: GlobInput, message: TemplateMessage) -> str:
         """Title → '🔍 Glob <pattern>[ in path]'."""

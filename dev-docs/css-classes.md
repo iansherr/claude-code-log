@@ -50,6 +50,7 @@ This document provides a comprehensive reference for CSS class combinations used
 | `compacted` | `user` | Compacted conversation summary |
 | `command-output` | `user` | Slash command output content |
 | `error` | `tool_result` | Tool execution error |
+| `memory` | `tool_use`, `tool_result` | Auto-memory interaction: Read/Write/Edit on a `~/.claude/projects/<slug>/memory/` path (#192). Drives the 🧠 title, the `memory` filter toggle, and the timeline `memory` lane. |
 | `pair_first` | Various | First message in a pair |
 | `pair_last` | Various | Last message in a pair |
 | `pair_middle` | Various | Middle message (never used so far) |

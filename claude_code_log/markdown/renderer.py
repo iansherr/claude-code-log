@@ -13,7 +13,12 @@ import mistune
 from mistune.renderers.markdown import MarkdownRenderer as _MistuneMarkdownRenderer
 
 from ..cache import get_library_version
-from ..html.utils import is_well_formed_html, render_user_markdown
+from ..html.utils import (
+    is_memory_path,
+    is_well_formed_html,
+    memory_short_path,
+    render_user_markdown,
+)
 from ..utils import format_timestamp, generate_unified_diff, strip_error_tags
 from ..models import (
     AssistantTextMessage,
@@ -1658,15 +1663,24 @@ class MarkdownRenderer(Renderer):
         return f"{base} {suffix}"
 
     def title_ReadInput(self, input: ReadInput, _: TemplateMessage) -> str:
-        """Title → '👀 Read `filename`'."""
+        """Title → '👀 Read `filename`', or '🧠 Read memory `short-path`' for
+        an auto-memory path (#192; mirrors the HTML renderer)."""
+        if is_memory_path(input.file_path):
+            return f"🧠 Read memory `{memory_short_path(input.file_path)}`"
         return f"👀 Read `{Path(input.file_path).name}`"
 
     def title_WriteInput(self, input: WriteInput, _: TemplateMessage) -> str:
-        """Title → '✍️  Write `filename`'."""
+        """Title → '✍️  Write `filename`', or '🧠 Write memory `short-path`'
+        for an auto-memory path (#192)."""
+        if is_memory_path(input.file_path):
+            return f"🧠 Write memory `{memory_short_path(input.file_path)}`"
         return f"✍️  Write `{Path(input.file_path).name}`"
 
     def title_EditInput(self, input: EditInput, _: TemplateMessage) -> str:
-        """Title → '✏️  Edit `filename`'."""
+        """Title → '✏️  Edit `filename`', or '🧠 Edit memory `short-path`' for
+        an auto-memory path (#192)."""
+        if is_memory_path(input.file_path):
+            return f"🧠 Edit memory `{memory_short_path(input.file_path)}`"
         return f"✏️  Edit `{Path(input.file_path).name}`"
 
     def title_MultiEditInput(self, input: MultiEditInput, _: TemplateMessage) -> str:
