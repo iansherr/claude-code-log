@@ -887,6 +887,13 @@ def generate_template_messages(
     with log_timing("Link task_id consumers", t_start):
         _link_task_id_consumers(ctx)
 
+    # MUST be last (#174 PR3): splice each linked WorkflowRun's phase/agent
+    # sub-tree under its Workflow tool_use node. Registers synthetic + grafted
+    # nodes (appending to ctx.messages via the monotonic ctx.register
+    # allocator), so it has to follow every ctx.messages-iterating pass above.
+    with log_timing("Splice workflow runs", t_start):
+        _splice_workflow_runs(ctx)
+
     return root_messages, session_nav, ctx
 
 
@@ -2759,6 +2766,233 @@ def _link_workflow_runs(
             run = runs_by_task.get(match.group(1))
             if run is not None:
                 wf_input.workflow_run = run
+
+
+def _splice_workflow_runs(ctx: RenderingContext) -> None:
+    """Splice each linked ``WorkflowRun`` as a sub-tree under its Workflow
+    tool_use node — phases → agents → each agent's side-channel transcript
+    (#174 PR3, step 3).
+
+    Strategy B: a self-contained sub-tree built *after* ``_build_message_tree``
+    and attached via ``.children`` (the render walks recurse children, so no
+    ancestry rebuild is needed). Runs LAST in ``generate_template_messages``:
+    it appends synthetic + grafted nodes through ``ctx.register`` — an
+    inherently session-wide monotonic index allocator (``len(ctx.messages)``)
+    that keeps indices collision-free across several / concurrent workflows in
+    one session — so it must follow every pass that iterates ``ctx.messages``.
+    """
+    hosts: list[tuple[TemplateMessage, Any]] = []
+    for tm in _visible(ctx.messages):
+        content = tm.content
+        if (
+            isinstance(content, ToolUseMessage)
+            and content.tool_name == "Workflow"
+            and isinstance(content.input, WorkflowToolInput)
+            and content.input.workflow_run is not None
+        ):
+            hosts.append((tm, content.input.workflow_run))
+    # Register AFTER collecting hosts — registering mutates ctx.messages.
+    for host, run in hosts:
+        _splice_one_workflow_run(ctx, host, run)
+
+
+def _splice_one_workflow_run(
+    ctx: RenderingContext, host: TemplateMessage, run: Any
+) -> None:
+    """Build + attach one run's phase/agent sub-tree under ``host`` (the
+    Workflow tool_use node)."""
+    if host.message_index is None:
+        return
+    # Phase grouping when the snapshot supplied phases; else a flat agent list
+    # directly under the tool_use (running / no-snapshot view).
+    if getattr(run, "has_snapshot", False) and run.phases:
+        groups: list[tuple[Any, list[Any]]] = [
+            (phase, list(phase.agents)) for phase in run.phases
+        ]
+    else:
+        groups = [(None, list(run.agents))]
+
+    spliced_top: list[TemplateMessage] = []
+    for phase, agents in groups:
+        if phase is not None:
+            phase_tm = _new_synthetic_node(
+                ctx,
+                WorkflowPhaseMessage(
+                    meta=MessageMeta.empty(),
+                    title=phase.title,
+                    detail=phase.detail,
+                    agent_count=len(agents),
+                ),
+                parent=host,
+            )
+            spliced_top.append(phase_tm)
+            agent_parent: Optional[TemplateMessage] = phase_tm
+        else:
+            agent_parent = None
+
+        agent_nodes: list[TemplateMessage] = []
+        for agent in agents:
+            base = agent_parent if agent_parent is not None else host
+            agent_tm = _new_synthetic_node(
+                ctx,
+                WorkflowAgentMessage(
+                    meta=MessageMeta.empty(),
+                    label=agent.label or agent.agent_id,
+                    model=agent.model,
+                    state=agent.state,
+                    tokens=agent.tokens,
+                    tool_calls=agent.tool_calls,
+                    result=agent.result,
+                    result_preview=agent.result_preview,
+                ),
+                parent=base,
+            )
+            _graft_agent_sidechannel(ctx, agent_tm, agent.entries)
+            agent_nodes.append(agent_tm)
+
+        if agent_parent is not None:
+            agent_parent.children = agent_nodes
+        else:
+            spliced_top.extend(agent_nodes)
+
+    host.children = list(host.children) + spliced_top
+    _recount_spliced_children(ctx, host, spliced_top)
+
+
+def _new_synthetic_node(
+    ctx: RenderingContext, content: "MessageContent", *, parent: TemplateMessage
+) -> TemplateMessage:
+    """Register a synthetic workflow node (phase/agent) and set its ancestry
+    from ``parent``. Index allocation is via ``ctx.register`` (monotonic)."""
+    tm = TemplateMessage(content)
+    ctx.register(tm)
+    if parent.message_index is not None:
+        tm.ancestry = list(parent.ancestry) + [parent.message_index]
+    return tm
+
+
+def _graft_agent_sidechannel(
+    ctx: RenderingContext,
+    agent_tm: TemplateMessage,
+    entries: "list[TranscriptEntry]",
+) -> None:
+    """Render an agent's side-channel transcript and graft it under ``agent_tm``.
+
+    Re-renders ``entries`` through the normal pipeline (its own
+    ``RenderingContext``), then re-registers every produced node into the MAIN
+    ctx so each ``message_index`` is unique + monotonic, and remaps pairing
+    references (``pair_first``/``pair_middle``/``pair_last``) into the new index
+    space so markdown pairing (which resolves partners via the main ctx) still
+    works. Jump-to-call backlinks computed inside the sub-context are not
+    remapped — a best-effort limitation; workflow agent transcripts are
+    typically simple read-heavy chains.
+    """
+    if not entries:
+        return
+    sub_roots, _sub_nav, _sub_ctx = generate_template_messages(entries)
+    old_to_new: dict[int, int] = {}
+
+    def _reindex(node: TemplateMessage, parent: TemplateMessage) -> None:
+        old = node.message_index
+        ctx.register(node)
+        if old is not None and node.message_index is not None:
+            old_to_new[old] = node.message_index
+        if parent.message_index is not None:
+            node.ancestry = list(parent.ancestry) + [parent.message_index]
+        for child in node.children:
+            _reindex(child, node)
+
+    grafted: list[TemplateMessage] = []
+    for root in sub_roots:
+        if root.is_session_header:
+            # Defensive: agent transcripts don't emit a session header, but if
+            # one appears, graft its children rather than the header chrome.
+            for child in list(root.children):
+                _reindex(child, agent_tm)
+                grafted.append(child)
+        else:
+            _reindex(root, agent_tm)
+            grafted.append(root)
+
+    def _remap_pairs(node: TemplateMessage) -> None:
+        for attr in ("pair_first", "pair_middle", "pair_last"):
+            old = getattr(node, attr)
+            if old is not None and old in old_to_new:
+                setattr(node, attr, old_to_new[old])
+        for child in node.children:
+            _remap_pairs(child)
+
+    for node in grafted:
+        _remap_pairs(node)
+    agent_tm.children = grafted
+
+
+def _recount_spliced_children(
+    ctx: RenderingContext,
+    host: TemplateMessage,
+    new_children: list[TemplateMessage],
+) -> None:
+    """Set descendant counts over each newly-spliced subtree, then add their
+    contribution to ``host`` and propagate it up ``host``'s existing ancestors.
+
+    Counts are *incremented* on the host (not reset), so this is correct even
+    if the host already had tree children. Within the workflow subtree every
+    child is counted (the pairing-skip nuance of
+    :func:`_mark_messages_with_children` is dropped — these are fold-control
+    label hints inside the run, where the simpler convention is fine)."""
+
+    def _counts(node: TemplateMessage) -> None:
+        node.immediate_children_count = 0
+        node.total_descendants_count = 0
+        node.immediate_children_by_type = {}
+        node.total_descendants_by_type = {}
+        for child in node.children:
+            _counts(child)
+            child_type = child.type
+            node.immediate_children_count += 1
+            node.immediate_children_by_type[child_type] = (
+                node.immediate_children_by_type.get(child_type, 0) + 1
+            )
+            node.total_descendants_count += 1 + child.total_descendants_count
+            node.total_descendants_by_type[child_type] = (
+                node.total_descendants_by_type.get(child_type, 0) + 1
+            )
+            for sub_type, sub_count in child.total_descendants_by_type.items():
+                node.total_descendants_by_type[sub_type] = (
+                    node.total_descendants_by_type.get(sub_type, 0) + sub_count
+                )
+
+    added_total = 0
+    added_by_type: dict[str, int] = {}
+    for child in new_children:
+        _counts(child)
+        child_type = child.type
+        host.immediate_children_count += 1
+        host.immediate_children_by_type[child_type] = (
+            host.immediate_children_by_type.get(child_type, 0) + 1
+        )
+        contribution = 1 + child.total_descendants_count
+        added_total += contribution
+        added_by_type[child_type] = added_by_type.get(child_type, 0) + 1
+        for sub_type, sub_count in child.total_descendants_by_type.items():
+            added_by_type[sub_type] = added_by_type.get(sub_type, 0) + sub_count
+
+    host.total_descendants_count += added_total
+    for sub_type, sub_count in added_by_type.items():
+        host.total_descendants_by_type[sub_type] = (
+            host.total_descendants_by_type.get(sub_type, 0) + sub_count
+        )
+    # Propagate the added descendants up the host's existing ancestors so their
+    # fold-control labels stay accurate.
+    for ancestor_index in host.ancestry:
+        ancestor = ctx.get(ancestor_index)
+        if ancestor is None:
+            continue
+        ancestor.total_descendants_count += added_total
+        for sub_type, sub_count in added_by_type.items():
+            ancestor.total_descendants_by_type[sub_type] = (
+                ancestor.total_descendants_by_type.get(sub_type, 0) + sub_count
+            )
 
 
 def _link_async_notifications(

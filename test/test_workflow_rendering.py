@@ -258,3 +258,103 @@ class TestWorkflowMarkdownEscaping:
         assert "<b>" not in header
         # Neutralized text still readable in the header.
         assert "alert(1)" in header
+
+
+class TestWorkflowRunSplice:
+    """PR3 step 3: the parsed WorkflowRun tree is spliced under its Workflow
+    tool_use node — phases → agents → each agent's side-channel transcript —
+    on the nested DOM, in both HTML and Markdown."""
+
+    def _tree(self):
+        from claude_code_log.converter import load_directory_transcripts
+        from claude_code_log.models import ToolUseMessage
+        from claude_code_log.renderer import generate_template_messages
+
+        msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
+        _roots, _nav, ctx = generate_template_messages(msgs, session_tree=tree)
+        host = next(
+            tm
+            for tm in ctx.messages
+            if tm is not None
+            and isinstance(tm.content, ToolUseMessage)
+            and tm.content.tool_name == "Workflow"
+        )
+        return host, ctx
+
+    def test_phases_and_agents_nested_under_tool_use(self) -> None:
+        host, _ctx = self._tree()
+        # Two phases (Map, Synthesize) attached to the Workflow tool_use.
+        phases = [c for c in host.children if c.type == "workflow_phase"]
+        assert len(phases) == 2
+        titles = [c.content.title for c in phases]  # type: ignore[attr-defined]
+        assert titles == ["Map", "Synthesize"]
+        # Map has 2 agents, Synthesize 1; all are workflow_agent children.
+        agents_by_phase = [
+            [c for c in p.children if c.type == "workflow_agent"] for p in phases
+        ]
+        assert [len(a) for a in agents_by_phase] == [2, 1]
+
+    def test_agent_sidechannel_grafted_beneath_agent(self) -> None:
+        host, _ctx = self._tree()
+        first_phase = next(c for c in host.children if c.type == "workflow_phase")
+        first_agent = next(
+            c for c in first_phase.children if c.type == "workflow_agent"
+        )
+        # The agent's 3 side-channel entries (user, assistant, assistant) are
+        # grafted as its children; the assistant's tool_use nests one deeper.
+        child_types = [c.type for c in first_agent.children]
+        assert child_types == ["user", "assistant", "assistant"]
+        assert any(
+            gc.type == "tool_use" for c in first_agent.children for gc in c.children
+        )
+
+    def test_spliced_indices_unique_and_monotonic(self) -> None:
+        _host, ctx = self._tree()
+        indices = [tm.message_index for tm in ctx.messages if tm is not None]
+        assert len(indices) == len(set(indices))  # no collisions across the splice
+
+    def test_html_renders_phase_and_agent_cards(self) -> None:
+        from claude_code_log.converter import load_directory_transcripts
+
+        msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
+        html = generate_html(msgs, session_tree=tree)
+        # Rendered-card markers (hyphenated) — distinct from the underscore
+        # `workflow_phase`/`workflow_agent` literals the timeline JS always
+        # carries, so these prove the cards actually rendered.
+        assert "workflow-phase-meta" in html and "workflow-agent-meta" in html
+        assert "Phase: Map" in html and "Phase: Synthesize" in html
+        assert "review:loader" in html and "review:hierarchy" in html
+        # StructuredOutput dict result is JSON-highlighted in the agent card.
+        assert "workflow-agent-result" in html
+        assert "Discovery glob misses" in html  # result content surfaced
+
+    def test_markdown_renders_phase_and_agent_tree(self) -> None:
+        from claude_code_log.converter import load_directory_transcripts
+
+        msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
+        md = MarkdownRenderer().generate(msgs, session_tree=tree)
+        assert "Phase: Map" in md and "Phase: Synthesize" in md
+        assert "review:loader" in md
+        # Dict result fenced as JSON; the string-result agent's markdown body
+        # ("## Plan") renders directly.
+        assert '"area": "loader"' in md
+        assert "Land parsing first" in md
+
+    def test_non_workflow_transcript_has_no_spliced_nodes(self) -> None:
+        # The splice is gated on a linked workflow_run, so an ordinary
+        # transcript must yield no workflow_phase / workflow_agent tree nodes.
+        # (Asserting on the rendered tree, not on the HTML string — the timeline
+        # JS embeds the `workflow_phase`/`workflow_agent` literals on every
+        # page regardless of content.)
+        from claude_code_log.converter import load_transcript
+        from claude_code_log.renderer import generate_template_messages
+
+        other = Path(__file__).parent / "test_data" / "representative_messages.jsonl"
+        if not other.is_file():
+            import pytest
+
+            pytest.skip("no representative fixture available")
+        _roots, _nav, ctx = generate_template_messages(load_transcript(other))
+        types = {tm.type for tm in ctx.messages if tm is not None}
+        assert "workflow_phase" not in types
+        assert "workflow_agent" not in types
