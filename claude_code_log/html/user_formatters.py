@@ -330,6 +330,15 @@ def extract_embedded_json(text: str) -> "tuple[str, dict[str, Any]]":
     return "\n".join(out_lines), blocks
 
 
+# Top-level breadth cap for extracted blocks, mirroring the params-table
+# breadth discipline (CodeRabbit, PR #216): a folded table still GENERATES
+# one row per element, so a huge embedded array must not tabulate. The
+# fallback is an escaped <pre> in a fold — proportional to the source text,
+# like the un-extracted prompt would have been (and deliberately not
+# Pygments-highlighted, which is itself generation-heavy at this size).
+_EMBEDDED_JSON_MAX_ITEMS = 200
+
+
 def _embedded_json_html(parsed: Any) -> str:
     """Structured rendering for an extracted JSON block — the generic tool
     params table (upgraded to the hybrid JSON/Markdown renderer when that
@@ -338,6 +347,13 @@ def _embedded_json_html(parsed: Any) -> str:
         params = {str(k): v for k, v in cast("dict[Any, Any]", parsed).items()}
     else:
         params = {str(i): v for i, v in enumerate(cast("list[Any]", parsed))}
+    if len(params) > _EMBEDDED_JSON_MAX_ITEMS:
+        dumped = escape_html(json.dumps(parsed, indent=2, ensure_ascii=False))
+        return (
+            "<div class='embedded-json'><details class='tool-param-collapsible'>"
+            f"<summary>{len(params)} items (JSON)</summary>"
+            f"<pre>{dumped}</pre></details></div>"
+        )
     return f"<div class='embedded-json'>{render_params_table(params)}</div>"
 
 

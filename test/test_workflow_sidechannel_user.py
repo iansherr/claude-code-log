@@ -138,6 +138,24 @@ class TestSidechannelUserRendering:
         )
         assert "<strong>ADVERSARIAL</strong>" in html
 
+    def test_breadth_cap_boundary(self) -> None:
+        # Generation-side discipline (CodeRabbit, PR #216): at the cap the
+        # block tabulates; past it, an escaped JSON fold — no one-<tr>-per-
+        # element generation for huge embedded arrays.
+        import json as _json
+
+        def prompt(n: int) -> str:
+            block = _json.dumps(list(range(n)), indent=2)
+            return f"Data:\n\n{block}\n\nEnd."
+
+        at_cap = format_workflow_sidechannel_user_text(prompt(200))
+        assert "tool-params-table" in at_cap
+
+        past_cap = format_workflow_sidechannel_user_text(prompt(201))
+        assert "tool-params-table" not in past_cap
+        assert "201 items (JSON)" in past_cap
+        assert "embedded-json" in past_cap
+
     def test_user_content_stays_escaped(self) -> None:
         html = format_workflow_sidechannel_user_text(
             'Try <script>alert(1)</script>:\n\n{\n  "x": "<img src=y onerror=z>"\n}\n\nEnd.'
