@@ -556,7 +556,7 @@ def _apply_subagent_meta_links(
             elif isinstance(item, ToolResultContent) and item.tool_use_id in meta_map:
                 result_entries.setdefault(item.tool_use_id, msg)
 
-    for tool_use_id, spawned in meta_map.items():
+    for tool_use_id, spawned in sorted(meta_map.items()):
         # Self-guard: an agent can't spawn itself; skip a sidecar that
         # (through data corruption) would claim otherwise.
         if spawned == own_agent_id:
@@ -564,6 +564,17 @@ def _apply_subagent_meta_links(
         anchor = result_entries.get(tool_use_id) or use_entries.get(tool_use_id)
         if anchor is None:
             # Sidecar belongs to another transcript of the flat family.
+            continue
+        if anchor.spawnedAgentId and anchor.spawnedAgentId != spawned:
+            # One anchor entry, two spawns: only reachable when a single
+            # entry carries several spawn tool_uses AND more than one of
+            # them lacks a tool_result (results anchor 1:1 on their own
+            # entries). Claude Code streams one content block per
+            # assistant entry, so this doesn't occur in real transcripts
+            # — but never silently overwrite: keep the first link and
+            # let the extra transcript load anyway (it relocates via the
+            # defensive tail-append instead of a spawn anchor).
+            agent_ids.add(spawned)
             continue
         anchor.spawnedAgentId = spawned
         if not anchor.isSidechain and not anchor.agentId:

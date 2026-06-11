@@ -215,6 +215,13 @@ class BaseTranscriptEntry(BaseModel):
     # *membership* (whose transcript this entry belongs to) — inside an agent
     # transcript the two necessarily differ, which is what makes nested
     # agent→agent spawns (issue #213) linkable.
+    #
+    # A single field suffices because Claude Code streams one content block
+    # per assistant entry (parallel spawns arrive as separate entries) and
+    # tool_results anchor 1:1 on their own entries. The degenerate
+    # several-resultless-spawns-in-one-entry shape — unobserved in real
+    # transcripts — degrades to the relocation tail-append, never to data
+    # loss (see ``converter._apply_subagent_meta_links``).
     spawnedAgentId: Optional[str] = None
 
 
