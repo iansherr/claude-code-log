@@ -1274,11 +1274,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -1317,6 +1320,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -1345,6 +1366,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -4759,6 +4835,90 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -7213,11 +7373,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -7256,6 +7419,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -7284,6 +7465,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -10596,6 +10832,90 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
@@ -15234,11 +15554,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -15277,6 +15600,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -15305,6 +15646,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -18834,6 +19230,90 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -21288,11 +21768,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -21331,6 +21814,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -21359,6 +21860,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -25155,6 +25711,90 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -27609,11 +28249,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -27652,6 +28295,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -27680,6 +28341,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -30963,48 +31679,165 @@
               </div>
           </div>
           <div class='debug-info'>assistant_00 &rarr; assistant_00</div>
-          <div class='content'><table class='tool-params-table'>
+          <div class='content'><div class='tool-params-root'><div class='tool-params-controls'><button type='button' class='tool-params-expand-all' data-state='collapsed'>&#9654; expand all</button></div><table class='tool-params-table'>
               <tr>
                   <td class='tool-param-key'>todos</td>
                   <td class='tool-param-value'>
-                          <details class='tool-param-collapsible'>
+                          <details class='tool-param-collapsible tool-param-collapsible-rows'>
                               <summary><span class='tool-param-preview'>[
     &quot;broken_todo&quot;,
     {
       &quot;id&quot;: &quot;2&quot;,
       &quot;content&quot;: &quot;Implement core functionality&quot;,
-      &quot;status&quot;: &quot;...</span></summary>
-                              <pre class='tool-param-structured'>[
-    &quot;broken_todo&quot;,
-    {
-      &quot;id&quot;: &quot;2&quot;,
-      &quot;content&quot;: &quot;Implement core functionality&quot;,
-      &quot;status&quot;: &quot;in_progress&quot;,
-      &quot;priority&quot;: &quot;high&quot;
-    },
-    {
-      &quot;id&quot;: &quot;3&quot;,
-      &quot;content&quot;: &quot;Add comprehensive tests&quot;,
-      &quot;status&quot;: &quot;pending&quot;,
-      &quot;priority&quot;: &quot;medium&quot;
-    },
-    {
-      &quot;id&quot;: &quot;4&quot;,
-      &quot;content&quot;: &quot;Write user documentation&quot;,
-      &quot;status&quot;: &quot;pending&quot;,
-      &quot;priority&quot;: &quot;low&quot;
-    },
-    {
-      &quot;id&quot;: &quot;5&quot;,
-      &quot;content&quot;: &quot;Perform code review&quot;,
-      &quot;status&quot;: &quot;pending&quot;,
-      &quot;priority&quot;: &quot;medium&quot;
-    }
-  ]</pre>
+      &quot;status&quot;: &quot;...</span><span class='tool-param-collapse-hint'>collapse</span><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='rows'>&#9654; expand all rows</button></summary>
+                              <table class='tool-params-table tool-params-nested'>
+              <tr>
+                  <td class='tool-param-key'>0</td>
+                  <td class='tool-param-value'>broken_todo</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>1</td>
+                  <td class='tool-param-value'>
+                          <details class='tool-param-collapsible'>
+                              <summary><span class='tool-param-preview'>{
+    &quot;id&quot;: &quot;2&quot;,
+    &quot;content&quot;: &quot;Implement core functionality&quot;,
+    &quot;status&quot;: &quot;in_progress&quot;,
+    &quot;priority&quot;:...</span></summary>
+                              <table class='tool-params-table tool-params-nested'>
+              <tr>
+                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-value'>2</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-value'>Implement core functionality</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-value'>in_progress</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-value'>high</td>
+              </tr>
+          </table>
                           </details>
                       </td>
               </tr>
-          </table></div>
+          
+              <tr>
+                  <td class='tool-param-key'>2</td>
+                  <td class='tool-param-value'>
+                          <details class='tool-param-collapsible'>
+                              <summary><span class='tool-param-preview'>{
+    &quot;id&quot;: &quot;3&quot;,
+    &quot;content&quot;: &quot;Add comprehensive tests&quot;,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;priority&quot;: &quot;medium&quot;...</span></summary>
+                              <table class='tool-params-table tool-params-nested'>
+              <tr>
+                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-value'>3</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-value'>Add comprehensive tests</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-value'>pending</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-value'>medium</td>
+              </tr>
+          </table>
+                          </details>
+                      </td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>3</td>
+                  <td class='tool-param-value'>
+                          <details class='tool-param-collapsible'>
+                              <summary><span class='tool-param-preview'>{
+    &quot;id&quot;: &quot;4&quot;,
+    &quot;content&quot;: &quot;Write user documentation&quot;,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;priority&quot;: &quot;low&quot;
+  }</span></summary>
+                              <table class='tool-params-table tool-params-nested'>
+              <tr>
+                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-value'>4</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-value'>Write user documentation</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-value'>pending</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-value'>low</td>
+              </tr>
+          </table>
+                          </details>
+                      </td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>4</td>
+                  <td class='tool-param-value'>
+                          <details class='tool-param-collapsible'>
+                              <summary><span class='tool-param-preview'>{
+    &quot;id&quot;: &quot;5&quot;,
+    &quot;content&quot;: &quot;Perform code review&quot;,
+    &quot;status&quot;: &quot;pending&quot;,
+    &quot;priority&quot;: &quot;medium&quot;
+  }</span></summary>
+                              <table class='tool-params-table tool-params-nested'>
+              <tr>
+                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-value'>5</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-value'>Perform code review</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-value'>pending</td>
+              </tr>
+          
+              <tr>
+                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-value'>medium</td>
+              </tr>
+          </table>
+                          </details>
+                      </td>
+              </tr>
+          </table>
+                          </details>
+                      </td>
+              </tr>
+          </table></div></div>
           
       </div>
       
@@ -31320,6 +32153,90 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
@@ -33775,11 +34692,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -33818,6 +34738,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -33846,6 +34784,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -37548,6 +38541,90 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -40002,11 +41079,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -40045,6 +41125,24 @@
       border-radius: 3px;
   }
   
+  /* Nested tables produced by the recursive params renderer: keep the
+     flat look but let the key column shrink (index/short keys) so depth
+     doesn't eat horizontal space. */
+  .tool-params-nested .tool-param-key {
+      width: auto;
+      min-width: 4em;
+  }
+  
+  /* Markdown-rendered string values: suppress the outer paragraph
+     margins so a prose value aligns with plain-text cells. */
+  .tool-param-value .tool-param-markdown > p:first-child {
+      margin-top: 0;
+  }
+  
+  .tool-param-value .tool-param-markdown > p:last-child {
+      margin-bottom: 0;
+  }
+  
   .tool-param-collapsible {
       margin: 0;
   }
@@ -40073,6 +41171,61 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -43601,6 +44754,90 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              // Derive the button label/state from the actual row state, so
+              // it stays in sync whatever opened the rows (button click,
+              // toggle-all, manual clicks).
+              function syncRowsToggle(details) {
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (!button) return;
+                  const rows = details.querySelectorAll(rowDetailsSelector);
+                  const allOpen = rows.length > 0 &&
+                      Array.from(rows).every(row => row.open);
+                  const kind = button.dataset.kind || 'rows';
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen
+                      ? '▼ collapse all ' + kind
+                      : '▶ expand all ' + kind;
+              }
+  
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  syncRowsToggle(details);
+              });
+  
+              // Capturing listener (toggle doesn't bubble) keeps every fold
+              // consistent: closing one restores its initial state (rows
+              // collapsed — nested folds reset recursively through this same
+              // listener); any row toggling re-syncs its parent's button.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement) || details.tagName !== 'DETAILS') return;
+                  if (details.classList.contains('tool-param-collapsible-rows')) {
+                      if (!details.open) {
+                          details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                              row.open = false;
+                          });
+                      }
+                      syncRowsToggle(details);
+                  }
+                  const cell = details.parentElement;
+                  const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
+                  if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {

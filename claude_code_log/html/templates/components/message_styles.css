@@ -920,11 +920,14 @@ pre > code {
     border-right: #00000017 1px solid;
 }
 
-/* Tool parameter table styling */
+/* Tool parameter table styling. The percentage font-size compounds at
+   each nesting level of the recursive params renderer — a deliberate
+   depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+   become unreadable. */
 .tool-params-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 80%;
+    font-size: 90%;
 }
 
 /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -963,6 +966,24 @@ pre > code {
     border-radius: 3px;
 }
 
+/* Nested tables produced by the recursive params renderer: keep the
+   flat look but let the key column shrink (index/short keys) so depth
+   doesn't eat horizontal space. */
+.tool-params-nested .tool-param-key {
+    width: auto;
+    min-width: 4em;
+}
+
+/* Markdown-rendered string values: suppress the outer paragraph
+   margins so a prose value aligns with plain-text cells. */
+.tool-param-value .tool-param-markdown > p:first-child {
+    margin-top: 0;
+}
+
+.tool-param-value .tool-param-markdown > p:last-child {
+    margin-bottom: 0;
+}
+
 .tool-param-collapsible {
     margin: 0;
 }
@@ -991,6 +1012,61 @@ pre > code {
 .tool-param-full {
     margin-top: 4px;
     word-break: break-all;
+}
+
+/* Structured-table folds carry an explicit collapse hint plus a
+   rows-toggle button in the summary, so suppress the generic ::after
+   "collapse" hint for them and show the real elements only when open. */
+.tool-param-collapsible-rows[open] > summary::after {
+    content: none;
+}
+
+.tool-param-collapse-hint,
+.tool-param-rows-toggle {
+    display: none;
+}
+
+.tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+    display: inline;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+    display: inline;
+    margin-left: 1.5em;
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: var(--text-muted);
+    font-style: italic;
+    cursor: pointer;
+}
+
+.tool-param-rows-toggle:hover {
+    color: var(--text-primary);
+}
+
+/* Top-level expand/collapse-all control above a params/result table —
+   same quiet look as the in-summary rows-toggle. */
+.tool-params-controls {
+    margin-bottom: 2px;
+}
+
+.tool-params-expand-all {
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 80%;
+    color: var(--text-muted);
+    font-style: italic;
+    cursor: pointer;
+}
+
+.tool-params-expand-all:hover {
+    color: var(--text-primary);
 }
 
 .tool-params-empty {
