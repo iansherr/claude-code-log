@@ -962,23 +962,38 @@ def extract_session_dag_lines(
                 first_timestamp=sorted_nodes[0].timestamp,
             )
         else:
-            # Merge non-branch DAG-lines that share the same session_id
-            # (happens when multiple roots exist due to orphan promotion)
-            trunk_lines = [dl for dl in dag_lines if dl.session_id == session_id]
-            branch_lines = [dl for dl in dag_lines if dl.session_id != session_id]
-            if trunk_lines:
-                # Merge all trunk lines into one, ordered by first_timestamp
-                trunk_lines.sort(key=lambda dl: dl.first_timestamp)
+            # Merge DAG-line segments that share a session_id, ordered by
+            # first_timestamp. Multiple segments arise for the trunk when a
+            # session has several roots (orphan promotion, /compact) and for
+            # any line — trunk or *branch* — when continuation-fork
+            # linearization re-enqueues children as same-line segments.
+            # Branch segments must be merged too: inserting them by key
+            # would keep only the last segment and silently drop the rest.
+            lines_by_id: dict[str, list[SessionDAGLine]] = {}
+            for dl in dag_lines:
+                lines_by_id.setdefault(dl.session_id, []).append(dl)
+            for line_id, segments in lines_by_id.items():
+                if len(segments) == 1:
+                    sessions[line_id] = segments[0]
+                    continue
+                segments.sort(key=lambda dl: dl.first_timestamp)
                 merged_uuids: list[str] = []
-                for tl in trunk_lines:
-                    merged_uuids.extend(tl.uuids)
-                sessions[session_id] = SessionDAGLine(
-                    session_id=session_id,
+                for seg in segments:
+                    merged_uuids.extend(seg.uuids)
+                # The earliest segment starts the line, so its attachment
+                # metadata (fork point, branch flags) describes the whole
+                # merged line.
+                first = segments[0]
+                sessions[line_id] = SessionDAGLine(
+                    session_id=line_id,
                     uuids=merged_uuids,
-                    first_timestamp=trunk_lines[0].first_timestamp,
+                    first_timestamp=first.first_timestamp,
+                    parent_session_id=first.parent_session_id,
+                    attachment_uuid=first.attachment_uuid,
+                    is_branch=first.is_branch,
+                    original_session_id=first.original_session_id,
+                    is_sidechain=first.is_sidechain,
                 )
-            for dag_line in branch_lines:
-                sessions[dag_line.session_id] = dag_line
 
     return sessions
 

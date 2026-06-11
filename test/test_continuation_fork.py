@@ -151,6 +151,75 @@ def _deep_continuation_chain(parent, n, start_sec):
     return entries
 
 
+class TestContinuationForkInsideBranch:
+    """A continuation fork occurring *within* a rewind branch must not drop
+    branch segments.
+
+    The re-enqueued continuation/result chains carry the branch's line id,
+    so the branch ends up as multiple SessionDAGLine segments. Inserting
+    branch lines by key would keep only the last segment — the merge in
+    ``extract_session_dag_lines`` must cover branch ids too (PR #214
+    review finding).
+    """
+
+    def _build(self):
+        entries = [
+            _user("u0", None, "go", "2025-01-01T00:00:00Z"),
+            _assistant(
+                "a1",
+                "u0",
+                [{"type": "text", "text": "which approach?"}],
+                "2025-01-01T00:00:01Z",
+                "end_turn",
+            ),
+            # Real rewind at a1: two user prompts at different timestamps.
+            _user("u1", "a1", "try approach A", "2025-01-01T00:00:30Z"),
+            _user("u2", "a1", "actually, approach B", "2025-01-01T00:10:00Z"),
+            # Branch 1 contains a continuation fork at a2.
+            _assistant("a2", "u1", [_tool_use("X")], "2025-01-01T00:00:31Z"),
+            _assistant("a3", "a2", [_tool_use("Y")], "2025-01-01T00:00:32Z"),
+            _user("u3", "a2", _tool_result("X"), "2025-01-01T00:03:00Z"),
+            _assistant(
+                "a4",
+                "u3",
+                [{"type": "text", "text": "X done"}],
+                "2025-01-01T00:03:01Z",
+                "end_turn",
+            ),
+            # Branch 2 is a plain reply.
+            _assistant(
+                "a5",
+                "u2",
+                [{"type": "text", "text": "doing B"}],
+                "2025-01-01T00:10:01Z",
+                "end_turn",
+            ),
+        ]
+        # Deep live chain under a3 so the continuation fork isn't a V2 dead end.
+        entries += _deep_continuation_chain("a3", 25, 0)
+        return build_dag_from_entries(entries)
+
+    def test_branch_segments_are_merged_not_overwritten(self):
+        tree = self._build()
+        branches = [s for s in tree.sessions.values() if s.is_branch]
+        assert len(branches) == 2
+        (b1,) = [b for b in branches if "u1" in b.uuids]
+        # Every segment of branch 1 survives the merge:
+        for uuid in ("u1", "a2", "a3", "c24", "u3", "a4"):
+            assert uuid in b1.uuids, f"{uuid} dropped from branch line"
+        # Continuation inline after its tool_use; lagging result after it.
+        assert b1.uuids.index("a2") < b1.uuids.index("a3") < b1.uuids.index("u3")
+
+    def test_merged_branch_keeps_fork_point_attachment(self):
+        tree = self._build()
+        b1 = next(b for b in tree.sessions.values() if "u1" in b.uuids)
+        # The merged line's attachment is the rewind fork point (a1), not
+        # the continuation fork's parent (a2) from a later segment.
+        assert b1.attachment_uuid == "a1"
+        b2 = next(b for b in tree.sessions.values() if "u2" in b.uuids)
+        assert b2.attachment_uuid == "a1"
+
+
 class TestContinuationForkLinearization:
     def _build(self):
         # a1(tool_use X) → { a2 (deep live continuation), u1 (tool_result X) }
