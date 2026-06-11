@@ -1048,6 +1048,27 @@ pre > code {
     color: var(--text-primary);
 }
 
+/* Top-level expand/collapse-all control above a params/result table —
+   same quiet look as the in-summary rows-toggle. */
+.tool-params-controls {
+    margin-bottom: 2px;
+}
+
+.tool-params-expand-all {
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 80%;
+    color: var(--text-muted);
+    font-style: italic;
+    cursor: pointer;
+}
+
+.tool-params-expand-all:hover {
+    color: var(--text-primary);
+}
+
 .tool-params-empty {
     color: var(--text-muted);
     font-style: italic;

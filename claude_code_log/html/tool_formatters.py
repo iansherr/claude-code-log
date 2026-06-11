@@ -1131,6 +1131,27 @@ def _table_fold_html(formatted_value: str, table_html: str, kind: str) -> str:
                     """
 
 
+def _params_root_html(table_html: str) -> str:
+    """Wrap a top-level params/result table with an expand-all control.
+
+    The button opens/closes every fold inside this renderer at once and
+    keeps the nested rows-toggle buttons in sync (wired up in
+    transcript.html, state derived from the DOM). Only emitted when the
+    tree actually contains folds — no dead button on flat tables.
+    """
+    if "<details" not in table_html:
+        return table_html
+    return (
+        "<div class='tool-params-root'>"
+        "<div class='tool-params-controls'>"
+        "<button type='button' class='tool-params-expand-all'"
+        " data-state='collapsed'>&#9654; expand all</button>"
+        "</div>"
+        f"{table_html}"
+        "</div>"
+    )
+
+
 def _param_value_html(value: Any, depth: int) -> str:
     """Dispatch a single param value to its hybrid rendering."""
     if isinstance(value, (dict, list)):
@@ -1169,7 +1190,7 @@ def render_params_table(params: dict[str, Any]) -> str:
     if not params:
         return "<div class='tool-params-empty'>No parameters</div>"
 
-    return _params_table_html(params.items(), 0)
+    return _params_root_html(_params_table_html(params.items(), 0))
 
 
 # -- Tool Result Content Fallback Formatter -----------------------------------
@@ -1203,7 +1224,7 @@ def _json_result_table_html(raw_content: str) -> Optional[str]:
     # render as an unfolded thousand-row table.
     if len(raw_content) > 200:
         table_html = _table_fold_html(raw_content, table_html, kind)
-    return f"<div class='tool-result-json'>{table_html}</div>"
+    return f"<div class='tool-result-json'>{_params_root_html(table_html)}</div>"
 
 
 def format_tool_result_content_raw(tool_result: ToolResultContent) -> str:

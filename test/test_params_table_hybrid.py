@@ -162,6 +162,39 @@ class TestNestedStructures:
         assert "{}" in html and "[]" in html
 
 
+class TestExpandAllControl:
+    """Top-level expand-all button above renderers that contain folds."""
+
+    def test_control_present_when_folds_exist(self):
+        html = render_params_table({"cfg": {"k": 1}})
+        assert "tool-params-root" in html
+        assert "tool-params-expand-all" in html
+        assert "expand all" in html
+        # The control sits above the table.
+        assert html.index("tool-params-expand-all") < html.index("<table")
+
+    def test_no_control_on_flat_params(self):
+        html = render_params_table({"path": "/src", "mode": "fast"})
+        assert "tool-params-root" not in html
+        assert "tool-params-expand-all" not in html
+
+    def test_string_fold_counts_as_fold(self):
+        html = render_params_table({"prompt": "words " * 40})
+        assert "tool-params-expand-all" in html
+
+    def test_json_result_with_folds_gets_control(self):
+        import json
+
+        content = json.dumps([{"id": i, "msg": f"row {i}"} for i in range(40)])
+        html = format_tool_result_content_raw(_tool_result(content))
+        assert "tool-result-json" in html
+        assert "tool-params-expand-all" in html
+
+    def test_small_flat_json_result_has_no_control(self):
+        html = format_tool_result_content_raw(_tool_result('{"a": "b"}'))
+        assert "tool-params-expand-all" not in html
+
+
 class TestDepthGuard:
     """Past the max depth, values fall back to the JSON dump."""
 

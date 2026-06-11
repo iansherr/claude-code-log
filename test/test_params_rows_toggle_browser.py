@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 from claude_code_log.converter import load_transcript
 from claude_code_log.html.renderer import generate_html
@@ -147,7 +147,7 @@ class TestParamsRowsToggleBrowser:
 
         row_states = outer.evaluate(ROW_DETAILS_JS)
         assert not any(row_states), "reopened fold must show rows collapsed"
-        assert "expand all rows" in (button.text_content() or "")
+        expect(button).to_contain_text("expand all rows")
 
     @pytest.mark.browser
     def test_toggle_all_keeps_button_in_sync(self, page: Page) -> None:
@@ -163,9 +163,69 @@ class TestParamsRowsToggleBrowser:
         page.locator("#toggleDetails").click()
         assert outer.evaluate("el => el.open")
         assert all(outer.evaluate(ROW_DETAILS_JS))
-        assert "collapse all rows" in (button.text_content() or "")
+        expect(button).to_contain_text("collapse all rows")
 
         # And the button still works from this externally-reached state.
         button.click()
         assert not any(outer.evaluate(ROW_DETAILS_JS))
         assert "expand all rows" in (button.text_content() or "")
+
+    @pytest.mark.browser
+    def test_expand_all_control_cascades(self, page: Page) -> None:
+        """The top-level expand-all opens every fold in the renderer and
+        flips the nested rows-toggle buttons; selectively closing one
+        fold flips the top button back to 'expand all'."""
+        html = self._render(_entries_with_structured_list())
+        page.goto(f"file://{html}")
+
+        root = page.locator(".tool-params-root").first
+        expand_all = root.locator(".tool-params-expand-all").first
+        all_open_js = (
+            "el => Array.from(el.querySelectorAll('details')).every(d => d.open)"
+        )
+        all_closed_js = (
+            "el => Array.from(el.querySelectorAll('details')).every(d => !d.open)"
+        )
+
+        assert root.evaluate(all_closed_js), "everything starts collapsed"
+        assert "expand all" in (expand_all.text_content() or "")
+
+        expand_all.click()
+        assert root.evaluate(all_open_js), "expand all must open every fold"
+        assert "collapse all" in (expand_all.text_content() or "")
+        # The toggle event is dispatched as a queued task, so label
+        # updates from the toggle listener are asynchronous — poll.
+        page.wait_for_function(
+            "() => Array.from(document.querySelectorAll("
+            "'.tool-params-root .tool-param-rows-toggle'))"
+            ".every(b => b.textContent.includes('collapse all'))"
+        )
+
+        # Selectively close one row: mixed state → top offers expand again.
+        outer = root.locator("details.tool-param-collapsible-rows").first
+        row = outer.locator(":scope > table > tbody > tr > td > details").first
+        row.locator("summary").first.click()
+        expect(expand_all).to_contain_text("expand all")
+
+        # Re-expand, then collapse all back to the initial state.
+        expand_all.click()
+        assert root.evaluate(all_open_js)
+        expand_all.click()
+        assert root.evaluate(all_closed_js)
+        assert "expand all" in (expand_all.text_content() or "")
+
+    @pytest.mark.browser
+    def test_global_toggle_all_activates_expand_all(self, page: Page) -> None:
+        """The global 'Open all details' button counts as expand-all for
+        every params renderer: its top button must read 'collapse all'."""
+        html = self._render(_entries_with_structured_list())
+        page.goto(f"file://{html}")
+
+        root = page.locator(".tool-params-root").first
+        expand_all = root.locator(".tool-params-expand-all").first
+
+        page.locator("#toggleDetails").click()
+        assert root.evaluate(
+            "el => Array.from(el.querySelectorAll('details')).every(d => d.open)"
+        )
+        expect(expand_all).to_contain_text("collapse all")

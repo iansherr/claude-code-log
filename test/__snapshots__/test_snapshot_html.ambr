@@ -1402,6 +1402,27 @@
       color: var(--text-primary);
   }
   
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
+  }
+  
   .tool-params-empty {
       color: var(--text-muted);
       font-style: italic;
@@ -4835,7 +4856,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -4868,6 +4912,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -7449,6 +7498,27 @@
   }
   
   .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
       color: var(--text-primary);
   }
   
@@ -10784,7 +10854,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -10817,6 +10910,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -15584,6 +15682,27 @@
       color: var(--text-primary);
   }
   
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
+      color: var(--text-primary);
+  }
+  
   .tool-params-empty {
       color: var(--text-muted);
       font-style: italic;
@@ -19132,7 +19251,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -19165,6 +19307,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -21746,6 +21893,27 @@
   }
   
   .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
       color: var(--text-primary);
   }
   
@@ -25564,7 +25732,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -25597,6 +25788,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -28178,6 +28374,27 @@
   }
   
   .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
       color: var(--text-primary);
   }
   
@@ -31462,7 +31679,7 @@
               </div>
           </div>
           <div class='debug-info'>assistant_00 &rarr; assistant_00</div>
-          <div class='content'><table class='tool-params-table'>
+          <div class='content'><div class='tool-params-root'><div class='tool-params-controls'><button type='button' class='tool-params-expand-all' data-state='collapsed'>&#9654; expand all</button></div><table class='tool-params-table'>
               <tr>
                   <td class='tool-param-key'>todos</td>
                   <td class='tool-param-value'>
@@ -31620,7 +31837,7 @@
                           </details>
                       </td>
               </tr>
-          </table></div>
+          </table></div></div>
           
       </div>
       
@@ -31958,7 +32175,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -31991,6 +32231,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -34572,6 +34817,27 @@
   }
   
   .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
       color: var(--text-primary);
   }
   
@@ -38296,7 +38562,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -38329,6 +38618,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
@@ -40910,6 +41204,27 @@
   }
   
   .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Top-level expand/collapse-all control above a params/result table —
+     same quiet look as the in-summary rows-toggle. */
+  .tool-params-controls {
+      margin-bottom: 2px;
+  }
+  
+  .tool-params-expand-all {
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 80%;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-params-expand-all:hover {
       color: var(--text-primary);
   }
   
@@ -44461,7 +44776,30 @@
                       : '▶ expand all ' + kind;
               }
   
+              // Top-level expand-all for a whole params/result renderer:
+              // opens/closes every fold inside it, at all depths. Nested
+              // rows-toggle buttons follow via the toggle listener below.
+              function syncExpandAll(root) {
+                  const button = root.querySelector(':scope > .tool-params-controls > .tool-params-expand-all');
+                  if (!button) return;
+                  const folds = root.querySelectorAll('details');
+                  const allOpen = folds.length > 0 &&
+                      Array.from(folds).every(fold => fold.open);
+                  button.dataset.state = allOpen ? 'expanded' : 'collapsed';
+                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+              }
+  
               document.addEventListener('click', function (event) {
+                  const expandAllButton = event.target.closest('.tool-params-expand-all');
+                  if (expandAllButton) {
+                      const root = expandAllButton.closest('.tool-params-root');
+                      const expand = expandAllButton.dataset.state !== 'expanded';
+                      root.querySelectorAll('details').forEach(fold => {
+                          fold.open = expand;
+                      });
+                      syncExpandAll(root);
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
                   // The button sits inside a <summary>: keep the click from
@@ -44494,6 +44832,11 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Keep the renderer's top-level expand-all button in step
+                  // with whatever opened/closed this fold (rows-toggle,
+                  // manual click, global toggle-all).
+                  const root = details.closest('.tool-params-root');
+                  if (root) syncExpandAll(root);
               }, true);
   
               // Filter toolbar toggle functionality
