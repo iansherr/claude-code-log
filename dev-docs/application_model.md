@@ -27,6 +27,7 @@ for user-facing operations docs see [`docs/`](../docs/).
 | Sync sub-agents (#79) | [`converter.py`](../claude_code_log/converter.py), `factories/agent_metadata_factory.py` | [agents.md § 1](agents.md) |
 | Async task agents (#90) | `converter.py`, `factories/task_notification_factory.py` | [agents.md § 2](agents.md) |
 | Teammates (#91) | `renderer.py`, `factories/teammate_factory.py`, `html/teammate_formatter.py` | [teammates.md](teammates.md) |
+| Dynamic workflows (#174) | [`workflow.py`](../claude_code_log/workflow.py), `converter.py`, `renderer.py` | [workflows.md](workflows.md) |
 | Rendering pipeline | [`renderer.py`](../claude_code_log/renderer.py), `html/`, `markdown/`, `json/` | [rendering-architecture.md](rendering-architecture.md) |
 | Fold-bar / message hierarchy | `html/templates/components/`, JS in `transcript.html` | [message-hierarchy.md](message-hierarchy.md) |
 | CSS class taxonomy | `html/templates/components/*.css` | [css-classes.md](css-classes.md) |
@@ -398,6 +399,12 @@ Terms that appear across multiple subsystems — defined once here.
   metadata tail). Used to stitch sub-agent JSONL files into the
   trunk DAG. See [agents.md](agents.md).
 
+- **workflow run**: one execution of the `Workflow` tool — a JS
+  orchestrator fanning out into phase-grouped side-channel sub-agents,
+  left on disk under `<sid>/subagents/workflows/<runId>/`. Parsed by
+  `workflow.py` into a `WorkflowRun` and spliced into the message tree
+  at the Workflow tool_use site. See [workflows.md](workflows.md).
+
 - **fork point** / **branch**: when a session has multiple children
   with the same parent, the parent is the fork point and each child
   initiates a branch. Real forks come from `/exit` rewinds; spurious
@@ -459,6 +466,9 @@ Common entry questions and their best first stop:
 - "How are sub-agent transcripts (sync, async, teammates) integrated?"
   → [agents.md](agents.md), then [teammates.md](teammates.md) for the
   teammates-specific machinery.
+- "How does a dynamic-workflow run (phases, agents, orchestrator
+  script) get rendered?"
+  → [workflows.md](workflows.md).
 - "I want to extend the cache / change the schema."
   → § 2.3, § 2.4 here, then read the migration files in order.
 - "How do I export to JSON for downstream tooling?"

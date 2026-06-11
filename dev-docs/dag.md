@@ -91,6 +91,14 @@ s1, a, b, c, d, e, f, g, s2, h, i, j, s3, k, l, m
 
 Where `s1`, `s2`, `s3` are synthesized session header messages.
 
+Beyond the session structure, the `SessionTree` dataclass (in
+[`dag.py`](../claude_code_log/dag.py)) also ferries **dynamic-workflow
+data** from the loader to the renderer: `workflow_runs` (parsed
+`WorkflowRun`s keyed by runId) and `workflow_links` (the
+full-session-scope `{tool_use_id: WorkflowRun}` map resolved before
+pagination). Both are populated by `converter.py` and consumed by the
+renderer's link/splice passes — see [workflows.md](workflows.md).
+
 ### Navigation Links
 
 - **Forward links** on junction points: "Session N forks/continues here"

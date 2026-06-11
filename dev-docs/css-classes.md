@@ -60,6 +60,8 @@ This document provides a comprehensive reference for CSS class combinations used
 | `system-info` | `system` | System info level |
 | `system-hook` | `system` | Hook execution summary |
 | `system-away-summary` | `system` | Away-summary recap (left-aligned, narrative) |
+| `workflow_phase` | `tool_use` | Spliced dynamic-workflow phase card (#174). The `tool_use` base keeps it under the "Tool Use" filter toggle; the modifier drives the depth-driven indent + dark-green card/group border, the 🧩 title, and a dedicated timeline lane. |
+| `workflow_agent` | `tool_use` | Spliced dynamic-workflow agent card (#174). Same pattern as `workflow_phase` (grey card/group border, 🤖 title, own timeline lane). Its `.children` container indents the agent's grafted side-channel transcript one level further. |
 
 ---
 
