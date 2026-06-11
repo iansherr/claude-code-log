@@ -50,6 +50,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -1701,23 +1706,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -6020,6 +6068,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -7671,23 +7724,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -11889,6 +11985,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -14072,6 +14173,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -15723,23 +15829,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -20157,6 +20306,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -21808,23 +21962,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -26509,6 +26706,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -28160,23 +28362,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -32706,6 +32951,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -34357,23 +34607,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice
@@ -38964,6 +39257,11 @@
       --system-error-color: #f44336;
       --tool-use-color: #4caf50;
   
+      /* Dynamic-workflow tree colors (#174): each level's card border and its
+         group border (the line framing the card's subtree) share a color. */
+      --workflow-phase-color: #1b5e20;
+      --workflow-agent-color: #9e9e9e;
+  
       /* Fork/branch structural colors */
       --fork-point-color: #adb5bd;
       --branch-point-color: #adb5bd;
@@ -40615,23 +40913,66 @@
   
   /* Spliced dynamic-workflow run tree (#174 PR3): phase + agent cards. */
   
-  /* Depth-driven indentation. Phase/agent cards sit one level right of the
-     Workflow tool pair (4em vs the tool level's 2em), and each workflow node's
-     .children container shifts its whole subtree another level right — depth
-     accumulates through DOM nesting, so arbitrarily deep nests (e.g. a future
-     sub-agent spawning its own sub-agents) indent correctly with no new rules.
-     A dim guide line marks each nesting level. */
+  /* Depth-driven indentation with aligned, color-coded group borders.
+  
+     Each workflow node's .children container gets the SAME margin-left as the
+     cards (2em), so the container's border-left lands at the exact x of its
+     parent card's border-left — the group border reads as the card's border
+     continuing down its subtree (one line per level, no parallel doubles).
+     The cards inside step right by their own 2em margin. Depth accumulates
+     through DOM nesting, so arbitrarily deep nests (e.g. a future sub-agent
+     spawning its own sub-agents) indent correctly with no new rules.
+  
+     Color pairing: the Workflow pair + its phases group line are tool-green;
+     a phase card + its agents group line are dark green; an agent card + its
+     side-channel group line are grey. */
   .workflow_phase,
   .workflow_agent {
-      margin-left: 4em;
       margin-right: 4em;
   }
   
-  .message-node:has(> .message.workflow_phase) > .children,
+  .workflow_phase {
+      border-left-color: var(--workflow-phase-color);
+  }
+  
+  .workflow_agent {
+      border-left-color: var(--workflow-agent-color);
+  }
+  
+  /* The phases group (children of the Workflow tool_result) — continues the
+     pair's tool-green border. Selected by its CONTENT (the parent card is a
+     plain tool_result, so :has on the parent would over-match). */
+  .children:has(> .message-node > .message.workflow_phase) {
+      margin-left: 2em;
+      border-left: 2px solid var(--tool-use-color);
+  }
+  
+  /* A phase's agents group — continues the phase card's dark green. */
+  .message-node:has(> .message.workflow_phase) > .children {
+      margin-left: 2em;
+      border-left: 2px solid var(--workflow-phase-color);
+  }
+  
+  /* An agent's side-channel group — continues the agent card's grey. */
   .message-node:has(> .message.workflow_agent) > .children {
       margin-left: 2em;
-      padding-left: 0.8em;
-      border-left: 2px solid var(--tool-param-sep-color);
+      border-left: 2px solid var(--workflow-agent-color);
+  }
+  
+  /* Below 1280px the tool-level card margins switch to percentages (see the
+     responsive block above) — mirror that on the workflow group containers so
+     the group borders stay pixel-aligned with their parent cards' borders. */
+  @media (max-width: 1280px) {
+      .workflow_phase,
+      .workflow_agent {
+          margin-right: 4%;
+      }
+  
+      .children:has(> .message-node > .message.workflow_phase),
+      .message-node:has(> .message.workflow_phase) > .children,
+      .message-node:has(> .message.workflow_agent) > .children {
+          margin-left: 2%;
+      }
   }
   
   /* Phase pills double as anchor links to their phase card when the splice

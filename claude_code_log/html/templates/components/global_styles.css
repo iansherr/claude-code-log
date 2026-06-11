@@ -38,6 +38,11 @@
     --system-error-color: #f44336;
     --tool-use-color: #4caf50;
 
+    /* Dynamic-workflow tree colors (#174): each level's card border and its
+       group border (the line framing the card's subtree) share a color. */
+    --workflow-phase-color: #1b5e20;
+    --workflow-agent-color: #9e9e9e;
+
     /* Fork/branch structural colors */
     --fork-point-color: #adb5bd;
     --branch-point-color: #adb5bd;
