@@ -163,7 +163,9 @@ on non-workflow rendering would be high). Key mechanics:
   Markdown with embedded JSON blocks **extracted** first
   (`extract_embedded_json`): a lone `{`/`[` on its own line, through a
   lone matching closer followed by a blank line (or EOF), accepted only
-  when `json.loads` parses it. Each block is substituted with a
+  when `json.loads` parses it to a **non-empty** dict/list — empty
+  `{}`/`[]` stay inline (nothing to tabulate), as do blocks inside
+  fenced code. Each block is substituted with a
   z-prefixed UUID placeholder (every uuid group gets a `z` so the
   SHA→commit-URL linkifier can't match inside it), the remainder renders
   as Markdown, and the placeholders are swapped for the generic
