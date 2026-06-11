@@ -1096,9 +1096,13 @@ def _structured_value_html(value: "dict[Any, Any] | list[Any]", depth: int) -> s
     table_html = _params_table_html(items, depth + 1)
     if len(formatted_value) > 200:
         preview = escape_html(formatted_value[:100]) + "..."
+        # The summary carries an explicit collapse hint (instead of the
+        # generic ::after one) followed by a rows-toggle button that
+        # expands/collapses all row-level folds of this table at once
+        # (wired up in transcript.html).
         return f"""
-                        <details class='tool-param-collapsible'>
-                            <summary><span class='tool-param-preview'>{preview}</span></summary>
+                        <details class='tool-param-collapsible tool-param-collapsible-rows'>
+                            <summary><span class='tool-param-preview'>{preview}</span><span class='tool-param-collapse-hint'>collapse</span><button type='button' class='tool-param-rows-toggle' data-state='collapsed'>&#9654; expand rows</button></summary>
                             {table_html}
                         </details>
                     """

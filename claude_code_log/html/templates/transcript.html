@@ -409,6 +409,47 @@
 
             toggleButton.addEventListener('click', toggleAllDetails);
 
+            // Per-table rows-toggle for structured params: the button in an
+            // open fold's summary expands/collapses all row-level folds of
+            // that table (direct rows only — nested tables have their own).
+            const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+
+            function setRowsToggleState(button, expanded) {
+                button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+            }
+
+            document.addEventListener('click', function (event) {
+                const button = event.target.closest('.tool-param-rows-toggle');
+                if (!button) return;
+                // The button sits inside a <summary>: keep the click from
+                // toggling the enclosing details.
+                event.preventDefault();
+                event.stopPropagation();
+                const details = button.closest('details');
+                const expand = button.dataset.state !== 'expanded';
+                details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                    row.open = expand;
+                });
+                setRowsToggleState(button, expand);
+            });
+
+            // Closing a fold restores its initial state: all rows collapsed,
+            // button back to "expand rows". Rows that are themselves folds
+            // reset their own rows through this same (capturing — toggle
+            // doesn't bubble) listener.
+            document.addEventListener('toggle', function (event) {
+                const details = event.target;
+                if (!(details instanceof HTMLElement)) return;
+                if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                if (details.open) return;
+                details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                    row.open = false;
+                });
+                const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                if (button) setRowsToggleState(button, false);
+            }, true);
+
             // Filter toolbar toggle functionality
             function toggleFilterToolbar() {
                 const isVisible = filterToolbar.classList.contains('visible');

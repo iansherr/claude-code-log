@@ -920,11 +920,14 @@ pre > code {
     border-right: #00000017 1px solid;
 }
 
-/* Tool parameter table styling */
+/* Tool parameter table styling. The percentage font-size compounds at
+   each nesting level of the recursive params renderer — a deliberate
+   depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+   become unreadable. */
 .tool-params-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 80%;
+    font-size: 90%;
 }
 
 /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -1009,6 +1012,40 @@ pre > code {
 .tool-param-full {
     margin-top: 4px;
     word-break: break-all;
+}
+
+/* Structured-table folds carry an explicit collapse hint plus a
+   rows-toggle button in the summary, so suppress the generic ::after
+   "collapse" hint for them and show the real elements only when open. */
+.tool-param-collapsible-rows[open] > summary::after {
+    content: none;
+}
+
+.tool-param-collapse-hint,
+.tool-param-rows-toggle {
+    display: none;
+}
+
+.tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+    display: inline;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+    display: inline;
+    margin-left: 1.5em;
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: var(--text-muted);
+    font-style: italic;
+    cursor: pointer;
+}
+
+.tool-param-rows-toggle:hover {
+    color: var(--text-primary);
 }
 
 .tool-params-empty {

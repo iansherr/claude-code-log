@@ -101,6 +101,22 @@ class TestNestedStructures:
         # The expanded body is a table, not a JSON dump.
         assert "tool-params-nested" in html
 
+    def test_table_fold_carries_rows_toggle(self):
+        """Structured-table folds get the explicit hint + rows-toggle
+        button; plain string folds and the JSON fallback do not."""
+        value = {f"key_{i}": f"value {i}" for i in range(20)}
+        html = render_params_table({"cfg": value})
+        assert "tool-param-collapsible-rows" in html
+        assert "tool-param-collapse-hint" in html
+        assert "tool-param-rows-toggle" in html
+        assert "expand rows" in html
+
+        string_fold = render_params_table({"v": "plain words " * 20})
+        assert "tool-param-rows-toggle" not in string_fold
+
+        json_fallback = render_params_table({"v": "{" + "x" * 300})
+        assert "tool-param-rows-toggle" not in json_fallback
+
     def test_empty_containers_fall_back_to_json_dump(self):
         html = render_params_table({"a": {}, "b": []})
         assert html.count("tool-param-structured") == 2

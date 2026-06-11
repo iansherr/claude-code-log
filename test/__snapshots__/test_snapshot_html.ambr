@@ -1274,11 +1274,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -1363,6 +1366,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -4777,6 +4814,47 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -7231,11 +7309,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -7320,6 +7401,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -10632,6 +10747,47 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
@@ -15270,11 +15426,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -15359,6 +15518,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -18888,6 +19081,47 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -21342,11 +21576,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -21431,6 +21668,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -25227,6 +25498,47 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -27681,11 +27993,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -27770,6 +28085,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -31057,13 +31406,13 @@
               <tr>
                   <td class='tool-param-key'>todos</td>
                   <td class='tool-param-value'>
-                          <details class='tool-param-collapsible'>
+                          <details class='tool-param-collapsible tool-param-collapsible-rows'>
                               <summary><span class='tool-param-preview'>[
     &quot;broken_todo&quot;,
     {
       &quot;id&quot;: &quot;2&quot;,
       &quot;content&quot;: &quot;Implement core functionality&quot;,
-      &quot;status&quot;: &quot;...</span></summary>
+      &quot;status&quot;: &quot;...</span><span class='tool-param-collapse-hint'>collapse</span><button type='button' class='tool-param-rows-toggle' data-state='collapsed'>&#9654; expand rows</button></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
                   <td class='tool-param-key'>0</td>
@@ -31489,6 +31838,47 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
@@ -33944,11 +34334,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -34033,6 +34426,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -37735,6 +38162,47 @@
   
               toggleButton.addEventListener('click', toggleAllDetails);
   
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
+  
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
                   const isVisible = filterToolbar.classList.contains('visible');
@@ -40189,11 +40657,14 @@
       border-right: #00000017 1px solid;
   }
   
-  /* Tool parameter table styling */
+  /* Tool parameter table styling. The percentage font-size compounds at
+     each nesting level of the recursive params renderer — a deliberate
+     depth cue — so keep the factor gentle (90%, not 80%) or deep tables
+     become unreadable. */
   .tool-params-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 80%;
+      font-size: 90%;
   }
   
   /* Skill-tool body folded into the Skill tool_use block (issue #93).
@@ -40278,6 +40749,40 @@
   .tool-param-full {
       margin-top: 4px;
       word-break: break-all;
+  }
+  
+  /* Structured-table folds carry an explicit collapse hint plus a
+     rows-toggle button in the summary, so suppress the generic ::after
+     "collapse" hint for them and show the real elements only when open. */
+  .tool-param-collapsible-rows[open] > summary::after {
+      content: none;
+  }
+  
+  .tool-param-collapse-hint,
+  .tool-param-rows-toggle {
+      display: none;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
+      display: inline;
+      color: var(--text-muted);
+      font-style: italic;
+  }
+  
+  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
+      display: inline;
+      margin-left: 1.5em;
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--text-muted);
+      font-style: italic;
+      cursor: pointer;
+  }
+  
+  .tool-param-rows-toggle:hover {
+      color: var(--text-primary);
   }
   
   .tool-params-empty {
@@ -43806,6 +44311,47 @@
               }
   
               toggleButton.addEventListener('click', toggleAllDetails);
+  
+              // Per-table rows-toggle for structured params: the button in an
+              // open fold's summary expands/collapses all row-level folds of
+              // that table (direct rows only — nested tables have their own).
+              const rowDetailsSelector = ':scope > table > tbody > tr > td > details';
+  
+              function setRowsToggleState(button, expanded) {
+                  button.dataset.state = expanded ? 'expanded' : 'collapsed';
+                  button.textContent = expanded ? '▼ collapse rows' : '▶ expand rows';
+              }
+  
+              document.addEventListener('click', function (event) {
+                  const button = event.target.closest('.tool-param-rows-toggle');
+                  if (!button) return;
+                  // The button sits inside a <summary>: keep the click from
+                  // toggling the enclosing details.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const details = button.closest('details');
+                  const expand = button.dataset.state !== 'expanded';
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = expand;
+                  });
+                  setRowsToggleState(button, expand);
+              });
+  
+              // Closing a fold restores its initial state: all rows collapsed,
+              // button back to "expand rows". Rows that are themselves folds
+              // reset their own rows through this same (capturing — toggle
+              // doesn't bubble) listener.
+              document.addEventListener('toggle', function (event) {
+                  const details = event.target;
+                  if (!(details instanceof HTMLElement)) return;
+                  if (!details.classList.contains('tool-param-collapsible-rows')) return;
+                  if (details.open) return;
+                  details.querySelectorAll(rowDetailsSelector).forEach(row => {
+                      row.open = false;
+                  });
+                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  if (button) setRowsToggleState(button, false);
+              }, true);
   
               // Filter toolbar toggle functionality
               function toggleFilterToolbar() {
