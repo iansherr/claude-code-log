@@ -1161,11 +1161,60 @@ def _branch_label(branch_sid: str, preview: str) -> str:
     return f"Branch • {_branch_label_suffix(branch_sid, preview)}"
 
 
+def _tool_summary_label(tool_name: Optional[str], description: Optional[str]) -> str:
+    """Compose a short ``Tool — description`` label for nav previews.
+
+    Used so a fork point or branch whose first message is a tool call reads as
+    e.g. ``Bash — Timeline d-N dependency check (retry)`` instead of an empty
+    preview (#179 follow-up / dev/tool-use-continuation).
+    """
+    name = (tool_name or "Tool").strip()
+    desc = (description or "").strip().splitlines()[0].strip() if description else ""
+    if len(desc) > 70:
+        desc = desc[:70] + "…"
+    return f"{name} — {desc}" if desc else name
+
+
+def _entry_nav_summary(entry: "TranscriptEntry") -> str:
+    """Type-aware one-line summary of a transcript entry, for branch previews.
+
+    Mirrors ``_fork_point_preview``'s label shapes but reads the raw entry
+    (available at branch-header build time): user/assistant text → the text,
+    a tool call → ``Bash — <description>``, thinking → ``Thinking``. Returns
+    "" for entries with no summarisable content (system/hook/attachment), so
+    the caller walks to the branch's first meaningful message.
+    """
+    if isinstance(entry, UserTranscriptEntry):
+        content = entry.message.content
+        if isinstance(content, str):
+            return create_session_preview(content)
+        items: list[ContentItem] = content
+    elif isinstance(entry, AssistantTranscriptEntry):
+        items = entry.message.content
+    else:
+        return ""
+    for item in items:
+        if isinstance(item, TextContent):
+            text = item.text.strip()
+            if text:
+                return create_session_preview(text)
+        elif isinstance(item, ToolUseContent):
+            description = item.input.get("description")
+            return _tool_summary_label(
+                item.name, description if isinstance(description, str) else None
+            )
+        elif isinstance(item, ThinkingContent):
+            return "Thinking"
+    return ""
+
+
 def _fork_point_preview(fork_msg: "TemplateMessage", ctx: RenderingContext) -> str:
     """Get a meaningful preview for a fork point message.
 
     If the fork point is a system hook (common with /rewind), walk up
-    to the parent message to find more descriptive content.
+    to the parent message to find more descriptive content. Tool-use and
+    thinking fork points (the common shape for tool-flow forks) get a
+    type-aware label so the fork point names the message it sits on.
     """
     msg = fork_msg
     # Walk up past system hooks to find a meaningful message
@@ -1191,14 +1240,20 @@ def _fork_point_preview(fork_msg: "TemplateMessage", ctx: RenderingContext) -> s
             break
         msg = parent
 
-    # Extract text from the found message
+    # Extract a label from the found message, type-aware so tool-use and
+    # thinking fork points name their message rather than rendering empty.
     content = msg.content
-    if isinstance(content, AssistantTextMessage):
+    if isinstance(content, (AssistantTextMessage, UserTextMessage)):
         parts = [item.text for item in content.items if isinstance(item, TextContent)]
         text = " ".join(parts).strip()
-    elif isinstance(content, UserTextMessage):
-        parts = [item.text for item in content.items if isinstance(item, TextContent)]
-        text = " ".join(parts).strip()
+    elif isinstance(content, ToolUseMessage):
+        text = _tool_summary_label(
+            content.tool_name, getattr(content.input, "description", None)
+        )
+    elif isinstance(content, ThinkingMessage):
+        text = "Thinking"
+    elif isinstance(content, ToolResultMessage):
+        text = f"{content.tool_name} result" if content.tool_name else "Tool result"
     else:
         return ""
 
@@ -4079,6 +4134,10 @@ def _build_branch_header(
     branch_uuids: list[str] = b_hier.get("uuids") or []
     branch_preview = ""
     if uuid_to_entry:
+        # Preferred: the first branch-local USER text. Scanning forward past a
+        # leading assistant turn (the canonical ``/exit`` → "No response
+        # requested." case) and staying bounded to ``branch_uuids`` keeps the
+        # spawned-agent inner prompt out of the label (see test_branch_label_source).
         for branch_uuid in branch_uuids:
             entry = uuid_to_entry.get(branch_uuid)
             if entry is None:
@@ -4090,6 +4149,19 @@ def _build_branch_header(
             if branch_text:
                 branch_preview = create_session_preview(branch_text)
                 break
+        # Fallback: a branch with no user text — an assistant continuation or
+        # tool-flow branch — gets a type-aware summary of its first meaningful
+        # message ("Thinking" / "Bash — <desc>") instead of a bare uuid label
+        # (dev/tool-use-continuation).
+        if not branch_preview:
+            for branch_uuid in branch_uuids:
+                entry = uuid_to_entry.get(branch_uuid)
+                if entry is None:
+                    continue
+                summary = _entry_nav_summary(entry)
+                if summary:
+                    branch_preview = summary
+                    break
     branch_title = _branch_label(branch_sid, branch_preview)
 
     branch_header_meta = MessageMeta(
