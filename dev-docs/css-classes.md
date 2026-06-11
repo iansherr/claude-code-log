@@ -54,7 +54,7 @@ This document provides a comprehensive reference for CSS class combinations used
 | `pair_first` | Various | First message in a pair |
 | `pair_last` | Various | Last message in a pair |
 | `pair_middle` | Various | Middle message (never used so far) |
-| `sidechain` | Various | Sub-agent (Task) message. The sidechain block under its spawning tool_result is framed by a single grey group line + 2em indent (same color/concept as a workflow agent's side-channel). |
+| `sidechain` | Various | Sub-agent (Task) message. The sidechain block under its spawning tool_result is framed by a single tool-green group line + 2em indent — the line continues the spawning card's border color (same pairing principle as the workflow phase/agent group lines). |
 | `slash-command` | `user` | Expanded slash command prompt |
 | `steering` | `user` | User steering via queue operation |
 | `system-info` | `system` | System info level |

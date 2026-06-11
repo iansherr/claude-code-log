@@ -1823,14 +1823,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -8031,14 +8033,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -16326,14 +16330,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -22649,14 +22655,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -29239,14 +29247,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -35791,14 +35801,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */
@@ -42287,14 +42299,16 @@
   
   /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
      async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE grey line (the same color/concept as a
-     workflow agent's side-channel — an agent transcript is an agent
-     transcript). The :not(.sidechain) parent filter keeps the line at the
-     block's top level only (containers deeper inside the sidechain hang
-     under .sidechain-flagged cards). */
+     tool_result, framed by ONE line in tool-green — per the color-pairing
+     principle, the group line CONTINUES its parent card's border, and the
+     spawning tool_result card's border is tool-green. (Workflow agents use
+     the same principle with their own grey: grey workflow_agent card →
+     grey side-channel line.) The :not(.sidechain) parent filter keeps the
+     line at the block's top level only (containers deeper inside the
+     sidechain hang under .sidechain-flagged cards). */
   .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
-      border-left: 2px solid var(--workflow-agent-color);
+      border-left: 2px solid var(--tool-use-color);
   }
   
   /* A phase's agents group — continues the phase card's dark green. */

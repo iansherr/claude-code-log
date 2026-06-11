@@ -203,12 +203,14 @@ Two `MessageContent` subclasses in [`models.py`](../claude_code_log/models.py):
   inside the ≤1280px responsive block), so the container's border-left
   lands at the exact x of its parent card's border — the group border
   reads as the card's border continuing down its subtree. Colors pair
-  per level: a phase card + its agents group are dark green
+  per level — the group line continues its parent card's border color: a
+  phase card + its agents group are dark green
   (`--workflow-phase-color`), an agent card + its side-channel group
-  are grey (`--workflow-agent-color`). The Workflow-level phases group
-  keeps its indent but draws no line (suppressed at 0px — two levels of
-  lines already distinguish a workflow from a standard sub-agent's
-  single grey sidechain line, which uses the same grey). Depth
+  are grey (`--workflow-agent-color`), and a standard sub-agent's
+  sidechain line is tool-green (continuing the spawning tool_result
+  card's border). The Workflow-level phases group keeps its indent but
+  draws no line (suppressed at 0px — two levels of lines already
+  distinguish a workflow from a standard sub-agent's single line). Depth
   accumulates through DOM nesting, so arbitrarily deep future nests (a
   sub-agent spawning its own sub-agents) indent with no new rules.
 - **Timeline** (`components/timeline.html`): dedicated
