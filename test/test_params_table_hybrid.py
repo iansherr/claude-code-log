@@ -89,8 +89,8 @@ class TestNestedStructures:
         html = render_params_table({"items": ["alpha", "beta"]})
         assert "tool-params-nested" in html
         # Scalar rows: glyph spacer + index in the key cell.
-        assert "<span class='tool-param-key-glyph'></span>0</td>" in html
-        assert "<span class='tool-param-key-glyph'></span>1</td>" in html
+        assert "<span class='tool-param-fold-glyph'></span>0</td>" in html
+        assert "<span class='tool-param-fold-glyph'></span>1</td>" in html
         assert "alpha" in html and "beta" in html
 
     def test_structures_always_fold_regardless_of_size(self):
@@ -177,7 +177,7 @@ class TestNestedStructures:
         # Scalar rows reserve the same glyph slot, empty.
         assert (
             "<td class='tool-param-key'>"
-            "<span class='tool-param-key-glyph'></span>count</td>" in html
+            "<span class='tool-param-fold-glyph'></span>count</td>" in html
         )
 
     def test_empty_containers_fall_back_to_json_dump(self):

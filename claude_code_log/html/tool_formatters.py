@@ -1133,7 +1133,7 @@ def _table_fold_html(formatted_value: str, table_html: str, kind: str) -> str:
         return f"""
                         <details class='tool-param-collapsible tool-param-collapsible-rows'>
                             <summary><span class='tool-param-preview'>{preview}</span></summary>
-                            <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='{kind}'>&#9654; expand all {kind}</button></div>
+                            <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='{kind}'><span class='tool-param-fold-glyph'>&#9656;</span><span class='tool-param-fold-label'>expand all {kind}</span></button></div>
                             {table_html}
                         </details>
                     """
@@ -1159,7 +1159,9 @@ def _params_root_html(table_html: str) -> str:
         "<div class='tool-params-root'>"
         "<div class='tool-params-controls'>"
         "<button type='button' class='tool-params-expand-all'"
-        " data-state='collapsed'>&#9654; expand all</button>"
+        " data-state='collapsed'>"
+        "<span class='tool-param-fold-glyph'>&#9656;</span>"
+        "<span class='tool-param-fold-label'>expand all</span></button>"
         "</div>"
         f"{table_html}"
         "</div>"
@@ -1199,14 +1201,14 @@ def _params_table_html(items: "Iterable[tuple[Any, Any]]", depth: int) -> str:
             key_cell = (
                 "<button type='button' class='tool-param-key-toggle'"
                 " aria-expanded='false'>"
-                "<span class='tool-param-key-glyph'>&#9656;</span>"
+                "<span class='tool-param-fold-glyph'>&#9656;</span>"
                 f"{escaped_key}</button>"
             )
             row_attr = " class='tool-param-row-fold'"
         else:
             # Scalar rows reserve the same glyph slot (empty) so every key
             # text starts at the same x.
-            key_cell = f"<span class='tool-param-key-glyph'></span>{escaped_key}"
+            key_cell = f"<span class='tool-param-fold-glyph'></span>{escaped_key}"
             row_attr = ""
         html_parts.append(f"""
             <tr{row_attr}>

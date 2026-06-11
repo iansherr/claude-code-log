@@ -1419,16 +1419,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -5006,10 +5012,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -5022,7 +5031,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -7696,16 +7708,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -11182,10 +11200,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -11198,7 +11219,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -16060,16 +16084,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -19762,10 +19792,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -19778,7 +19811,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -22452,16 +22488,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -26421,10 +26463,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -26437,7 +26482,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -29111,16 +29159,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -32303,7 +32357,7 @@
           <div class='debug-info'>edge_004</div>
           <div class='content'><table class='tool-params-table'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>test_param</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>test_param</td>
                   <td class='tool-param-value'>This tool will fail to demonstrate error handling</td>
               </tr>
           </table></div>
@@ -32549,9 +32603,9 @@
               </div>
           </div>
           <div class='debug-info'>assistant_00 &rarr; assistant_00</div>
-          <div class='content'><div class='tool-params-root'><div class='tool-params-controls'><button type='button' class='tool-params-expand-all' data-state='collapsed'>&#9654; expand all</button></div><table class='tool-params-table'>
+          <div class='content'><div class='tool-params-root'><div class='tool-params-controls'><button type='button' class='tool-params-expand-all' data-state='collapsed'><span class='tool-param-fold-glyph'>&#9656;</span><span class='tool-param-fold-label'>expand all</span></button></div><table class='tool-params-table'>
               <tr class='tool-param-row-fold'>
-                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>todos</button></td>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-fold-glyph'>&#9656;</span>todos</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible tool-param-collapsible-rows'>
                               <summary><span class='tool-param-preview'>[
@@ -32560,15 +32614,15 @@
       &quot;id&quot;: &quot;2&quot;,
       &quot;content&quot;: &quot;Implement core functionality&quot;,
       &quot;status&quot;: &quot;...</span></summary>
-                              <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='rows'>&#9654; expand all rows</button></div>
+                              <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='rows'><span class='tool-param-fold-glyph'>&#9656;</span><span class='tool-param-fold-label'>expand all rows</span></button></div>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>0</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>0</td>
                   <td class='tool-param-value'>broken_todo</td>
               </tr>
           
               <tr class='tool-param-row-fold'>
-                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>1</button></td>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-fold-glyph'>&#9656;</span>1</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32578,22 +32632,22 @@
     &quot;priority&quot;:...</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>id</td>
                   <td class='tool-param-value'>2</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>content</td>
                   <td class='tool-param-value'>Implement core functionality</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>status</td>
                   <td class='tool-param-value'>in_progress</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>priority</td>
                   <td class='tool-param-value'>high</td>
               </tr>
           </table>
@@ -32602,7 +32656,7 @@
               </tr>
           
               <tr class='tool-param-row-fold'>
-                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>2</button></td>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-fold-glyph'>&#9656;</span>2</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32612,22 +32666,22 @@
     &quot;priority&quot;: &quot;medium&quot;...</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>id</td>
                   <td class='tool-param-value'>3</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>content</td>
                   <td class='tool-param-value'>Add comprehensive tests</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>priority</td>
                   <td class='tool-param-value'>medium</td>
               </tr>
           </table>
@@ -32636,7 +32690,7 @@
               </tr>
           
               <tr class='tool-param-row-fold'>
-                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>3</button></td>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-fold-glyph'>&#9656;</span>3</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32647,22 +32701,22 @@
   }</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>id</td>
                   <td class='tool-param-value'>4</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>content</td>
                   <td class='tool-param-value'>Write user documentation</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>priority</td>
                   <td class='tool-param-value'>low</td>
               </tr>
           </table>
@@ -32671,7 +32725,7 @@
               </tr>
           
               <tr class='tool-param-row-fold'>
-                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>4</button></td>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-fold-glyph'>&#9656;</span>4</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32682,22 +32736,22 @@
   }</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>id</td>
                   <td class='tool-param-value'>5</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>content</td>
                   <td class='tool-param-value'>Perform code review</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-fold-glyph'></span>priority</td>
                   <td class='tool-param-value'>medium</td>
               </tr>
           </table>
@@ -33043,10 +33097,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -33059,7 +33116,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -35733,16 +35793,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -39608,10 +39674,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -39624,7 +39693,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {
@@ -42298,16 +42370,22 @@
       color: var(--text-primary);
   }
   
-  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-     all key texts start at the same x regardless of foldability. */
-  .tool-param-key-glyph {
+  /* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+     is expanded — symmetric open/closed by construction. Centered in a fixed
+     slot so the box-center rotation pivots on the glyph itself (a left-
+     aligned glyph in a wide box swings sideways when the box rotates). The
+     slot doubles as the key-column alignment spacer: every key cell renders
+     one (empty on scalar rows), so all key texts start at the same x. */
+  .tool-param-fold-glyph {
       display: inline-block;
       width: 1.3em;
+      text-align: center;
       color: var(--text-muted);
       transition: transform 0.15s ease;
   }
   
-  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+  [data-state='expanded'] > .tool-param-fold-glyph {
       transform: rotate(90deg);
   }
   
@@ -46000,10 +46078,13 @@
                   const allOpen = rows.length > 0 &&
                       Array.from(rows).every(row => row.open);
                   const kind = button.dataset.kind || 'rows';
+                  // data-state drives the CSS rotation of the constant ▸ glyph;
+                  // only the label text changes.
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen
-                      ? '▼ collapse all ' + kind
-                      : '▶ expand all ' + kind;
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                  }
               }
   
               // Top-level expand-all for a whole params/result renderer:
@@ -46016,7 +46097,10 @@
                   const allOpen = folds.length > 0 &&
                       Array.from(folds).every(fold => fold.open);
                   button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                  button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                  const label = button.querySelector('.tool-param-fold-label');
+                  if (label) {
+                      label.textContent = allOpen ? 'collapse all' : 'expand all';
+                  }
               }
   
               document.addEventListener('click', function (event) {

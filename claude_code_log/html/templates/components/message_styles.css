@@ -1060,16 +1060,22 @@ pre > code {
     color: var(--text-primary);
 }
 
-/* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
-   all key texts start at the same x regardless of foldability. */
-.tool-param-key-glyph {
+/* The shared fold glyph: one constant ▸, CSS-rotated 90° when its control
+   is expanded — symmetric open/closed by construction. Centered in a fixed
+   slot so the box-center rotation pivots on the glyph itself (a left-
+   aligned glyph in a wide box swings sideways when the box rotates). The
+   slot doubles as the key-column alignment spacer: every key cell renders
+   one (empty on scalar rows), so all key texts start at the same x. */
+.tool-param-fold-glyph {
     display: inline-block;
     width: 1.3em;
+    text-align: center;
     color: var(--text-muted);
     transition: transform 0.15s ease;
 }
 
-.tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+.tool-param-key-toggle[aria-expanded='true'] > .tool-param-fold-glyph,
+[data-state='expanded'] > .tool-param-fold-glyph {
     transform: rotate(90deg);
 }
 

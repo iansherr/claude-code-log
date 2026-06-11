@@ -427,10 +427,13 @@
                 const allOpen = rows.length > 0 &&
                     Array.from(rows).every(row => row.open);
                 const kind = button.dataset.kind || 'rows';
+                // data-state drives the CSS rotation of the constant ▸ glyph;
+                // only the label text changes.
                 button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                button.textContent = allOpen
-                    ? '▼ collapse all ' + kind
-                    : '▶ expand all ' + kind;
+                const label = button.querySelector('.tool-param-fold-label');
+                if (label) {
+                    label.textContent = (allOpen ? 'collapse all ' : 'expand all ') + kind;
+                }
             }
 
             // Top-level expand-all for a whole params/result renderer:
@@ -443,7 +446,10 @@
                 const allOpen = folds.length > 0 &&
                     Array.from(folds).every(fold => fold.open);
                 button.dataset.state = allOpen ? 'expanded' : 'collapsed';
-                button.textContent = allOpen ? '▼ collapse all' : '▶ expand all';
+                const label = button.querySelector('.tool-param-fold-label');
+                if (label) {
+                    label.textContent = allOpen ? 'collapse all' : 'expand all';
+                }
             }
 
             document.addEventListener('click', function (event) {
