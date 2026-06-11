@@ -244,3 +244,31 @@ class TestJsonToolResults:
         html = format_tool_result_content_raw(result)
         assert "<script>" not in html
         assert "&lt;script&gt;" in html
+
+    def test_large_result_folds_with_rows_toggle(self):
+        """Breadth guard: a big JSON array result starts collapsed (like
+        the legacy >200-char text fold) with the expand-all button."""
+        import json
+
+        content = json.dumps([{"id": i, "msg": f"row {i} " * 10} for i in range(50)])
+        html = format_tool_result_content_raw(_tool_result(content))
+        # The top-level table is inside a fold, not bare in the card.
+        assert html.startswith("<div class='tool-result-json'>")
+        before_table = html.split("<table", 1)[0]
+        assert "tool-param-collapsible-rows" in before_table
+        assert "expand all rows" in before_table
+
+    def test_large_scalar_only_result_folds_plain(self):
+        import json
+
+        content = json.dumps({f"key_{i}": f"v{i}" for i in range(30)})
+        assert len(content) > 200
+        html = format_tool_result_content_raw(_tool_result(content))
+        before_table = html.split("<table", 1)[0]
+        assert "tool-param-collapsible" in before_table
+        assert "tool-param-rows-toggle" not in html
+
+    def test_small_result_table_stays_unfolded(self):
+        html = format_tool_result_content_raw(_tool_result('{"status": "ok"}'))
+        assert "<details" not in html
+        assert "tool-params-table" in html

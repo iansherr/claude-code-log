@@ -1100,16 +1100,22 @@ def _structured_value_html(value: "dict[Any, Any] | list[Any]", depth: int) -> s
         items = enumerate(value)
         kind = "rows"
     table_html = _params_table_html(items, depth + 1)
+    return _table_fold_html(formatted_value, table_html, kind)
+
+
+def _table_fold_html(formatted_value: str, table_html: str, kind: str) -> str:
+    """Wrap a rendered params table in a collapsed fold.
+
+    When the table has row-level folds, the summary carries an explicit
+    collapse hint (instead of the generic ::after one) followed by a
+    rows-toggle button that expands/collapses them all at once (wired
+    up in transcript.html). The "<details" probe is exact: structures
+    always fold, so a deeper fold can only exist inside a direct-row
+    fold. All-scalar containers get a plain fold — no dead button.
+    """
     preview = escape_html(formatted_value[:100])
     if len(formatted_value) > 100:
         preview += "..."
-    # When the table has row-level folds, the summary carries an
-    # explicit collapse hint (instead of the generic ::after one)
-    # followed by a rows-toggle button that expands/collapses them all
-    # at once (wired up in transcript.html). The "<details" probe is
-    # exact: structures always fold, so a deeper fold can only exist
-    # inside a direct-row fold. All-scalar containers get a plain fold —
-    # no dead button.
     if "<details" in table_html:
         return f"""
                         <details class='tool-param-collapsible tool-param-collapsible-rows'>
@@ -1185,11 +1191,19 @@ def _json_result_table_html(raw_content: str) -> Optional[str]:
         return None
     if isinstance(parsed, dict) and parsed:
         items: Iterable[tuple[Any, Any]] = cast("dict[Any, Any]", parsed).items()
+        kind = "properties"
     elif isinstance(parsed, list) and parsed:
         items = enumerate(cast("list[Any]", parsed))
+        kind = "rows"
     else:
         return None
-    return f"<div class='tool-result-json'>{_params_table_html(items, 0)}</div>"
+    table_html = _params_table_html(items, 0)
+    # Breadth guard: results past the legacy 200-char threshold keep
+    # its folded-by-default behavior — a huge JSON array must not
+    # render as an unfolded thousand-row table.
+    if len(raw_content) > 200:
+        table_html = _table_fold_html(raw_content, table_html, kind)
+    return f"<div class='tool-result-json'>{table_html}</div>"
 
 
 def format_tool_result_content_raw(tool_result: ToolResultContent) -> str:
