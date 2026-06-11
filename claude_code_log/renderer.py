@@ -2945,12 +2945,26 @@ def _splice_workflow_runs(ctx: RenderingContext) -> None:
 def _splice_one_workflow_run(
     ctx: RenderingContext, host: TemplateMessage, run: Any
 ) -> None:
-    """Build + attach one run's phase/agent sub-tree under ``host`` (the
-    Workflow tool_use node)."""
+    """Build + attach one run's phase/agent sub-tree at ``host`` (the
+    Workflow tool_use node).
+
+    The sub-tree is attached to the PAIRED tool_result when present (falling
+    back to the tool_use for a still-running workflow with no result yet):
+    the tool_use/tool_result pair renders as one visually joined unit
+    (``pair_first`` flat bottom + ``pair_last`` flat top), so hanging the
+    run tree off the tool_use would wedge it *between* the two cards and
+    break the pair's outline. Off the result, the pair stays adjacent and
+    the tree reads as the run's outcome below it.
+    """
     if host.message_index is None:
         return
+    attach = host
+    if host.pair_last is not None:
+        partner = ctx.get(host.pair_last)
+        if partner is not None:
+            attach = partner
     # Phase grouping when the snapshot supplied phases; else a flat agent list
-    # directly under the tool_use (running / no-snapshot view).
+    # directly under the attach node (running / no-snapshot view).
     if getattr(run, "has_snapshot", False) and run.phases:
         groups: list[tuple[Any, list[Any]]] = [
             (phase, list(phase.agents)) for phase in run.phases
@@ -2959,6 +2973,7 @@ def _splice_one_workflow_run(
         groups = [(None, list(run.agents))]
 
     spliced_top: list[TemplateMessage] = []
+    phase_anchor_indices: list[int] = []
     for phase, agents in groups:
         if phase is not None:
             phase_tm = _new_synthetic_node(
@@ -2969,16 +2984,18 @@ def _splice_one_workflow_run(
                     detail=phase.detail,
                     agent_count=len(agents),
                 ),
-                parent=host,
+                parent=attach,
             )
             spliced_top.append(phase_tm)
+            if phase_tm.message_index is not None:
+                phase_anchor_indices.append(phase_tm.message_index)
             agent_parent: Optional[TemplateMessage] = phase_tm
         else:
             agent_parent = None
 
         agent_nodes: list[TemplateMessage] = []
         for agent in agents:
-            base = agent_parent if agent_parent is not None else host
+            base = agent_parent if agent_parent is not None else attach
             agent_tm = _new_synthetic_node(
                 ctx,
                 WorkflowAgentMessage(
@@ -3001,8 +3018,17 @@ def _splice_one_workflow_run(
         else:
             spliced_top.extend(agent_nodes)
 
-    host.children = list(host.children) + spliced_top
-    _recount_spliced_children(ctx, host, spliced_top)
+    attach.children = list(attach.children) + spliced_top
+    _recount_spliced_children(ctx, attach, spliced_top)
+
+    # Let the tool-input formatter link each phase pill to its phase card
+    # (#msg-d-{N} anchors; the hashchange handler unfolds the target).
+    # Only set when the splice grouped by snapshot phases — the pill list in
+    # the header comes from the same snapshot source, so order matches.
+    if phase_anchor_indices and isinstance(host.content, ToolUseMessage):
+        wf_input = host.content.input
+        if isinstance(wf_input, WorkflowToolInput):
+            wf_input.phase_anchor_indices = phase_anchor_indices
 
 
 def _new_synthetic_node(
@@ -4951,7 +4977,9 @@ class Renderer:
     def title_WorkflowAgentMessage(
         self, content: WorkflowAgentMessage, _: TemplateMessage
     ) -> str:
-        return content.label or "Agent"
+        # "Agent <label>" (no colon — labels are colon-shaped already,
+        # e.g. "map:converter-load-pipeline").
+        return f"Agent {content.label}" if content.label else "Agent"
 
     def title_UnknownMessage(self, _content: UnknownMessage, _: TemplateMessage) -> str:
         return "Unknown Content"

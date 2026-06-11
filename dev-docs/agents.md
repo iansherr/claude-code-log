@@ -2,17 +2,20 @@
 
 > See [application_model.md](application_model.md) for the system overview.
 
-`claude-code-log` renders three flavors of Task-spawned agents:
+`claude-code-log` renders four flavors of spawned agents:
 
 | Flavor | Trigger | Reference |
 |--------|---------|-----------|
 | **Sync sub-agent** | `Task` tool_use, default behavior | This doc § 1 (#79, stub) |
 | **Async task agent** | `Task` with `run_in_background=True` | This doc § 2 (#90) |
 | **Teammates** | `Agent` (or `Task` with `team_name`/`name`); requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | [teammates.md](teammates.md) (#91) |
+| **Workflow sub-agents** | `Workflow` tool_use (JS orchestrator fan-out) | [workflows.md](workflows.md) (#174); summary in § 4 |
 
-All three share the same metadata-tail shape on the spawn's tool_result
+The first three share the same metadata-tail shape on the spawn's tool_result
 (`agentId:` line + optional `<usage>` block) — `parse_agent_result_metadata`
-populates `TaskOutput.metadata` for every variant.
+populates `TaskOutput.metadata` for every variant. Workflow sub-agents are
+different: their metadata comes from the run's `journal.jsonl` +
+`<runId>.json` snapshot, not from the tool_result tail.
 
 ## 1. Sync sub-agents (#79)
 
@@ -131,7 +134,7 @@ anchors all stay valid — no index-remap cascade required.
 
 The answer is visible exactly once at every detail level. At
 MINIMAL/USER_ONLY the spawn-fold is skipped (the Task tool_result
-itself is filtered by `_filter_template_by_detail`), so the
+itself is ghosted by `_ghost_template_by_detail`), so the
 notification card retains its body as the surviving copy.
 
 ### 2.5 Key files
@@ -189,3 +192,21 @@ machinery:
 - Session-header team badge and project-index team aggregation.
 
 See [teammates.md](teammates.md) for the full as-built reference.
+
+## 4. Workflow sub-agents (#174)
+
+A `Workflow` tool_use launches a JavaScript orchestrator that fans out
+into many side-channel sub-agents grouped into phases. Unlike the Task
+flavors above, these agents are *not* integrated through
+`_integrate_agent_entries` / `_relocate_subagent_blocks`: the whole run
+(phases → agents → each agent's side-channel transcript) is parsed from
+`<sid>/subagents/workflows/<runId>/` by `workflow.py` and spliced as a
+self-contained sub-tree at the Workflow tool_use site by
+`_splice_workflow_runs` — the last pass in
+`generate_template_messages`. Each agent's transcript is re-rendered
+through a nested `generate_template_messages` call and grafted under
+its `workflow_agent` card.
+
+See [workflows.md](workflows.md) for the full as-built reference
+(on-disk layout, parse model, taskId linkage, splice mechanics,
+detail-level behaviour).

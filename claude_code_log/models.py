@@ -1608,6 +1608,12 @@ class WorkflowToolInput(BaseModel):
     # avoid importing the dataclass into this Pydantic model.
     workflow_run: Optional[Any] = None
 
+    # Renderer-set by the splice pass: message_index of each spliced
+    # WorkflowPhaseMessage card, in snapshot-phase order (parallel to the
+    # header's phase-pill list, which comes from the same snapshot). Lets the
+    # formatter render each pill as a #msg-d-{N} anchor link to its phase card.
+    phase_anchor_indices: Optional[list[int]] = None
+
     model_config = {"extra": "allow"}
 
 

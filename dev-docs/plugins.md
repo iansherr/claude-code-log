@@ -713,7 +713,7 @@ NOT already wrap. Synthesis classes leave `has_markdown` alone.
 | Protocol + loader + dispatch | [`claude_code_log/plugins.py`](../claude_code_log/plugins.py) |
 | Priority constants | [`claude_code_log/factories/priorities.py`](../claude_code_log/factories/priorities.py) |
 | Renderer dispatch | `Renderer._dispatch_format`, `Renderer._dispatch_title`, `HtmlRenderer._class_dispatch_format` in [`renderer.py`](../claude_code_log/renderer.py) / [`html/renderer.py`](../claude_code_log/html/renderer.py) |
-| Visibility predicate | `MessageContent.visible_at`, `DetailLevel.includes`, `_DETAIL_ORDER` in [`models.py`](../claude_code_log/models.py); `_filter_template_by_detail` (post-render driver) in [`renderer.py`](../claude_code_log/renderer.py) |
+| Visibility predicate | `MessageContent.visible_at`, `DetailLevel.includes`, `_DETAIL_ORDER` in [`models.py`](../claude_code_log/models.py); `_ghost_template_by_detail` (post-render driver) in [`renderer.py`](../claude_code_log/renderer.py) |
 | Reference plugin (canonical example) | [`test/_plugins/clmail/`](../test/_plugins/clmail/) + [`README.md`](../test/_plugins/clmail/README.md) |
 | Test suite (four layers) | [`test/test_plugin_system.py`](../test/test_plugin_system.py) |
 | Design discussion | [`work/tool-renderer-plugins.md`](../work/tool-renderer-plugins.md) |

@@ -778,6 +778,34 @@ class SessionHeaderMessage(MessageContent):
     summary: Optional[str] = None  # Session summary if available
 ```
 
+## 5.2 Workflow Run Nodes (#174)
+
+Two synthetic node types materialise a dynamic-workflow run's structure
+when the splice pass attaches it at the Workflow tool_use site (see
+[workflows.md](workflows.md)). They are built from the parsed run, not
+from JSONL entries, and use `MessageMeta.empty()`:
+
+```python
+@dataclass
+class WorkflowPhaseMessage(MessageContent):   # message_type = "workflow_phase"
+    title: str = ""        # heading renders as "Phase: <title>" (🧩)
+    detail: str = ""
+    agent_count: int = 0
+
+@dataclass
+class WorkflowAgentMessage(MessageContent):   # message_type = "workflow_agent"
+    label: str = ""        # heading renders as "Agent <label>" (🤖)
+    model: str = ""
+    state: str = ""
+    tokens: Optional[int] = None
+    tool_calls: Optional[int] = None
+    result: Any = None     # dict (StructuredOutput) | str | None
+    result_preview: str = ""
+```
+
+A phase's `.children` are its agent nodes; an agent's `.children` are
+its grafted side-channel transcript messages.
+
 ---
 
 # Part 6: Infrastructure Models
@@ -791,6 +819,7 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     # System message types
     SystemMessage: ["system"],  # level added dynamically
     HookSummaryMessage: ["system", "system-hook"],
+    HookAttachmentMessage: ["system", "system-hook-attachment"],
     AwaySummaryMessage: ["system", "system-away-summary"],
     # User message types
     UserTextMessage: ["user"],
@@ -800,6 +829,8 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     UserMemoryMessage: ["user"],
     CompactedSummaryMessage: ["user", "compacted"],
     CommandOutputMessage: ["user", "command-output"],
+    TeammateMessage: ["user", "teammate"],
+    TaskNotificationMessage: ["user", "task-notification"],
     # Assistant message types
     AssistantTextMessage: ["assistant"],
     # Tool message types
@@ -811,6 +842,11 @@ CSS_CLASS_REGISTRY: dict[type[MessageContent], list[str]] = {
     BashInputMessage: ["bash-input"],
     BashOutputMessage: ["bash-output"],
     UnknownMessage: ["unknown"],
+    # Dynamic-workflow synthetic nodes (#174): tool_use keeps them under
+    # the runtime "Tool Use" filter toggle; the modifier drives styling
+    # and the timeline lanes.
+    WorkflowPhaseMessage: ["tool_use", "workflow_phase"],
+    WorkflowAgentMessage: ["tool_use", "workflow_agent"],
 }
 ```
 

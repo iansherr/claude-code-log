@@ -1375,10 +1375,23 @@ def format_workflow_input(workflow_input: WorkflowToolInput) -> str:
             f"<span class='workflow-description'>{escape_html(description)}</span>"
         )
     if phases:
-        pills = "".join(
-            f"<span class='workflow-phase-pill'>{escape_html(p)}</span>" for p in phases
+        # When the splice recorded the phase cards' message indices (parallel
+        # to this snapshot-sourced phase list), each pill links to its card —
+        # the hashchange handler unfolds the target on click.
+        anchors = workflow_input.phase_anchor_indices or []
+        pill_parts: list[str] = []
+        for i, p in enumerate(phases):
+            label = escape_html(p)
+            if i < len(anchors):
+                pill_parts.append(
+                    f"<a class='workflow-phase-pill' href='#msg-d-{anchors[i]}'>"
+                    f"{label}</a>"
+                )
+            else:
+                pill_parts.append(f"<span class='workflow-phase-pill'>{label}</span>")
+        header_parts.append(
+            f"<span class='workflow-phases'>{''.join(pill_parts)}</span>"
         )
-        header_parts.append(f"<span class='workflow-phases'>{pills}</span>")
     header = (
         f"<div class='workflow-meta'>{''.join(header_parts)}</div>"
         if header_parts
@@ -1448,13 +1461,21 @@ def format_workflow_agent_content(content: WorkflowAgentMessage) -> str:
         parts.append(f"<div class='workflow-agent-meta'>{''.join(meta_bits)}</div>")
 
     result = content.result
-    if isinstance(result, (dict, list)):
-        # Pretty-print + JSON-highlight directly. NOT via render_async_result_body
-        # — its JSON heuristic only fires on `{"`-shaped text, so a list-shaped
-        # StructuredOutput result (``[...]``) would fall through to the markdown
-        # path and lose JSON highlighting (and diverge from the Markdown renderer,
-        # which fences both dict and list as JSON). A real dict/list always
-        # serializes to valid JSON, so highlight it unconditionally (CR #210).
+    if isinstance(result, dict):
+        # A dict-shaped StructuredOutput result renders like a generic tool's
+        # parameters — the shared key/value table — instead of a raw JSON dump.
+        # Going through render_params_table means future upgrades to the
+        # generic renderer (e.g. Markdown-aware string values) apply here
+        # automatically.
+        parts.append(
+            f"<div class='workflow-agent-result'>"
+            f"{render_params_table(cast('dict[str, Any]', result))}</div>"
+        )
+    elif isinstance(result, list):
+        # List-shaped results keep the pretty-printed JSON view (an index→value
+        # table reads worse than the literal). NOT via render_async_result_body
+        # — its JSON heuristic only fires on `{"`-shaped text, so a `[...]`
+        # payload would fall through to the markdown path (CR #210).
         pretty = json.dumps(result, indent=2, ensure_ascii=False)
         parts.append(
             render_file_content_collapsible(

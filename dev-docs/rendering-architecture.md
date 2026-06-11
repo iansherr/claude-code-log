@@ -240,8 +240,14 @@ In code order, `generate_template_messages`:
    (**Phase 4**), `_cleanup_sidechain_duplicates`.
 7. **Trailing metadata / link passes** — `_populate_teammate_colors`,
    `_populate_task_metadata`, `_link_async_notifications`,
-   `_link_tool_use_notifications`, `_link_cron_jobs_by_id`,
-   `_link_task_id_consumers`.
+   `_link_workflow_runs`, `_link_tool_use_notifications`,
+   `_link_cron_jobs_by_id`, `_link_task_id_consumers`.
+8. **Workflow splice (must stay last)** — `_splice_workflow_runs`
+   attaches each linked `WorkflowRun`'s phase→agent→side-channel
+   sub-tree at its Workflow tool_use site. It *appends* synthetic and
+   grafted nodes through `ctx.register` (the monotonic index
+   allocator), so it has to follow every pass that iterates
+   `ctx.messages`. See [workflows.md § 5](workflows.md).
 
 The code in `generate_template_messages` is the authoritative ordering.
 
@@ -422,3 +428,4 @@ Note that `meta.uuid` is the original transcript entry's UUID. Since a single en
 - [css-classes.md](css-classes.md) - CSS class combinations and rules
 - [message-hierarchy.md](message-hierarchy.md) - Fold/unfold state machine
 - [dag.md](dag.md) - DAG-based message architecture (replaces timestamp-based ordering)
+- [workflows.md](workflows.md) - Dynamic-workflow parsing + the run-tree splice

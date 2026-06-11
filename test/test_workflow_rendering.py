@@ -261,9 +261,11 @@ class TestWorkflowMarkdownEscaping:
 
 
 class TestWorkflowRunSplice:
-    """PR3 step 3: the parsed WorkflowRun tree is spliced under its Workflow
-    tool_use node — phases → agents → each agent's side-channel transcript —
-    on the nested DOM, in both HTML and Markdown."""
+    """PR3 step 3: the parsed WorkflowRun tree is spliced at its Workflow
+    tool_use site — phases → agents → each agent's side-channel transcript —
+    on the nested DOM, in both HTML and Markdown. The sub-tree attaches to the
+    PAIRED tool_result (so the tool_use/tool_result pair stays visually
+    joined), falling back to the tool_use when no result exists yet."""
 
     def _tree(self):
         from claude_code_log.converter import load_directory_transcripts
@@ -272,18 +274,25 @@ class TestWorkflowRunSplice:
 
         msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
         _roots, _nav, ctx = generate_template_messages(msgs, session_tree=tree)
-        host = next(
+        tool_use = next(
             tm
             for tm in ctx.messages
             if tm is not None
             and isinstance(tm.content, ToolUseMessage)
             and tm.content.tool_name == "Workflow"
         )
+        # The splice hangs off the paired tool_result when present.
+        host = tool_use
+        if tool_use.pair_last is not None:
+            partner = ctx.get(tool_use.pair_last)
+            if partner is not None and partner.children:
+                host = partner
         return host, ctx
 
-    def test_phases_and_agents_nested_under_tool_use(self) -> None:
+    def test_phases_and_agents_nested_at_tool_use_site(self) -> None:
         host, _ctx = self._tree()
-        # Two phases (Map, Synthesize) attached to the Workflow tool_use.
+        # Two phases (Map, Synthesize) attached at the Workflow tool_use site
+        # (on the paired tool_result — the pair renders as one joined unit).
         from claude_code_log.models import WorkflowPhaseMessage
 
         phases = [c for c in host.children if c.type == "workflow_phase"]
@@ -313,6 +322,42 @@ class TestWorkflowRunSplice:
         assert any(
             gc.type == "tool_use" for c in first_agent.children for gc in c.children
         )
+
+    def test_splice_attaches_to_paired_tool_result(self) -> None:
+        from claude_code_log.models import ToolResultMessage
+
+        host, _ctx = self._tree()
+        # The fixture run has completed → result exists → splice hangs off it,
+        # keeping the tool_use/tool_result pair visually joined.
+        assert isinstance(host.content, ToolResultMessage)
+        assert host.pair_first is not None  # still the pair's second half
+
+    def test_phase_pills_link_to_phase_cards(self) -> None:
+        from claude_code_log.converter import load_directory_transcripts
+
+        msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
+        html = generate_html(msgs, session_tree=tree)
+        host, _ctx = self._tree()
+        phase_ids = [
+            c.message_index for c in host.children if c.type == "workflow_phase"
+        ]
+        assert len(phase_ids) == 2
+        for idx in phase_ids:
+            assert f"<a class='workflow-phase-pill' href='#msg-d-{idx}'>" in html
+
+    def test_agent_title_prefixed_and_dict_result_as_params_table(self) -> None:
+        from claude_code_log.converter import load_directory_transcripts
+
+        msgs, tree = load_directory_transcripts(TRUNK.parent, silent=True)
+        html = generate_html(msgs, session_tree=tree)
+        # Agent cards title as "Agent <label>" (no colon — labels carry one).
+        assert "Agent review:loader" in html
+        # Dict-shaped StructuredOutput renders via the generic tool
+        # key/value table, not a raw JSON dump. (Target the rendered div —
+        # the bare class name also appears in the embedded CSS rules.)
+        i = html.find("<div class='workflow-agent-result'>")
+        assert i != -1
+        assert "tool-params-table" in html[i : i + 400]
 
     def test_spliced_indices_unique_and_monotonic(self) -> None:
         _host, ctx = self._tree()
