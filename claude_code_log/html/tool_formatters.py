@@ -1116,12 +1116,15 @@ def _structured_value_html(value: "dict[Any, Any] | list[Any]", depth: int) -> s
 def _table_fold_html(formatted_value: str, table_html: str, kind: str) -> str:
     """Wrap a rendered params table in a collapsed fold.
 
-    When the table has row-level folds, the summary carries an explicit
-    collapse hint (instead of the generic ::after one) followed by a
-    rows-toggle button that expands/collapses them all at once (wired
-    up in transcript.html). The "<details" probe is exact: structures
-    always fold, so a deeper fold can only exist inside a direct-row
-    fold. All-scalar containers get a plain fold — no dead button.
+    The summary holds ONLY the preview text — never interactive elements
+    (a button inside ``<summary>`` is an accessibility violation Chrome
+    flags: not consistently reachable by keyboard/AT). When the table has
+    row-level folds, the rows-toggle button lives in a controls strip
+    AFTER the summary, inside the details — natively hidden while closed,
+    visible when open (wired up in transcript.html). The "<details" probe
+    is exact: structures always fold, so a deeper fold can only exist
+    inside a direct-row fold. All-scalar containers get a plain fold —
+    no dead button.
     """
     preview = escape_html(formatted_value[:100])
     if len(formatted_value) > 100:
@@ -1129,7 +1132,8 @@ def _table_fold_html(formatted_value: str, table_html: str, kind: str) -> str:
     if "<details" in table_html:
         return f"""
                         <details class='tool-param-collapsible tool-param-collapsible-rows'>
-                            <summary><span class='tool-param-preview'>{preview}</span><span class='tool-param-collapse-hint'>collapse</span><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='{kind}'>&#9654; expand all {kind}</button></summary>
+                            <summary><span class='tool-param-preview'>{preview}</span></summary>
+                            <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='{kind}'>&#9654; expand all {kind}</button></div>
                             {table_html}
                         </details>
                     """
@@ -1173,15 +1177,40 @@ def _param_value_html(value: Any, depth: int) -> str:
 
 
 def _params_table_html(items: "Iterable[tuple[Any, Any]]", depth: int) -> str:
-    """Build one key/value table; nested levels get a marker class."""
+    """Build one key/value table; nested levels get a marker class.
+
+    A fold-valued row hoists its ▶/▼ toggle into the KEY column (wired in
+    transcript.html), so the value summary stays free of per-fold collapse
+    chrome — only the previews (closed) and the rows-toggle buttons (open)
+    remain there. The ``<details`` probe is exact: every fold helper emits
+    a ``<details`` as the value's first element, and non-fold values never
+    start with one (their text is escaped).
+    """
     css = "tool-params-table" if depth == 0 else "tool-params-table tool-params-nested"
     html_parts = [f"<table class='{css}'>"]
     for key, value in items:
         escaped_key = escape_html(str(key))
         value_html = _param_value_html(value, depth)
+        if value_html.lstrip().startswith("<details"):
+            # The button wraps glyph AND key text — the whole key is the
+            # click target (and keyboard-reachable, unlike a td handler).
+            # One glyph (▸), rotated 90° by CSS when open: symmetric by
+            # construction, unlike the ▶/▼ pair whose metrics differ.
+            key_cell = (
+                "<button type='button' class='tool-param-key-toggle'"
+                " aria-expanded='false'>"
+                "<span class='tool-param-key-glyph'>&#9656;</span>"
+                f"{escaped_key}</button>"
+            )
+            row_attr = " class='tool-param-row-fold'"
+        else:
+            # Scalar rows reserve the same glyph slot (empty) so every key
+            # text starts at the same x.
+            key_cell = f"<span class='tool-param-key-glyph'></span>{escaped_key}"
+            row_attr = ""
         html_parts.append(f"""
-            <tr>
-                <td class='tool-param-key'>{escaped_key}</td>
+            <tr{row_attr}>
+                <td class='tool-param-key'>{key_cell}</td>
                 <td class='tool-param-value'>{value_html}</td>
             </tr>
         """)

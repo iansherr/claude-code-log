@@ -1,9 +1,12 @@
-"""Playwright tests for the params-table rows-toggle button.
+"""Playwright tests for the params-table fold controls.
 
-An open structured-value fold shows "▶ expand rows" after the collapse
-hint; pressing it opens every row-level fold of that table and turns
-into "▼ collapse rows"; closing the outer fold restores the initial
-state (rows collapsed, button reset).
+An open structured-value fold shows "▶ expand all rows" in a controls
+strip after the summary (never inside it — interactive elements within
+<summary> are an accessibility violation); pressing it opens every
+row-level fold of that table and turns into "▼ collapse all rows";
+closing the outer fold restores the initial state. Fold-valued rows
+carry their ▶/▼ toggle in the KEY column, derived from the actual open
+state.
 """
 
 from __future__ import annotations
@@ -102,7 +105,9 @@ class TestParamsRowsToggleBrowser:
         page.goto(f"file://{html}")
 
         outer = page.locator("details.tool-param-collapsible-rows").first
-        button = outer.locator("summary .tool-param-rows-toggle").first
+        button = outer.locator(
+            ".tool-param-fold-controls .tool-param-rows-toggle"
+        ).first
 
         # Collapsed fold: the button is hidden.
         assert not button.is_visible()
@@ -134,16 +139,23 @@ class TestParamsRowsToggleBrowser:
         page.goto(f"file://{html}")
 
         outer = page.locator("details.tool-param-collapsible-rows").first
-        button = outer.locator("summary .tool-param-rows-toggle").first
+        button = outer.locator(
+            ".tool-param-fold-controls .tool-param-rows-toggle"
+        ).first
 
         outer.locator("summary").first.click()
         button.click()
         assert all(outer.evaluate(ROW_DETAILS_JS))
 
-        # Close the outer fold via its summary, then reopen.
-        outer.locator("summary").first.click()
+        # Close the outer fold via its key-column toggle (the open summary
+        # is hidden for keyed rows — the ▼ in the key cell is the collapse
+        # control), then reopen the same way.
+        key_toggle = page.locator(
+            "tr.tool-param-row-fold > td.tool-param-key > .tool-param-key-toggle"
+        ).first
+        key_toggle.click()
         assert not outer.evaluate("el => el.open")
-        outer.locator("summary").first.click()
+        key_toggle.click()
 
         row_states = outer.evaluate(ROW_DETAILS_JS)
         assert not any(row_states), "reopened fold must show rows collapsed"
@@ -158,7 +170,9 @@ class TestParamsRowsToggleBrowser:
         page.goto(f"file://{html}")
 
         outer = page.locator("details.tool-param-collapsible-rows").first
-        button = outer.locator("summary .tool-param-rows-toggle").first
+        button = outer.locator(
+            ".tool-param-fold-controls .tool-param-rows-toggle"
+        ).first
 
         page.locator("#toggleDetails").click()
         assert outer.evaluate("el => el.open")
@@ -202,9 +216,13 @@ class TestParamsRowsToggleBrowser:
         )
 
         # Selectively close one row: mixed state → top offers expand again.
+        # (Open keyed summaries are hidden — close via the key-column toggle.)
         outer = root.locator("details.tool-param-collapsible-rows").first
-        row = outer.locator(":scope > table > tbody > tr > td > details").first
-        row.locator("summary").first.click()
+        row_toggle = outer.locator(
+            ":scope > table > tbody > tr.tool-param-row-fold"
+            " > td.tool-param-key > .tool-param-key-toggle"
+        ).first
+        row_toggle.click()
         expect(expand_all).to_contain_text("expand all")
 
         # Re-expand, then collapse all back to the initial state.
@@ -229,3 +247,45 @@ class TestParamsRowsToggleBrowser:
             "el => Array.from(el.querySelectorAll('details')).every(d => d.open)"
         )
         expect(expand_all).to_contain_text("collapse all")
+
+    @pytest.mark.browser
+    def test_key_column_toggle_cycle_and_glyph_sync(self, page: Page) -> None:
+        """The whole-key button drives the row's fold; its state
+        (aria-expanded → CSS-rotated ▸ glyph) is derived from the actual
+        open state, so the expand-all path flips it too, not just direct
+        clicks."""
+        html = self._render(_entries_with_structured_list())
+        page.goto(f"file://{html}")
+
+        outer = page.locator("details.tool-param-collapsible-rows").first
+        key_toggle = page.locator(
+            "tr.tool-param-row-fold > td.tool-param-key > .tool-param-key-toggle"
+        ).first
+
+        # One constant ▸ glyph; open/closed is aria-expanded (CSS rotates).
+        assert "▸" in (key_toggle.text_content() or "")
+        expect(key_toggle).to_have_attribute("aria-expanded", "false")
+        key_toggle.click()
+        assert outer.evaluate("el => el.open")
+        # State updates arrive via the queued toggle event — poll.
+        expect(key_toggle).to_have_attribute("aria-expanded", "true")
+        key_toggle.click()
+        assert not outer.evaluate("el => el.open")
+        expect(key_toggle).to_have_attribute("aria-expanded", "false")
+
+        # Externally-driven open (expand-all) must flip the state too.
+        page.locator(".tool-params-expand-all").first.click()
+        expect(key_toggle).to_have_attribute("aria-expanded", "true")
+
+    @pytest.mark.browser
+    def test_no_interactive_elements_inside_summaries(self, page: Page) -> None:
+        """Accessibility contract (Chrome DevTools issue): no button/link/
+        input may live inside any <summary> on the rendered page."""
+        html = self._render(_entries_with_structured_list())
+        page.goto(f"file://{html}")
+        offenders = page.evaluate(
+            "() => document.querySelectorAll("
+            "'summary button, summary a, summary input, summary select'"
+            ").length"
+        )
+        assert offenders == 0

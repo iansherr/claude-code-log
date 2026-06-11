@@ -418,7 +418,10 @@
             // it stays in sync whatever opened the rows (button click,
             // toggle-all, manual clicks).
             function syncRowsToggle(details) {
-                const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                // The button lives in a controls strip AFTER the summary —
+                // interactive elements inside <summary> are an accessibility
+                // violation (unreachable by keyboard/AT in some browsers).
+                const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                 if (!button) return;
                 const rows = details.querySelectorAll(rowDetailsSelector);
                 const allOpen = rows.length > 0 &&
@@ -454,12 +457,20 @@
                     syncExpandAll(root);
                     return;
                 }
+                // Key-column fold toggle (▶/▼): drives the value cell's
+                // details from the key cell, keeping the summary free of
+                // per-fold collapse chrome. Glyph state is derived in the
+                // toggle listener below, so any other opener stays in sync.
+                const keyToggle = event.target.closest('.tool-param-key-toggle');
+                if (keyToggle) {
+                    const row = keyToggle.closest('tr');
+                    const details = row &&
+                        row.querySelector(':scope > .tool-param-value > details');
+                    if (details) details.open = !details.open;
+                    return;
+                }
                 const button = event.target.closest('.tool-param-rows-toggle');
                 if (!button) return;
-                // The button sits inside a <summary>: keep the click from
-                // toggling the enclosing details.
-                event.preventDefault();
-                event.stopPropagation();
                 const details = button.closest('details');
                 const expand = button.dataset.state !== 'expanded';
                 details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -486,6 +497,20 @@
                 const cell = details.parentElement;
                 const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                 if (parent && parent !== details) syncRowsToggle(parent);
+                // Sync the key-column glyph of a fold-valued row — derived
+                // from the actual open state, so summary clicks, rows-toggle
+                // bulk opens, and expand-all all keep it truthful.
+                if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                    const row = cell.closest('tr');
+                    const keyBtn = row && row.querySelector(
+                        ':scope > .tool-param-key > .tool-param-key-toggle');
+                    if (keyBtn) {
+                        // CSS rotates the single ▸ glyph on aria-expanded —
+                        // symmetric open/closed states by construction.
+                        keyBtn.setAttribute('aria-expanded',
+                            details.open ? 'true' : 'false');
+                    }
+                }
                 // Keep the renderer's top-level expand-all button in step
                 // with whatever opened/closed this fold (rows-toggle,
                 // manual click, global toggle-all).

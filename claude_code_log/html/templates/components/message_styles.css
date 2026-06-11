@@ -1014,27 +1014,15 @@ pre > code {
     word-break: break-all;
 }
 
-/* Structured-table folds carry an explicit collapse hint plus a
-   rows-toggle button in the summary, so suppress the generic ::after
-   "collapse" hint for them and show the real elements only when open. */
-.tool-param-collapsible-rows[open] > summary::after {
-    content: none;
+/* The rows-toggle lives in a controls strip AFTER the summary — never
+   inside it (an interactive element within <summary> is an accessibility
+   violation: not consistently reachable by keyboard/AT). The strip is
+   details content, so it's natively hidden while the fold is closed. */
+.tool-param-fold-controls {
+    margin: 2px 0;
 }
 
-.tool-param-collapse-hint,
 .tool-param-rows-toggle {
-    display: none;
-}
-
-.tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-    display: inline;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-.tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-    display: inline;
-    margin-left: 1.5em;
     padding: 0;
     background: none;
     border: none;
@@ -1046,6 +1034,60 @@ pre > code {
 
 .tool-param-rows-toggle:hover {
     color: var(--text-primary);
+}
+
+/* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+   ▶/▼ button (wired in transcript.html, state derived from toggle events)
+   replaces the per-fold in-summary collapse chrome, which only remained
+   useful en masse — every row showing "▼ collapse" drowned the content.
+   Scoped to keyed rows: the top-level root fold has no key column and
+   keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+   no interactive child). */
+.tool-param-key-toggle {
+    /* The whole key (glyph + text) is the click target — inherit the key
+       cell's look so fold keys read exactly like scalar keys. */
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tool-param-key-toggle:hover {
+    color: var(--text-primary);
+}
+
+/* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+   all key texts start at the same x regardless of foldability. */
+.tool-param-key-glyph {
+    display: inline-block;
+    width: 1.3em;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+}
+
+.tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+    transform: rotate(90deg);
+}
+
+/* The key glyph is THE marker for these rows — drop the duplicate native
+   one from the value summary (preview text stays clickable). */
+.tool-param-row-fold > .tool-param-value > details > summary {
+    list-style: none;
+}
+
+.tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+   the rows-toggle sits in the controls strip below) — drop the line it
+   would occupy. This also suppresses the generic ::after "collapse". */
+.tool-param-row-fold > .tool-param-value > details[open] > summary {
+    display: none;
 }
 
 /* Top-level expand/collapse-all control above a params/result table —

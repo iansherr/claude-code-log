@@ -1373,27 +1373,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -1405,6 +1393,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -4955,7 +4997,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -4991,12 +5036,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -5023,6 +5076,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -7583,27 +7650,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -7615,6 +7670,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -11064,7 +11173,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -11100,12 +11212,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -11132,6 +11252,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -15880,27 +16014,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -15912,6 +16034,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -19577,7 +19753,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -19613,12 +19792,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -19645,6 +19832,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -22205,27 +22406,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -22237,6 +22426,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -26169,7 +26412,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -26205,12 +26451,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -26237,6 +26491,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -28797,27 +29065,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -28829,6 +29085,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -31993,7 +32303,7 @@
           <div class='debug-info'>edge_004</div>
           <div class='content'><table class='tool-params-table'>
               <tr>
-                  <td class='tool-param-key'>test_param</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>test_param</td>
                   <td class='tool-param-value'>This tool will fail to demonstrate error handling</td>
               </tr>
           </table></div>
@@ -32240,8 +32550,8 @@
           </div>
           <div class='debug-info'>assistant_00 &rarr; assistant_00</div>
           <div class='content'><div class='tool-params-root'><div class='tool-params-controls'><button type='button' class='tool-params-expand-all' data-state='collapsed'>&#9654; expand all</button></div><table class='tool-params-table'>
-              <tr>
-                  <td class='tool-param-key'>todos</td>
+              <tr class='tool-param-row-fold'>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>todos</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible tool-param-collapsible-rows'>
                               <summary><span class='tool-param-preview'>[
@@ -32249,15 +32559,16 @@
     {
       &quot;id&quot;: &quot;2&quot;,
       &quot;content&quot;: &quot;Implement core functionality&quot;,
-      &quot;status&quot;: &quot;...</span><span class='tool-param-collapse-hint'>collapse</span><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='rows'>&#9654; expand all rows</button></summary>
+      &quot;status&quot;: &quot;...</span></summary>
+                              <div class='tool-param-fold-controls'><button type='button' class='tool-param-rows-toggle' data-state='collapsed' data-kind='rows'>&#9654; expand all rows</button></div>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'>0</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>0</td>
                   <td class='tool-param-value'>broken_todo</td>
               </tr>
           
-              <tr>
-                  <td class='tool-param-key'>1</td>
+              <tr class='tool-param-row-fold'>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>1</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32267,22 +32578,22 @@
     &quot;priority&quot;:...</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
                   <td class='tool-param-value'>2</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
                   <td class='tool-param-value'>Implement core functionality</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
                   <td class='tool-param-value'>in_progress</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
                   <td class='tool-param-value'>high</td>
               </tr>
           </table>
@@ -32290,8 +32601,8 @@
                       </td>
               </tr>
           
-              <tr>
-                  <td class='tool-param-key'>2</td>
+              <tr class='tool-param-row-fold'>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>2</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32301,22 +32612,22 @@
     &quot;priority&quot;: &quot;medium&quot;...</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
                   <td class='tool-param-value'>3</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
                   <td class='tool-param-value'>Add comprehensive tests</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
                   <td class='tool-param-value'>medium</td>
               </tr>
           </table>
@@ -32324,8 +32635,8 @@
                       </td>
               </tr>
           
-              <tr>
-                  <td class='tool-param-key'>3</td>
+              <tr class='tool-param-row-fold'>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>3</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32336,22 +32647,22 @@
   }</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
                   <td class='tool-param-value'>4</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
                   <td class='tool-param-value'>Write user documentation</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
                   <td class='tool-param-value'>low</td>
               </tr>
           </table>
@@ -32359,8 +32670,8 @@
                       </td>
               </tr>
           
-              <tr>
-                  <td class='tool-param-key'>4</td>
+              <tr class='tool-param-row-fold'>
+                  <td class='tool-param-key'><button type='button' class='tool-param-key-toggle' aria-expanded='false'><span class='tool-param-key-glyph'>&#9656;</span>4</button></td>
                   <td class='tool-param-value'>
                           <details class='tool-param-collapsible'>
                               <summary><span class='tool-param-preview'>{
@@ -32371,22 +32682,22 @@
   }</span></summary>
                               <table class='tool-params-table tool-params-nested'>
               <tr>
-                  <td class='tool-param-key'>id</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>id</td>
                   <td class='tool-param-value'>5</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>content</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>content</td>
                   <td class='tool-param-value'>Perform code review</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>status</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>status</td>
                   <td class='tool-param-value'>pending</td>
               </tr>
           
               <tr>
-                  <td class='tool-param-key'>priority</td>
+                  <td class='tool-param-key'><span class='tool-param-key-glyph'></span>priority</td>
                   <td class='tool-param-value'>medium</td>
               </tr>
           </table>
@@ -32723,7 +33034,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -32759,12 +33073,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -32791,6 +33113,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -35351,27 +35687,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -35383,6 +35707,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -39221,7 +39599,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -39257,12 +39638,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -39289,6 +39678,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).
@@ -41849,27 +42252,15 @@
       word-break: break-all;
   }
   
-  /* Structured-table folds carry an explicit collapse hint plus a
-     rows-toggle button in the summary, so suppress the generic ::after
-     "collapse" hint for them and show the real elements only when open. */
-  .tool-param-collapsible-rows[open] > summary::after {
-      content: none;
+  /* The rows-toggle lives in a controls strip AFTER the summary — never
+     inside it (an interactive element within <summary> is an accessibility
+     violation: not consistently reachable by keyboard/AT). The strip is
+     details content, so it's natively hidden while the fold is closed. */
+  .tool-param-fold-controls {
+      margin: 2px 0;
   }
   
-  .tool-param-collapse-hint,
   .tool-param-rows-toggle {
-      display: none;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-collapse-hint {
-      display: inline;
-      color: var(--text-muted);
-      font-style: italic;
-  }
-  
-  .tool-param-collapsible-rows[open] > summary > .tool-param-rows-toggle {
-      display: inline;
-      margin-left: 1.5em;
       padding: 0;
       background: none;
       border: none;
@@ -41881,6 +42272,60 @@
   
   .tool-param-rows-toggle:hover {
       color: var(--text-primary);
+  }
+  
+  /* Fold-valued rows hoist their toggle into the KEY column: the key cell's
+     ▶/▼ button (wired in transcript.html, state derived from toggle events)
+     replaces the per-fold in-summary collapse chrome, which only remained
+     useful en masse — every row showing "▼ collapse" drowned the content.
+     Scoped to keyed rows: the top-level root fold has no key column and
+     keeps its summary affordances (the pure-CSS ::after "collapse" hint —
+     no interactive child). */
+  .tool-param-key-toggle {
+      /* The whole key (glyph + text) is the click target — inherit the key
+         cell's look so fold keys read exactly like scalar keys. */
+      padding: 0;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+  }
+  
+  .tool-param-key-toggle:hover {
+      color: var(--text-primary);
+  }
+  
+  /* Fixed glyph slot in EVERY key cell (empty spacer on scalar rows), so
+     all key texts start at the same x regardless of foldability. */
+  .tool-param-key-glyph {
+      display: inline-block;
+      width: 1.3em;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+  }
+  
+  .tool-param-key-toggle[aria-expanded='true'] > .tool-param-key-glyph {
+      transform: rotate(90deg);
+  }
+  
+  /* The key glyph is THE marker for these rows — drop the duplicate native
+     one from the value summary (preview text stays clickable). */
+  .tool-param-row-fold > .tool-param-value > details > summary {
+      list-style: none;
+  }
+  
+  .tool-param-row-fold > .tool-param-value > details > summary::-webkit-details-marker {
+      display: none;
+  }
+  
+  /* A keyed fold's open summary carries nothing (the key glyph shows ▼ and
+     the rows-toggle sits in the controls strip below) — drop the line it
+     would occupy. This also suppresses the generic ::after "collapse". */
+  .tool-param-row-fold > .tool-param-value > details[open] > summary {
+      display: none;
   }
   
   /* Top-level expand/collapse-all control above a params/result table —
@@ -45546,7 +45991,10 @@
               // it stays in sync whatever opened the rows (button click,
               // toggle-all, manual clicks).
               function syncRowsToggle(details) {
-                  const button = details.querySelector(':scope > summary .tool-param-rows-toggle');
+                  // The button lives in a controls strip AFTER the summary —
+                  // interactive elements inside <summary> are an accessibility
+                  // violation (unreachable by keyboard/AT in some browsers).
+                  const button = details.querySelector(':scope > .tool-param-fold-controls > .tool-param-rows-toggle');
                   if (!button) return;
                   const rows = details.querySelectorAll(rowDetailsSelector);
                   const allOpen = rows.length > 0 &&
@@ -45582,12 +46030,20 @@
                       syncExpandAll(root);
                       return;
                   }
+                  // Key-column fold toggle (▶/▼): drives the value cell's
+                  // details from the key cell, keeping the summary free of
+                  // per-fold collapse chrome. Glyph state is derived in the
+                  // toggle listener below, so any other opener stays in sync.
+                  const keyToggle = event.target.closest('.tool-param-key-toggle');
+                  if (keyToggle) {
+                      const row = keyToggle.closest('tr');
+                      const details = row &&
+                          row.querySelector(':scope > .tool-param-value > details');
+                      if (details) details.open = !details.open;
+                      return;
+                  }
                   const button = event.target.closest('.tool-param-rows-toggle');
                   if (!button) return;
-                  // The button sits inside a <summary>: keep the click from
-                  // toggling the enclosing details.
-                  event.preventDefault();
-                  event.stopPropagation();
                   const details = button.closest('details');
                   const expand = button.dataset.state !== 'expanded';
                   details.querySelectorAll(rowDetailsSelector).forEach(row => {
@@ -45614,6 +46070,20 @@
                   const cell = details.parentElement;
                   const parent = cell ? cell.closest('details.tool-param-collapsible-rows') : null;
                   if (parent && parent !== details) syncRowsToggle(parent);
+                  // Sync the key-column glyph of a fold-valued row — derived
+                  // from the actual open state, so summary clicks, rows-toggle
+                  // bulk opens, and expand-all all keep it truthful.
+                  if (cell && cell.classList && cell.classList.contains('tool-param-value')) {
+                      const row = cell.closest('tr');
+                      const keyBtn = row && row.querySelector(
+                          ':scope > .tool-param-key > .tool-param-key-toggle');
+                      if (keyBtn) {
+                          // CSS rotates the single ▸ glyph on aria-expanded —
+                          // symmetric open/closed states by construction.
+                          keyBtn.setAttribute('aria-expanded',
+                              details.open ? 'true' : 'false');
+                      }
+                  }
                   // Keep the renderer's top-level expand-all button in step
                   // with whatever opened/closed this fold (rows-toggle,
                   // manual click, global toggle-all).

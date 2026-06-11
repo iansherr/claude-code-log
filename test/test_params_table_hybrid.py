@@ -88,8 +88,9 @@ class TestNestedStructures:
     def test_list_renders_indexed_rows(self):
         html = render_params_table({"items": ["alpha", "beta"]})
         assert "tool-params-nested" in html
-        assert "<td class='tool-param-key'>0</td>" in html
-        assert "<td class='tool-param-key'>1</td>" in html
+        # Scalar rows: glyph spacer + index in the key cell.
+        assert "<span class='tool-param-key-glyph'></span>0</td>" in html
+        assert "<span class='tool-param-key-glyph'></span>1</td>" in html
         assert "alpha" in html and "beta" in html
 
     def test_structures_always_fold_regardless_of_size(self):
@@ -141,21 +142,43 @@ class TestNestedStructures:
         assert "tool-params-nested" in html
 
     def test_table_fold_carries_rows_toggle(self):
-        """Structured-table folds with foldable rows get the explicit
-        hint + rows-toggle button; plain string folds and the JSON
-        fallback do not."""
+        """Structured-table folds with foldable rows get the rows-toggle
+        button in a controls strip AFTER the summary (interactive elements
+        inside <summary> are an accessibility violation); plain string
+        folds and the JSON fallback do not."""
         value = {f"key_{i}": {"nested": i} for i in range(5)}
         html = render_params_table({"cfg": value})
         assert "tool-param-collapsible-rows" in html
-        assert "tool-param-collapse-hint" in html
+        assert "tool-param-fold-controls" in html
         assert "tool-param-rows-toggle" in html
         assert "expand all properties" in html
+        # The summary holds only the preview — no interactive children.
+        summary = html.split("<summary>", 1)[1].split("</summary>", 1)[0]
+        assert "<button" not in summary
 
         string_fold = render_params_table({"v": "plain words " * 20})
         assert "tool-param-rows-toggle" not in string_fold
 
         json_fallback = render_params_table({"v": "{" + "x" * 300})
         assert "tool-param-rows-toggle" not in json_fallback
+
+    def test_fold_rows_carry_key_column_toggle(self):
+        """A fold-valued row hoists its toggle (the whole key is the
+        button) into the key cell; scalar rows get the empty glyph spacer
+        instead, keeping every key text aligned."""
+        html = render_params_table(
+            {"cfg": {"nested": {"deep": 1}}, "count": 3, "note": "short"}
+        )
+        assert "tool-param-row-fold" in html
+        assert "tool-param-key-toggle" in html
+        # Exactly the fold rows get toggles: cfg (outer) + nested (inner).
+        assert html.count("tool-param-key-toggle") == 2
+        # Scalar rows render the plain key cell.
+        # Scalar rows reserve the same glyph slot, empty.
+        assert (
+            "<td class='tool-param-key'>"
+            "<span class='tool-param-key-glyph'></span>count</td>" in html
+        )
 
     def test_empty_containers_fall_back_to_json_dump(self):
         html = render_params_table({"a": {}, "b": []})
@@ -280,8 +303,11 @@ class TestJsonToolResults:
         result = _tool_result('[{"id": 1}, {"id": 2}]')
         html = format_tool_result_content_raw(result)
         assert "tool-result-json" in html
-        assert "<td class='tool-param-key'>0</td>" in html
-        assert "<td class='tool-param-key'>1</td>" in html
+        # Index keys head their rows; these rows hold dict folds, so the
+        # key cell wraps the index in the key-toggle button.
+        assert "0</button></td>" in html
+        assert "1</button></td>" in html
+        assert "tool-param-key-toggle" in html
 
     def test_invalid_json_stays_text(self):
         result = _tool_result('{"status": "ok", trailing')
