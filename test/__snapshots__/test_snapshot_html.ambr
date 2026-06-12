@@ -1889,16 +1889,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -1927,7 +1935,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -8198,16 +8207,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -8236,7 +8253,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -16594,16 +16612,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -16632,7 +16658,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -23018,16 +23045,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -23056,7 +23091,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -29709,16 +29745,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -29747,7 +29791,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -36363,16 +36408,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -36401,7 +36454,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
@@ -42960,16 +43014,24 @@
       border-left: 0px solid var(--tool-use-color);
   }
   
-  /* A standard sub-agent's sidechain group (Task-spawned agents — sync,
-     async, teammates): the agent's transcript hangs under the spawning
-     tool_result, framed by ONE line in tool-green — per the color-pairing
+  /* A sub-agent's sidechain group (Task/Agent-spawned — sync, async,
+     teammates): the agent's transcript hangs under its spawning tool card,
+     indented and framed by ONE line in tool-green — per the color-pairing
      principle, the group line CONTINUES its parent card's border, and the
-     spawning tool_result card's border is tool-green. (Workflow agents use
-     the same principle with their own grey: grey workflow_agent card →
-     grey side-channel line.) The :not(.sidechain) parent filter keeps the
-     line at the block's top level only (containers deeper inside the
-     sidechain hang under .sidechain-flagged cards). */
-  .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+     spawning tool card's border is tool-green. (Workflow agents use the
+     same principle with their own grey: grey workflow_agent card → grey
+     side-channel line.) The rule matches at EVERY nesting depth (#213):
+     a nested agent's group hangs under a spawn card that is itself
+     .sidechain, and each spawn boundary adds its own 2em step + line, so
+     depth accumulates through the DOM with no per-depth rules. Both
+     tool_use and tool_result parents are covered — a transcript attaches
+     to the tool_use when the spawn has no result yet (running /
+     interrupted). The :not(.workflow_agent) keeps this higher-specificity
+     rule off workflow agents' side-channel groups (their card is ALSO
+     tool_use-classed; their group line is grey, see below). Per-depth
+     line colors + depth badges: PR2 of #213. */
+  .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+  .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
       margin-left: 2em;
       border-left: 2px solid var(--tool-use-color);
   }
@@ -42998,7 +43060,8 @@
       .children:has(> .message-node > .message.workflow_phase),
       .message-node:has(> .message.workflow_phase) > .children,
       .message-node:has(> .message.workflow_agent) > .children,
-      .message-node:has(> .message.tool_result:not(.sidechain)) > .children:has(> .message-node > .message.sidechain) {
+      .message-node:has(> .message.tool_result) > .children:has(> .message-node > .message.sidechain),
+      .message-node:has(> .message.tool_use:not(.workflow_agent)) > .children:has(> .message-node > .message.sidechain) {
           margin-left: 2%;
       }
   }
