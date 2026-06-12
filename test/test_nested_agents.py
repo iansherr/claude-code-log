@@ -242,6 +242,35 @@ class TestNestedCacheInvalidation:
         # And the refreshed cache entry is valid again.
         assert cm.is_file_cached(trunk)
 
+    def test_sidecar_landing_mid_parse_invalidates_next_read(
+        self, tmp_path: Path
+    ) -> None:
+        """TOCTOU window (delta-review advisory): the stored fingerprint
+        must describe the world AS OF THE PARSE — a sidecar landing
+        between the parse's sidecar scan and the save must mismatch on
+        the next read (over-invalidation), not be fingerprinted as
+        covered by a parse that never saw it."""
+        import shutil
+
+        from claude_code_log.cache import CacheManager, subagents_fingerprint
+
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        trunk = proj / TRUNK.name
+        shutil.copy(TRUNK, trunk)
+
+        cm = CacheManager(proj, "0.0.0-test", db_path=tmp_path / "cache.db")
+        # The parse captured its fingerprint…
+        fp_at_parse = subagents_fingerprint(trunk)
+        entries = load_transcript(trunk, silent=True)
+        # …then a sidecar landed before the save.
+        shutil.copytree(TRUNK.parent / TRUNK_SID, proj / TRUNK_SID)
+        cm.save_cached_entries(trunk, entries, subagents_fp=fp_at_parse)
+
+        assert not cm.is_file_cached(trunk), (
+            "a parse-time fingerprint must not validate the late sidecar"
+        )
+
 
 class TestMultiSpawnGuard:
     def test_resultless_parallel_spawns_in_one_entry_degrade_safely(self) -> None:

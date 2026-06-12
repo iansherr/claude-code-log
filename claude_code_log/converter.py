@@ -265,7 +265,14 @@ def load_transcript(
                 print(f"Loading {jsonl_path} from cache...")
             return cached_entries
 
-    # Parse from source file
+    # Parse from source file. Capture the sidecar fingerprint FIRST — it
+    # must describe the world as-of-the-parse (or older), so a sidecar
+    # landing mid-parse mismatches on the next cache read and forces a
+    # reparse, instead of being fingerprinted-as-covered without having
+    # been scanned (review advisory on PR #218).
+    from .cache import subagents_fingerprint
+
+    subagents_fp = subagents_fingerprint(jsonl_path)
     messages: list[TranscriptEntry] = []
     agent_ids: set[str] = set()  # Collect agentId references while parsing
     # Track unrecognized message types already warned about so we emit at
@@ -473,7 +480,9 @@ def load_transcript(
 
     # Save to cache if cache manager is available
     if cache_manager is not None:
-        cache_manager.save_cached_entries(jsonl_path, messages)
+        cache_manager.save_cached_entries(
+            jsonl_path, messages, subagents_fp=subagents_fp
+        )
 
     return messages
 

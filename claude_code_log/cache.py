@@ -235,6 +235,12 @@ def subagents_fingerprint(jsonl_path: Path) -> str:
     (the flat layout puts children next to their parent). Sidecars are
     written once at spawn time, so count+newest-mtime captures every
     addition and removal. Empty string when there are none.
+
+    Deliberately narrower than ``converter._subagent_meta_map``'s scan
+    for TRUNK files: the parse also defensively checks the project dir
+    itself, but Claude Code never writes sidecars there, and
+    fingerprinting it would rescan a potentially large dir on every
+    cache read for a theoretical-only input.
     """
     candidates = [jsonl_path.parent / jsonl_path.stem / "subagents"]
     if jsonl_path.parent.name == "subagents":
@@ -611,14 +617,27 @@ class CacheManager:
         return [self._deserialize_entry(row) for row in rows]
 
     def save_cached_entries(
-        self, jsonl_path: Path, entries: List[TranscriptEntry]
+        self,
+        jsonl_path: Path,
+        entries: List[TranscriptEntry],
+        subagents_fp: Optional[str] = None,
     ) -> None:
-        """Save parsed transcript entries to cache."""
+        """Save parsed transcript entries to cache.
+
+        ``subagents_fp`` is the sidecar fingerprint AS OF THE PARSE —
+        callers that scanned sidecars should pass the value captured
+        before the scan, so a sidecar landing mid-parse mismatches on the
+        next read and forces a reparse (over-invalidation; computing it
+        here at save time would instead validate a parse that never saw
+        the late sidecar). Falls back to computing now when omitted.
+        """
         if self._project_id is None:
             return
 
         source_mtime = jsonl_path.stat().st_mtime
         cached_mtime = datetime.now().timestamp()
+        if subagents_fp is None:
+            subagents_fp = subagents_fingerprint(jsonl_path)
 
         with self._get_connection() as conn:
             # Insert or update file record
@@ -643,7 +662,7 @@ class CacheManager:
                     source_mtime,
                     cached_mtime,
                     len(entries),
-                    subagents_fingerprint(jsonl_path),
+                    subagents_fp,
                 ),
             )
 
