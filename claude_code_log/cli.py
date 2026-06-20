@@ -20,6 +20,7 @@ from .converter import (
     get_file_extension,
     get_index_filename,
     process_projects_hierarchy,
+    generate_all_providers_index,
 )
 from .cache import (
     CacheManager,
@@ -583,6 +584,11 @@ def _validate_git_link_template(template: str) -> None:
     help="Process all projects in ~/.claude/projects/ hierarchy and create linked HTML files",
 )
 @click.option(
+    "--all-providers",
+    is_flag=True,
+    help="Discover sessions from ALL providers (Claude, Codex, Gemini, OpenCode, agy) and generate a unified index page",
+)
+@click.option(
     "--no-individual-sessions",
     is_flag=True,
     help=(
@@ -717,6 +723,22 @@ def _validate_git_link_template(template: str) -> None:
     ),
 )
 @click.option(
+    "--provider",
+    type=click.Choice(
+        ["claude", "codex", "gemini", "opencode", "agy", "all"], case_sensitive=False
+    ),
+    default=None,
+    help=(
+        "Session provider to use. Default: auto-detect based on available ~/. directories. "
+        "Use 'all' to discover sessions from all providers."
+    ),
+)
+@click.option(
+    "--list-providers",
+    is_flag=True,
+    help="List available session providers and exit.",
+)
+@click.option(
     "--debug",
     is_flag=True,
     default=False,
@@ -732,6 +754,7 @@ def main(
     from_date: Optional[str],
     to_date: Optional[str],
     all_projects: bool,
+    all_providers: bool,
     no_individual_sessions: bool,
     no_cache: bool,
     clear_cache: bool,
@@ -747,15 +770,30 @@ def main(
     git_link: Optional[str],
     no_timestamps: bool,
     no_recaps: bool,
+    provider: Optional[str],
+    list_providers: bool,
     debug: bool,
 ) -> None:
-    """Convert Claude transcript JSONL files to HTML or Markdown.
+    """Convert AI coding assistant transcripts to HTML or Markdown.
 
-    INPUT_PATH: Path to a Claude transcript JSONL file, directory containing JSONL files, or project path to convert. If not provided, defaults to ~/.claude/projects/ and --all-projects is used.
+    INPUT_PATH: Path to a transcript JSONL file, directory containing session files,
+    or project path to convert. If not provided, auto-discovers sessions from all
+    available providers (Claude Code, Codex CLI, Gemini CLI, OpenCode, agy).
+    Use --provider to limit to a specific provider.
     """
     # Install signal-based stack dumper before any heavy work, so a hang
     # can be diagnosed with `kill -USR1 <pid>` without root or restart.
     _install_stack_dump_signal()
+
+    if list_providers:
+        from .providers import discover_providers
+
+        registry = discover_providers()
+        click.echo("Available session providers:")
+        for name in registry.get_all_providers():
+            status = "✓" if name in registry.get_available_providers() else "✗"
+            click.echo(f"  {status} {name}")
+        return
 
     # Custom-forge URL template: validate eagerly with a loud error,
     # then pin to the env var so the resolver (which reads the env at
@@ -1019,6 +1057,61 @@ def main(
                 no_recaps=no_recaps,
             )
             click.echo(f"Successfully exported session to {output_path}")
+            if open_browser:
+                click.launch(str(output_path))
+            return
+
+        # Handle --all-providers: discover from all providers and generate unified index
+        if all_providers:
+            from .providers import discover_providers
+
+            registry = discover_providers()
+
+            # Get available providers
+            available = registry.get_available_providers()
+            if not available:
+                click.echo(
+                    "No providers found. Make sure at least one AI assistant is installed."
+                )
+                return
+
+            click.echo(f"Discovering sessions from providers: {', '.join(available)}")
+
+            # Collect sessions from all providers
+            all_sessions = []
+            for name in available:
+                provider = registry.get_provider(name)
+                try:
+                    sessions = list(provider.discover_sessions())
+                    for s in sessions:
+                        all_sessions.append((name, s))
+                except Exception as e:
+                    click.echo(f"Warning: Failed to discover {name} sessions: {e}")
+
+            if not all_sessions:
+                click.echo("No sessions found across any provider.")
+                return
+
+            click.echo(
+                f"Found {len(all_sessions)} total sessions across {len(available)} providers"
+            )
+
+            # Generate unified index
+            output_path = generate_all_providers_index(
+                all_sessions,
+                output_format,
+                output,
+                from_date,
+                to_date,
+                detail_level,
+                compact,
+                no_timestamps,
+                no_recaps,
+                image_export_mode,
+            )
+
+            click.echo(f"Successfully created unified index at {output_path}")
+
             if open_browser:
                 click.launch(str(output_path))
             return

@@ -46,8 +46,8 @@
 
 <script>
 (function() {
-    // Search state
-    let searchState = {
+    // Search state - expose globally
+    window.searchState = {
         query: '',
         useRegex: false,
         searchInFiltered: true,
@@ -56,6 +56,7 @@
         searchIndex: null,
         isIndexPage: null
     };
+    let searchState = window.searchState;
 
     // DOM elements
     const searchContainer = document.getElementById('searchContainer');
@@ -74,24 +75,23 @@
 
     // Initialize search
     function initSearch() {
-        // Detect page type by content rather than URL so it works regardless of filename
         searchState.isIndexPage = document.querySelector('.project-list') !== null;
 
-        // Build search index from page content
         buildSearchIndex();
-
-        // Restore previous search state from localStorage
         restoreSearchState();
-
-        // Set up event listeners
         setupEventListeners();
-
-        // Initialize UI state
         updateSearchInputState();
 
-        // Re-index when filters change (transcript pages only)
         if (!searchState.isIndexPage) {
             setupTranscriptFilterObserver();
+        }
+
+        const hashQuery = window.location.hash.match(/search=(.+)/);
+        if (hashQuery) {
+            const q = decodeURIComponent(hashQuery[1]);
+            searchInput.value = q;
+            updateSearchInputState();
+            performSearch(q);
         }
     }
 
@@ -99,6 +99,51 @@
     function buildSearchIndex() {
         searchState.searchIndex = [];
         
+        // Check for all-providers full index data
+        if (searchState.isIndexPage && window.__allProvidersSearchData) {
+            // Use full provider data for complete search coverage
+            window.__allProvidersSearchData.forEach(provider => {
+                const projectName = provider.name;
+                const projectLink = '#'; // Provider link
+                const sessionCount = provider.sessions?.length || 0;
+                
+                // Index the provider
+                searchState.searchIndex.push({
+                    type: 'project',
+                    name: projectName,
+                    stats: `${sessionCount} sessions`,
+                    element: document.querySelector(`.project-card .provider-link[href="#"]`).closest('.project-card'),
+                    link: projectLink,
+                    searchText: `${projectName} ${sessionCount} sessions`,
+                    originalText: `${projectName} ${sessionCount} sessions`
+                });
+                
+                // Index ALL sessions from this provider (not just displayed 15)
+                (provider.sessions || []).forEach(session => {
+                    const sessionId = session.id;
+                    const createdAt = session.created_at || '';
+                    const createdAtDisplay = createdAt ? createdAt.slice(0, 19).replace('T', ' ') : 'unknown';
+                    const contentPreview = session.content_preview || '';
+                    const sessionFile = session.file || null;
+                    
+                    searchState.searchIndex.push({
+                        type: 'session',
+                        projectName: projectName,
+                        sessionText: sessionId,
+                        sessionPreview: contentPreview,
+                        sessionMeta: createdAtDisplay,
+                        sessionFile: sessionFile,
+                        element: document.querySelector(`.session-link[data-session-id="${sessionId}"]`) || document.body,
+                        link: sessionFile || '#',
+                        searchText: `${projectName} ${sessionId} ${createdAtDisplay} ${contentPreview}`,
+                        originalText: `${sessionId} ${createdAtDisplay} ${contentPreview}`
+                    });
+                });
+            });
+            return;
+        }
+        
+        // Original index page logic
         if (searchState.isIndexPage) {
             // Index page: index projects with individual sessions
             document.querySelectorAll('.project-card').forEach(card => {
@@ -501,16 +546,20 @@
         navigateToMatch(searchState.currentMatchIndex);
     }
 
-    // Navigate to specific match
     function navigateToMatch(index) {
         if (index < 0 || index >= searchState.matches.length) return;
         
-        // Update current highlight
         document.querySelectorAll('.search-highlight.current').forEach(el => {
             el.classList.remove('current');
         });
         
         const match = searchState.matches[index];
+        
+        if (searchState.isIndexPage) {
+            updateSearchUI();
+            return;
+        }
+        
         const highlights = match.element.querySelectorAll('.search-highlight');
         if (highlights.length > 0) {
             highlights[0].classList.add('current');
@@ -581,17 +630,20 @@
             
             // Show session matches
             groups.sessions.forEach(match => {
-                const sessionId = match.link.split('/').pop().replace('session-', '').replace('.html', '').substring(0, 8);
+                const sessionId = match.sessionText || match.id || 'unknown';
+                const safeSessionId = sessionId.replace(/'/g, "\\'");
+                const safeProjectName = (match.projectName || '').replace(/'/g, "\\'");
+                const sessionLink = match.sessionFile || match.link || '#';
                 html += `
-                    <div class="search-result-item">
-                        <a href="${match.link}">
-                            <div class="search-result-session">💬 Session ${sessionId}</div>
+                    <div class="search-result-item" data-session-id="${match.sessionText || match.id}" data-project="${safeProjectName}" data-session-file="${match.sessionFile || ''}" style="cursor: pointer;">
+                        <a href="${sessionLink}">
+                            <div class="search-result-session">💬 Session ${sessionId.substring(0, 16)}</div>
                             <div class="search-result-excerpt">
                                 ${highlightText(match.excerpt, searchState.query)}
                             </div>
                             <div class="search-result-meta">
                                 <span>${match.matchCount} matches</span>
-                                <span>${match.sessionMeta}</span>
+                                <span>${match.sessionMeta || ''}</span>
                             </div>
                         </a>
                     </div>
@@ -602,6 +654,18 @@
         });
         
         searchResultsContent.innerHTML = html;
+
+        // Add click handlers for session items
+        searchResultsContent.querySelectorAll('.search-result-item[data-session-id]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sessionFile = item.dataset.sessionFile;
+                if (sessionFile && sessionFile !== 'null') {
+                    const query = searchState.query ? '#search=' + encodeURIComponent(searchState.query) : '';
+                    window.location.href = sessionFile + query;
+                }
+            });
+        });
     }
 
     // Highlight text in search results (always case-insensitive)
@@ -775,5 +839,10 @@
     } else {
         initSearch();
     }
+
+    // Expose globally for external use
+    window.initSearch = initSearch;
+    window.buildSearchIndex = buildSearchIndex;
+    window.performSearch = performSearch;
 })();
 </script>

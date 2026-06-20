@@ -229,11 +229,13 @@ def load_transcript(
     to_date: Optional[str] = None,
     silent: bool = False,
     _loaded_files: Optional[set[Path]] = None,
+    max_messages: Optional[int] = None,
 ) -> list[TranscriptEntry]:
     """Load and parse JSONL transcript file, using cache if available.
 
     Args:
         _loaded_files: Internal parameter to track loaded files and prevent infinite recursion.
+        max_messages: Optional maximum number of messages to return (for previews)
     """
     # Initialize loaded files set on first call
     if _loaded_files is None:
@@ -326,6 +328,10 @@ def load_transcript(
                         # the payload away at parse time).
                         entry = create_transcript_entry(entry_dict)
                         messages.append(entry)
+
+                        # Check max_messages limit for preview loading
+                        if max_messages is not None and len(messages) >= max_messages:
+                            break
                     elif entry_type in SILENT_SKIP_TYPES:
                         # Internal Claude Code entries with no DAG fields.
                         pass
@@ -1426,9 +1432,9 @@ def _generate_paginated_html(
 
         page_info = {
             "page_number": page_num,
-            "prev_link": _get_page_html_path(page_num - 1, suffix)
-            if has_prev
-            else None,
+            "prev_link": (
+                _get_page_html_path(page_num - 1, suffix) if has_prev else None
+            ),
             "next_link": _get_page_html_path(page_num + 1, suffix),
             "is_last_page": is_last_page,
         }
@@ -1962,9 +1968,11 @@ def _collect_project_sessions(messages: list[TranscriptEntry]) -> list[dict[str,
                     data.last_timestamp,
                 ),
                 "message_count": data.message_count,
-                "first_user_message": data.first_user_message
-                if data.first_user_message
-                else "[No user message found in session.]",
+                "first_user_message": (
+                    data.first_user_message
+                    if data.first_user_message
+                    else "[No user message found in session.]"
+                ),
             }
         )
 
@@ -2810,9 +2818,9 @@ def process_projects_hierarchy(
                     "total_cache_read_tokens": total_cache_read_tokens,
                     "latest_timestamp": latest_timestamp,
                     "earliest_timestamp": earliest_timestamp,
-                    "working_directories": cache_manager.get_working_directories()
-                    if cache_manager
-                    else [],
+                    "working_directories": (
+                        cache_manager.get_working_directories() if cache_manager else []
+                    ),
                     "is_archived": False,
                     "combined_suppressed": not write_combined,
                     "sessions": sessions_data,
@@ -2990,3 +2998,269 @@ def process_projects_hierarchy(
         _print_archived_sessions_note(total_archived)
 
     return index_path
+
+
+# =============================================================================
+# All-Providers Index Generation
+# =============================================================================
+
+
+def generate_all_providers_index(
+    sessions: list[tuple[str, Any]],  # [(provider_name, SessionInfo), ...]
+    output_format: str = "html",
+    output: Optional[Path] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    detail: DetailLevel = DetailLevel.FULL,
+    compact: bool = False,
+    no_timestamps: bool = False,
+    no_recaps: bool = False,
+    image_export_mode: Optional[str] = None,
+) -> Path:
+    """Generate a unified index page for sessions across all providers.
+
+    Args:
+        sessions: List of (provider_name, SessionInfo) tuples
+        output_format: Output format (html, md, json)
+        output: Output directory or file path
+        from_date: Optional date filter start
+        to_date: Optional date filter end
+        detail: Detail level
+        compact: Compact mode
+        no_timestamps: Suppress timestamps in Markdown
+        no_recaps: Suppress recap messages
+        image_export_mode: Image export mode
+
+    Returns:
+        Path to the generated index file
+    """
+    from .renderer import get_renderer
+    import time
+    from datetime import datetime
+
+    start_time = time.time()
+
+    if output is None:
+        output_dir = Path.home() / ".local" / "agent_log_viewer"
+    elif output.suffix in (".html", ".md", ".markdown", ".json"):
+        output_dir = output.parent
+    else:
+        output_dir = output
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    renderer = get_renderer(
+        output_format, image_export_mode, detail, compact, no_timestamps, no_recaps
+    )
+
+    # Group sessions by provider
+    by_provider: dict[str, list[Any]] = {}
+    for provider_name, session_info in sessions:
+        by_provider.setdefault(provider_name, []).append(session_info)
+
+    # Build provider summaries
+    provider_summaries = []
+    for provider_name, session_infos in sorted(by_provider.items()):
+        # Sort by created_at descending (newest first)
+        sorted_sessions = sorted(
+            session_infos, key=lambda s: s.created_at, reverse=True
+        )
+
+        session_data = []
+        from .providers import discover_providers
+
+        registry = discover_providers()
+        preview_limit = 1000
+        for i, s in enumerate(sorted_sessions):
+            provider = registry.get_provider(provider_name)
+            content_preview = ""
+            session_file_name = None
+            if provider is None:
+                continue
+
+            try:
+                if i < preview_limit:
+                    entries = list(provider.load_session(s.session_id, max_messages=10))
+                    preview_parts = []
+                    for entry in entries[:10]:
+                        if hasattr(entry, "message") and entry.message:
+                            msg = entry.message
+                            if hasattr(msg, "content"):
+                                for content in msg.content:
+                                    if hasattr(content, "text"):
+                                        preview_parts.append(content.text)
+                                    elif isinstance(content, str):
+                                        preview_parts.append(content)
+                    content_preview = " ".join(preview_parts)[:10000]
+
+                # Generate individual session HTML file
+                full_entries = list(provider.load_session(s.session_id))
+                if full_entries:
+                    session_title = (
+                        f"{provider_name.upper()} Session {s.session_id[:8]}"
+                    )
+                    if s.created_at:
+                        session_title += f" ({s.created_at[:19].replace('T', ' ')})"
+                    session_html = renderer.generate_session(
+                        full_entries, s.session_id, session_title
+                    )
+                    session_file_name = f"session-{s.session_id}.html"
+                    session_file_path = output_dir / session_file_name
+                    session_file_path.write_text(
+                        session_html, encoding="utf-8", errors="replace"
+                    )
+            except Exception as e:
+                print(f"    Warning: Failed to process session {s.session_id}: {e}")
+
+            session_data.append(
+                {
+                    "id": s.session_id,
+                    "provider": provider_name,
+                    "created_at": s.created_at,
+                    "file": session_file_name,
+                    "content_preview": content_preview,
+                }
+            )
+
+        # Count total sessions per provider
+        session_count = len(session_infos)
+        last_modified = max(
+            (
+                datetime.fromisoformat(s.created_at).timestamp()
+                for s in session_infos
+                if s.created_at
+            ),
+            default=0,
+        )
+
+        provider_summaries.append(
+            {
+                "name": provider_name.upper(),
+                "provider": provider_name,
+                "session_count": session_count,
+                "last_modified": last_modified,
+                "formatted_date": (
+                    datetime.fromtimestamp(last_modified).strftime("%Y-%m-%d %H:%M:%S")
+                    if last_modified > 0
+                    else "Unknown"
+                ),
+                "sessions": session_data,
+                "is_archived": False,
+            }
+        )
+
+    # Calculate total stats
+    total_sessions = len(sessions)
+    total_providers = len(by_provider)
+
+    # Generate index content
+    if output_format == "html":
+        index_content = _generate_all_providers_html_index(
+            renderer,
+            provider_summaries,
+            from_date,
+            to_date,
+            total_sessions,
+            total_providers,
+        )
+    else:
+        # For markdown/json, use a simple fallback
+        index_content = _generate_all_providers_fallback_index(
+            provider_summaries,
+            from_date,
+            to_date,
+            total_sessions,
+            total_providers,
+            output_format,
+        )
+
+    index_path = output_dir / get_index_filename(output_format)
+    index_path.write_text(index_content, encoding="utf-8", errors="replace")
+
+    elapsed = time.time() - start_time
+    print(
+        f"Generated all-providers index in {elapsed:.1f}s ({total_sessions} sessions, {total_providers} providers)"
+    )
+
+    return index_path
+
+
+def _generate_all_providers_html_index(
+    renderer,
+    provider_summaries: list[dict[str, Any]],
+    from_date: Optional[str],
+    to_date: Optional[str],
+    total_sessions: int,
+    total_providers: int,
+) -> str:
+    """Generate HTML index for all providers."""
+    from .html.renderer import get_template_environment
+    from .cache import get_library_version
+
+    title = "All Providers Session Index"
+    if from_date or to_date:
+        date_parts = []
+        if from_date:
+            date_parts.append(f"from {from_date}")
+        if to_date:
+            date_parts.append(f"to {to_date}")
+        title += f" ({', '.join(date_parts)})"
+
+    env = get_template_environment()
+    template = env.get_template("all_providers_index.html")
+
+    return str(
+        template.render(
+            title=title,
+            providers=provider_summaries,
+            summary={
+                "total_sessions": total_sessions,
+                "total_providers": total_providers,
+                "from_date": from_date,
+                "to_date": to_date,
+            },
+            library_version=get_library_version(),
+            is_transcript=False,
+        )
+    )
+
+
+def _generate_all_providers_fallback_index(
+    provider_summaries: list[dict[str, Any]],
+    from_date: Optional[str],
+    to_date: Optional[str],
+    total_sessions: int,
+    total_providers: int,
+    output_format: str,
+) -> str:
+    """Generate fallback index for non-HTML formats."""
+    lines = [
+        "# All Providers Session Index",
+        "",
+        f"**Total Sessions:** {total_sessions}  ",
+        f"**Providers:** {total_providers}",
+        "",
+    ]
+
+    if from_date or to_date:
+        date_parts = []
+        if from_date:
+            date_parts.append(f"from {from_date}")
+        if to_date:
+            date_parts.append(f"to {to_date}")
+        lines.append(f"**Date Range:** {', '.join(date_parts)}")
+        lines.append("")
+
+    for p in provider_summaries:
+        lines.append(f"## {p['name']} ({p['session_count']} sessions)")
+        lines.append("")
+        for s in p["sessions"][:10]:  # Limit to 10 per provider
+            created = (
+                s["created_at"][:19].replace("T", " ") if s["created_at"] else "unknown"
+            )
+            lines.append(f"- `{s['id']}` — {created}")
+        if len(p["sessions"]) > 10:
+            lines.append(f"- ... and {len(p['sessions']) - 10} more")
+        lines.append("")
+
+    return "\n".join(lines)
