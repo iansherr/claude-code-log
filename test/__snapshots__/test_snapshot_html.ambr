@@ -92,8 +92,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -104,6 +107,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -363,6 +503,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -446,13 +603,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -3006,6 +3389,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -3014,26 +3466,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -3048,6 +3494,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -3978,6 +4430,78 @@
       </div>
   </div>
   
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
+  
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
       (function () {
@@ -4818,8 +5342,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -4850,6 +5407,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -5139,6 +5697,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -6636,8 +7349,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -6648,6 +7364,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -6907,6 +7760,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -6990,13 +7860,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -9550,6 +10646,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -9558,26 +10723,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -9592,6 +10751,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -10522,6 +11687,78 @@
       </div>
   </div>
   
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
+  
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
       (function () {
@@ -11261,8 +12498,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -11293,6 +12563,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -11582,6 +12853,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -13079,8 +14505,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -13091,6 +14520,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -13350,6 +14916,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -13433,13 +15016,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -14021,6 +15830,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -14029,26 +15907,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -14063,6 +15935,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -15439,8 +17317,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -15451,6 +17332,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -15710,6 +17728,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -15793,13 +17828,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -18353,6 +20614,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -18361,26 +20691,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -18395,6 +20719,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -19324,6 +21654,78 @@
           <div style="width: 40px; height: 3px; background: #999; border-radius: 2px;"></div>
       </div>
   </div>
+  
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
   
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
@@ -20280,8 +22682,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -20312,6 +22747,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -20601,6 +23037,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -22098,8 +24689,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -22110,6 +24704,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -22369,6 +25100,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -22452,13 +25200,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -25012,6 +27986,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -25020,26 +28063,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -25054,6 +28091,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -25983,6 +29026,78 @@
           <div style="width: 40px; height: 3px; background: #999; border-radius: 2px;"></div>
       </div>
   </div>
+  
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
   
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
@@ -27206,8 +30321,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -27238,6 +30386,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -27527,6 +30676,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -29024,8 +32328,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -29036,6 +32343,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -29295,6 +32739,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -29378,13 +32839,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -31938,6 +35625,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -31946,26 +35702,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -31980,6 +35730,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -32909,6 +36665,78 @@
           <div style="width: 40px; height: 3px; background: #999; border-radius: 2px;"></div>
       </div>
   </div>
+  
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
   
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
@@ -34095,8 +37923,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -34127,6 +37988,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -34416,6 +38278,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -35913,8 +39930,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -35925,6 +39945,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -36184,6 +40341,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -36267,13 +40441,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -38827,6 +43227,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -38835,26 +43304,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -38869,6 +43332,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -39798,6 +44267,78 @@
           <div style="width: 40px; height: 3px; background: #999; border-radius: 2px;"></div>
       </div>
   </div>
+  
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
   
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
@@ -40927,8 +45468,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -40959,6 +45533,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -41248,6 +45823,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
@@ -42745,8 +47475,11 @@
       /* Border colors */
       --border-light: #e0e0e0;
       --border-separator: #f0f3f6;
+      --border-color: #e0e0e0;
   
       /* Background colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #ffffff;
       --bg-card: #ffffff66;
       --bg-hover: #f8f9fa;
       --bg-neutral: #f8f9fa;
@@ -42757,6 +47490,143 @@
       /* Font families */
       --font-monospace: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', 'Inconsolata', 'Droid Sans Mono', 'Source Code Pro', 'Ubuntu Mono', 'Cascadia Code', 'Menlo', monospace;
       --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+      /* Accent color */
+      --accent: #6366f1;
+  }
+  
+  /* Dark mode variables */
+  body.dark-mode {
+      /* Base colors */
+      --code-bg-color: #1e1e2e;
+      --tool-param-sep-color: #ffffff22;
+  
+      /* Dimmed/transparent variants */
+      --white-dimmed: #ffffff22;
+      --highlight-dimmed: #3b82f622;
+      --assistant-dimmed: #a855f722;
+      --info-dimmed: #3b82f622;
+      --warning-dimmed: #f59e0b22;
+      --success-dimmed: #22c55e22;
+      --error-dimmed: #ef444422;
+      --neutral-dimmed: #37415122;
+      --tool-input-dimmed: #f59e0b22;
+      --thinking-dimmed: #37415122;
+      --tool-result-dimmed: #22c55e22;
+      --session-bg-dimmed: #3b82f622;
+      --ide-notification-dimmed: #4b556322;
+  
+      /* Fully transparent variants */
+      --highlight-semi: #3b82f633;
+      --error-semi: #ef444433;
+      --neutral-semi: #37415133;
+  
+      /* Slightly transparent variants */
+      --highlight-light: #3b82f622;
+  
+      /* Solid colors for message types */
+      --user-color: #fb923c;
+      --user-dimmed: #fb923c44;
+      --assistant-color: #c084fc;
+      --system-color: #fbbf24;
+      --system-warning-color: #60a5fa;
+      --system-error-color: #f87171;
+      --tool-use-color: #4ade80;
+  
+      /* Dynamic-workflow tree colors */
+      --workflow-phase-color: #4ade80;
+      --workflow-agent-color: #9ca3af;
+  
+      /* Fork/branch structural colors */
+      --fork-point-color: #6b7280;
+      --branch-point-color: #6b7280;
+  
+      /* Question/answer tool colors */
+      --question-accent: #fbbf24;
+      --question-bg: #1e1e2e;
+      --answer-accent: #4ade80;
+      --answer-bg: #1e1e2e;
+  
+      /* Priority colors */
+      --priority-600: #a78bfa;
+      --priority-400: #c4b5fd;
+      --priority-300: #ddd6fe;
+  
+      /* Status colors */
+      --status-in-progress: #422006;
+      --status-completed: #052e16;
+  
+      /* Plan/todo accent color */
+      --plan-accent: #818cf8;
+      --todo-accent: #60a5fa;
+  
+      /* Solid colors for text and accents */
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --text-secondary: #d1d5db;
+      --fold-color: #6b7280;
+  
+      /* Border colors */
+      --border-light: #374151;
+      --border-separator: #1f2937;
+      --border-color: #374151;
+  
+      /* Background colors */
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-card: #1f2937cc;
+      --bg-hover: #374151;
+      --bg-neutral: #374151;
+  
+      /* Accent color */
+      --accent: #818cf8;
+  }
+  
+  body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: var(--text-primary);
+  }
+  
+  body.dark-mode h1 {
+      color: #f1f5f9;
+  }
+  
+  body.dark-mode code {
+      background-color: var(--code-bg-color);
+      color: #e2e8f0;
+  }
+  
+  body.dark-mode pre {
+      background-color: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+  }
+  
+  body.dark-mode .card-base {
+      background-color: var(--bg-card);
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-left: #ffffff11 1px solid;
+      border-top: #ffffff11 1px solid;
+      border-bottom: #00000033 1px solid;
+      border-right: #00000033 1px solid;
+  }
+  
+  body.dark-mode .floating-btn {
+      background-color: var(--bg-secondary);
+      color: var(--text-muted);
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  }
+  
+  body.dark-mode .floating-btn:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode a {
+      color: var(--accent);
+  }
+  
+  body.dark-mode a:visited {
+      color: #a78bfa;
   }
   
   body {
@@ -43016,6 +47886,23 @@
       font-weight: 700;
   }
   
+  /* Dark mode toggle button */
+  .dark-mode-toggle.floating-btn {
+      bottom: 380px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .dark-mode-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
   /* Help panel */
   .help-panel {
       position: fixed;
@@ -43099,13 +47986,239 @@
       color: var(--text-secondary, #495057);
   }
   
-  @media (max-width: 600px) {
+  /* Export toggle button */
+  .export-toggle.floating-btn {
+      bottom: 420px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.9em;
+  }
+  
+  /* Export panel */
+  .export-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 320px;
+      background: var(--bg-secondary, #fff);
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  }
+  .export-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color, #e0e0e0);
+  }
+  .export-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+  }
+  .export-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted, #666);
+      padding: 0;
+      line-height: 1;
+  }
+  .export-close-btn:hover {
+      color: var(--text-primary, #333);
+  }
+  .export-panel-content {
+      padding: 0.5rem;
+  }
+  .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .export-option:hover {
+      background-color: var(--bg-hover, #f5f5f5);
+  }
+  .export-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+  }
+  .export-info {
+      flex: 1;
+  }
+  .export-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+  }
+  .export-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted, #666);
+  }
+  
+  body.dark-mode .export-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  body.dark-mode .export-panel {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .export-panel-header {
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode .export-option:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .export-icon {
+      background: #374151;
+  }
+  
+  body.dark-mode .export-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .export-desc {
+      color: #9ca3af;
+  }
+  
+  /* Responsive adjustments for export panel */
+  @media (max-width: 768px) {
+      .export-panel {
+          right: 10px;
+          left: 10px;
+          width: auto;
+          bottom: 60px;
+      }
+  }
+  @media (max-width: 768px) {
+      body {
+          padding: 8px;
+          max-width: 100%;
+      }
+      
+      h1 {
+          font-size: 1.4em;
+          margin-bottom: 12px;
+      }
+      
+      .summary-stats {
+          gap: 1rem;
+      }
+      
+      .summary-stat .number {
+          font-size: 1.5rem;
+      }
+      
+      .floating-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1em;
+      }
+      
       .help-panel {
           right: 10px;
           left: 10px;
           width: auto;
-          bottom: 70px;
+          bottom: 60px;
+          max-height: 60vh;
       }
+      
+      .help-shortcut {
+          font-size: 0.85rem;
+      }
+      
+      .help-shortcut kbd {
+          min-width: 20px;
+          padding: 0.1rem 0.3rem;
+          font-size: 0.75em;
+      }
+      
+      .provider-list {
+          grid-template-columns: 1fr;
+      }
+      
+      .provider-card {
+          padding: 1rem;
+      }
+      
+      .provider-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+      }
+      
+      .provider-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1.5rem;
+      }
+      
+      .provider-stats {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+      }
+      
+      .session-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.25rem;
+      }
+      
+      .session-date {
+          margin-left: 0;
+      }
+  }
+  
+  @media (max-width: 480px) {
+      .summary-stats {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+      
+      .summary-stat {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      
+      .floating-btn {
+          right: 10px;
+          width: 36px;
+          height: 36px;
+      }
+      
+      .scroll-top.floating-btn { bottom: 10px; }
+      .toggle-details.floating-btn { bottom: 55px; }
+      .filter-messages.floating-btn { bottom: 100px; }
+      .timeline-toggle.floating-btn { bottom: 145px; }
+      .debug-toggle.floating-btn { bottom: 190px; }
+      .user-view-global.floating-btn { bottom: 235px; }
+      .dark-mode-toggle.floating-btn { bottom: 280px; }
+      .help-toggle.floating-btn { bottom: 325px; }
   }
   
   @media (max-width: 1280px) {
@@ -45659,6 +50772,75 @@
       color: #000;
   }
   
+  body.dark-mode .search-highlight {
+      background-color: #854d0e;
+      color: #fef3c7;
+  }
+  
+  body.dark-mode .search-highlight.current {
+      background-color: #b45309;
+      color: #fff;
+  }
+  
+  body.dark-mode .search-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+  
+  body.dark-mode .search-input::placeholder {
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-nav-btn {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-nav-btn:hover:not(:disabled) {
+      background: #4b5563;
+      border-color: #6366f1;
+  }
+  
+  body.dark-mode .search-result-item {
+      background-color: #1f2937;
+      border-color: #374151;
+  }
+  
+  body.dark-mode .search-result-item:hover {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .search-results-title {
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .search-result-group-title {
+      color: #818cf8;
+  }
+  
+  body.dark-mode .search-result-count {
+      background: #374151;
+      border-color: #4b5563;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-no-results {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
+  body.dark-mode .search-loading {
+      background-color: #1f2937;
+      color: #9ca3af;
+  }
+  
   /* Search Options */
   .search-options {
       margin-top: 8px;
@@ -45667,26 +50849,20 @@
       font-size: 0.75em;
   }
   
-  .search-option {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-muted);
-      transition: color 0.2s;
+  body.dark-mode .search-option {
+      color: #9ca3af;
   }
   
-  .search-option input[type="checkbox"] {
-      cursor: pointer;
-      accent-color: #2196f3;
+  body.dark-mode .search-option:hover {
+      color: #e5e7eb;
   }
   
-  .search-option label {
-      cursor: pointer;
-      user-select: none;
+  body.dark-mode .search-option-inline {
+      color: #9ca3af;
   }
   
-  .search-option:hover {
-      color: var(--text-primary);
+  body.dark-mode .search-option-inline:hover {
+      color: #e5e7eb;
   }
   
   /* Index Page Search Results */
@@ -45701,6 +50877,12 @@
       border-bottom: #00000017 1px solid;
       border-right: #00000017 1px solid;
       display: none;
+  }
+  
+  body.dark-mode .search-results-panel {
+      background-color: #1f2937;
+      box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+      border-color: #374151;
   }
   
   .search-results-panel.visible {
@@ -46630,6 +51812,78 @@
           <div style="width: 40px; height: 3px; background: #999; border-radius: 2px;"></div>
       </div>
   </div>
+  
+  <style>
+  body.dark-mode #timeline-container {
+      background: #1f2937;
+      border-bottom-color: #374151;
+  }
+  
+  body.dark-mode #timeline-resize-handle {
+      background: linear-gradient(to bottom, transparent, #374151);
+  }
+  
+  body.dark-mode #timeline-resize-handle > div {
+      background: #6b7280;
+  }
+  
+  body.dark-mode .vis-timeline {
+      border-color: #374151 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-panel {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-item {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-item.vis-selected {
+      border-color: #6366f1 !important;
+  }
+  
+  body.dark-time .vis-time-axis .vis-text {
+      color: #9ca3af !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-time-axis .vis-grid.vis-major {
+      border-color: #4b5563 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-background {
+      background: #111827 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-center {
+      background: #1f2937 !important;
+  }
+  
+  body.dark-mode .vis-panel.vis-left,
+  body.dark-mode .vis-panel.vis-right {
+      background: #1f2937 !important;
+      border-color: #374151 !important;
+  }
+  
+  body.dark-mode .vis-labelset .vis-label {
+      color: #e5e7eb !important;
+  }
+  
+  body.dark-mode .vis-current-time {
+      background-color: #6366f1 !important;
+  }
+  
+  body.dark-mode .vis-custom-time {
+      background-color: #8b5cf6 !important;
+  }
+  </style>
   
   <script id="timeline-script">
       // Timeline functionality - inline for self-contained HTML
@@ -47586,8 +52840,41 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+      <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
       <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Export panel -->
+      <div class="export-panel" id="exportPanel" style="display: none;">
+          <div class="export-panel-header">
+              <h3>📥 Export Session</h3>
+              <button class="export-close-btn" id="closeExport">✕</button>
+          </div>
+          <div class="export-panel-content">
+              <div class="export-option" id="exportCSV">
+                  <div class="export-icon">📊</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as CSV</div>
+                      <div class="export-desc">Messages with timestamps, roles, and content</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportJSON">
+                  <div class="export-icon">📋</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as JSON</div>
+                      <div class="export-desc">Full session data with metadata</div>
+                  </div>
+              </div>
+              <div class="export-option" id="exportMarkdown">
+                  <div class="export-icon">📝</div>
+                  <div class="export-info">
+                      <div class="export-title">Export as Markdown</div>
+                      <div class="export-desc">Formatted conversation for sharing</div>
+                  </div>
+              </div>
+          </div>
+      </div>
   
       <!-- Keyboard shortcuts help panel -->
       <div class="help-panel" id="helpPanel" style="display: none;">
@@ -47618,6 +52905,7 @@
                   <h4>View</h4>
                   <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
                   <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                  <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
                   <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
               </div>
           </div>
@@ -47907,6 +53195,161 @@
                           }
                       }
                   });
+              }
+  
+              // Dark mode toggle
+              const darkModeButton = document.getElementById('toggleDarkMode');
+              const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+              
+              function setDarkMode(enabled) {
+                  if (enabled) {
+                      document.body.classList.add('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '☀️';
+                  } else {
+                      document.body.classList.remove('dark-mode');
+                      if (darkModeButton) darkModeButton.textContent = '🌙';
+                  }
+                  localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+              }
+              
+              function toggleDarkMode() {
+                  const isDark = document.body.classList.contains('dark-mode');
+                  setDarkMode(!isDark);
+              }
+              
+              // Restore dark mode preference
+              const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+              if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  setDarkMode(true);
+              }
+              
+              if (darkModeButton) {
+                  darkModeButton.addEventListener('click', toggleDarkMode);
+              }
+              
+              // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                      e.preventDefault();
+                      toggleDarkMode();
+                  }
+              });
+  
+              // Export panel toggle
+              const exportButton = document.getElementById('toggleExport');
+              const exportPanel = document.getElementById('exportPanel');
+              const closeExportButton = document.getElementById('closeExport');
+              
+              if (exportButton && exportPanel) {
+                  exportButton.addEventListener('click', function () {
+                      exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                  });
+                  
+                  if (closeExportButton) {
+                      closeExportButton.addEventListener('click', function () {
+                          exportPanel.style.display = 'none';
+                      });
+                  }
+                  
+                  // Export as CSV
+                  document.getElementById('exportCSV')?.addEventListener('click', function () {
+                      exportSessionAsCSV();
+                  });
+                  
+                  // Export as JSON
+                  document.getElementById('exportJSON')?.addEventListener('click', function () {
+                      exportSessionAsJSON();
+                  });
+                  
+                  // Export as Markdown
+                  document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                      exportSessionAsMarkdown();
+                  });
+              }
+              
+              function exportSessionAsCSV() {
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let csv = 'Timestamp,Role,Content\n';
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                      csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                  });
+                  
+                  downloadFile(csv, 'session-export.csv', 'text/csv');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsJSON() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  const data = {
+                      title: title,
+                      exportedAt: new Date().toISOString(),
+                      messageCount: messages.length,
+                      messages: []
+                  };
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'unknown';
+                      if (msg.classList.contains('user')) role = 'user';
+                      else if (msg.classList.contains('assistant')) role = 'assistant';
+                      else if (msg.classList.contains('system')) role = 'system';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                      
+                      data.messages.push({
+                          timestamp: timestamp,
+                          role: role,
+                          content: msg.querySelector('.content')?.textContent?.trim() || ''
+                      });
+                  });
+                  
+                  downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function exportSessionAsMarkdown() {
+                  const title = document.getElementById('title')?.textContent || 'Session';
+                  const messages = document.querySelectorAll('.message:not(.session-header)');
+                  let md = `# ${title}\n\n`;
+                  
+                  messages.forEach(msg => {
+                      const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                      let role = 'Unknown';
+                      if (msg.classList.contains('user')) role = 'User';
+                      else if (msg.classList.contains('assistant')) role = 'Assistant';
+                      else if (msg.classList.contains('system')) role = 'System';
+                      else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                      
+                      const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                      md += `## ${role}\n\n`;
+                      if (timestamp) md += `*${timestamp}*\n\n`;
+                      md += `${content}\n\n---\n\n`;
+                  });
+                  
+                  downloadFile(md, 'session-export.md', 'text/markdown');
+                  exportPanel.style.display = 'none';
+              }
+              
+              function downloadFile(content, filename, mimeType) {
+                  const blob = new Blob([content], { type: mimeType });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
               }
   
               // Toggle details functionality
