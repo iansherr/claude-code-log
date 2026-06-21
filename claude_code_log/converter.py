@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Convert Claude transcript JSONL files to HTML."""
 
+import concurrent.futures
 import contextlib
 import itertools
 import json
 import logging
+import os
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -3005,6 +3007,70 @@ def process_projects_hierarchy(
 # =============================================================================
 
 
+def _process_single_session(
+    args: tuple[Any, str, Path, Any],
+) -> dict[str, Any] | None:
+    """Process a single session in parallel.
+
+    Args:
+        args: Tuple of (session_info, provider_name, output_dir, renderer)
+
+    Returns:
+        Session data dict or None if processing failed
+    """
+    session_info, provider_name, output_dir, renderer = args
+    from .providers import discover_providers
+
+    s = session_info
+    provider = discover_providers().get_provider(provider_name)
+    if provider is None:
+        return None
+
+    content_preview = ""
+    session_file_name = None
+
+    try:
+        # Load preview content
+        entries = list(provider.load_session(s.session_id, max_messages=10))
+        preview_parts = []
+        for entry in entries[:10]:
+            if hasattr(entry, "message") and entry.message:
+                msg = entry.message
+                if hasattr(msg, "content"):
+                    for content in msg.content:
+                        if hasattr(content, "text"):
+                            preview_parts.append(content.text)
+                        elif isinstance(content, str):
+                            preview_parts.append(content)
+        content_preview = " ".join(preview_parts)[:10000]
+
+        # Load full session and generate HTML
+        full_entries = list(provider.load_session(s.session_id))
+        if full_entries:
+            session_title = f"{provider_name.upper()} Session {s.session_id[:8]}"
+            if s.created_at:
+                session_title += f" ({s.created_at[:19].replace('T', ' ')})"
+            session_html = renderer.generate_session(
+                full_entries, s.session_id, session_title
+            )
+            session_file_name = f"session-{s.session_id}.html"
+            session_file_path = output_dir / session_file_name
+            session_file_path.write_text(
+                session_html, encoding="utf-8", errors="replace"
+            )
+    except Exception as e:
+        print(f"    Warning: Failed to process session {s.session_id}: {e}")
+        return None
+
+    return {
+        "id": s.session_id,
+        "provider": provider_name,
+        "created_at": s.created_at,
+        "file": session_file_name,
+        "content_preview": content_preview,
+    }
+
+
 def generate_all_providers_index(
     sessions: list[tuple[str, Any]],  # [(provider_name, SessionInfo), ...]
     output_format: str = "html",
@@ -3016,6 +3082,7 @@ def generate_all_providers_index(
     no_timestamps: bool = False,
     no_recaps: bool = False,
     image_export_mode: Optional[str] = None,
+    max_workers: Optional[int] = None,
 ) -> Path:
     """Generate a unified index page for sessions across all providers.
 
@@ -3030,6 +3097,7 @@ def generate_all_providers_index(
         no_timestamps: Suppress timestamps in Markdown
         no_recaps: Suppress recap messages
         image_export_mode: Image export mode
+        max_workers: Maximum number of parallel workers (defaults to CPU count)
 
     Returns:
         Path to the generated index file
@@ -3058,69 +3126,51 @@ def generate_all_providers_index(
     for provider_name, session_info in sessions:
         by_provider.setdefault(provider_name, []).append(session_info)
 
-    # Build provider summaries
+    # Determine max workers (default to CPU count, cap at reasonable limit)
+    if max_workers is None:
+        max_workers = min(os.cpu_count() or 4, 8)
+
+    total_sessions = len(sessions)
+    print(f"Processing {total_sessions} sessions with {max_workers} workers...")
+
+    # Build provider summaries with parallel session processing
     provider_summaries = []
+    completed_count = 0
+
     for provider_name, session_infos in sorted(by_provider.items()):
         # Sort by created_at descending (newest first)
         sorted_sessions = sorted(
             session_infos, key=lambda s: s.created_at, reverse=True
         )
 
+        # Prepare tasks for parallel processing
+        tasks = [(s, provider_name, output_dir, renderer) for s in sorted_sessions]
+
+        # Process sessions in parallel
         session_data = []
-        from .providers import discover_providers
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks
+            future_to_session = {
+                executor.submit(_process_single_session, task): task[0]
+                for task in tasks
+            }
 
-        registry = discover_providers()
-        preview_limit = 1000
-        for i, s in enumerate(sorted_sessions):
-            provider = registry.get_provider(provider_name)
-            content_preview = ""
-            session_file_name = None
-            if provider is None:
-                continue
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(future_to_session):
+                result = future.result()
+                completed_count += 1
 
-            try:
-                if i < preview_limit:
-                    entries = list(provider.load_session(s.session_id, max_messages=10))
-                    preview_parts = []
-                    for entry in entries[:10]:
-                        if hasattr(entry, "message") and entry.message:
-                            msg = entry.message
-                            if hasattr(msg, "content"):
-                                for content in msg.content:
-                                    if hasattr(content, "text"):
-                                        preview_parts.append(content.text)
-                                    elif isinstance(content, str):
-                                        preview_parts.append(content)
-                    content_preview = " ".join(preview_parts)[:10000]
-
-                # Generate individual session HTML file
-                full_entries = list(provider.load_session(s.session_id))
-                if full_entries:
-                    session_title = (
-                        f"{provider_name.upper()} Session {s.session_id[:8]}"
+                # Progress reporting every 10 sessions or at end
+                if completed_count % 10 == 0 or completed_count == total_sessions:
+                    print(
+                        f"  Progress: {completed_count}/{total_sessions} sessions ({completed_count * 100 // total_sessions}%)"
                     )
-                    if s.created_at:
-                        session_title += f" ({s.created_at[:19].replace('T', ' ')})"
-                    session_html = renderer.generate_session(
-                        full_entries, s.session_id, session_title
-                    )
-                    session_file_name = f"session-{s.session_id}.html"
-                    session_file_path = output_dir / session_file_name
-                    session_file_path.write_text(
-                        session_html, encoding="utf-8", errors="replace"
-                    )
-            except Exception as e:
-                print(f"    Warning: Failed to process session {s.session_id}: {e}")
 
-            session_data.append(
-                {
-                    "id": s.session_id,
-                    "provider": provider_name,
-                    "created_at": s.created_at,
-                    "file": session_file_name,
-                    "content_preview": content_preview,
-                }
-            )
+                if result is not None:
+                    session_data.append(result)
+
+        # Sort session_data by created_at descending to maintain order
+        session_data.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
         # Count total sessions per provider
         session_count = len(session_infos)
@@ -3150,7 +3200,6 @@ def generate_all_providers_index(
         )
 
     # Calculate total stats
-    total_sessions = len(sessions)
     total_providers = len(by_provider)
 
     # Generate index content
