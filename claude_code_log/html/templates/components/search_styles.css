@@ -164,6 +164,75 @@
     color: #000;
 }
 
+body.dark-mode .search-highlight {
+    background-color: #854d0e;
+    color: #fef3c7;
+}
+
+body.dark-mode .search-highlight.current {
+    background-color: #b45309;
+    color: #fff;
+}
+
+body.dark-mode .search-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+body.dark-mode .search-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+body.dark-mode .search-input::placeholder {
+    color: #9ca3af;
+}
+
+body.dark-mode .search-nav-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+body.dark-mode .search-nav-btn:hover:not(:disabled) {
+    background: #4b5563;
+    border-color: #6366f1;
+}
+
+body.dark-mode .search-result-item {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+body.dark-mode .search-result-item:hover {
+    background-color: #374151;
+}
+
+body.dark-mode .search-results-title {
+    color: #e5e7eb;
+}
+
+body.dark-mode .search-result-group-title {
+    color: #818cf8;
+}
+
+body.dark-mode .search-result-count {
+    background: #374151;
+    border-color: #4b5563;
+    color: #9ca3af;
+}
+
+body.dark-mode .search-no-results {
+    background-color: #1f2937;
+    color: #9ca3af;
+}
+
+body.dark-mode .search-loading {
+    background-color: #1f2937;
+    color: #9ca3af;
+}
+
 /* Search Options */
 .search-options {
     margin-top: 8px;
@@ -172,26 +241,20 @@
     font-size: 0.75em;
 }
 
-.search-option {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--text-muted);
-    transition: color 0.2s;
+body.dark-mode .search-option {
+    color: #9ca3af;
 }
 
-.search-option input[type="checkbox"] {
-    cursor: pointer;
-    accent-color: #2196f3;
+body.dark-mode .search-option:hover {
+    color: #e5e7eb;
 }
 
-.search-option label {
-    cursor: pointer;
-    user-select: none;
+body.dark-mode .search-option-inline {
+    color: #9ca3af;
 }
 
-.search-option:hover {
-    color: var(--text-primary);
+body.dark-mode .search-option-inline:hover {
+    color: #e5e7eb;
 }
 
 /* Index Page Search Results */
@@ -206,6 +269,12 @@
     border-bottom: #00000017 1px solid;
     border-right: #00000017 1px solid;
     display: none;
+}
+
+body.dark-mode .search-results-panel {
+    background-color: #1f2937;
+    box-shadow: -7px -7px 10px #00000033, 7px 7px 10px #00000022;
+    border-color: #374151;
 }
 
 .search-results-panel.visible {

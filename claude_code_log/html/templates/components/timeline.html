@@ -10,6 +10,78 @@
     </div>
 </div>
 
+<style>
+body.dark-mode #timeline-container {
+    background: #1f2937;
+    border-bottom-color: #374151;
+}
+
+body.dark-mode #timeline-resize-handle {
+    background: linear-gradient(to bottom, transparent, #374151);
+}
+
+body.dark-mode #timeline-resize-handle > div {
+    background: #6b7280;
+}
+
+body.dark-mode .vis-timeline {
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .vis-panel {
+    background: #1f2937 !important;
+}
+
+body.dark-mode .vis-item {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .vis-item.vis-selected {
+    border-color: #6366f1 !important;
+}
+
+body.dark-time .vis-time-axis .vis-text {
+    color: #9ca3af !important;
+}
+
+body.dark-mode .vis-time-axis .vis-grid.vis-minor {
+    border-color: #374151 !important;
+}
+
+body.dark-mode .vis-time-axis .vis-grid.vis-major {
+    border-color: #4b5563 !important;
+}
+
+body.dark-mode .vis-panel.vis-background {
+    background: #111827 !important;
+}
+
+body.dark-mode .vis-panel.vis-center {
+    background: #1f2937 !important;
+}
+
+body.dark-mode .vis-panel.vis-left,
+body.dark-mode .vis-panel.vis-right {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+body.dark-mode .vis-labelset .vis-label {
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .vis-current-time {
+    background-color: #6366f1 !important;
+}
+
+body.dark-mode .vis-custom-time {
+    background-color: #8b5cf6 !important;
+}
+</style>
+
 <script id="timeline-script">
     // Timeline functionality - inline for self-contained HTML
     (function () {

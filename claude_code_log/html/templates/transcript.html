@@ -224,7 +224,76 @@
     <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
     <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
     <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+    <button class="export-toggle floating-btn" id="toggleExport" title="Export data">📥</button>
+    <button class="dark-mode-toggle floating-btn" id="toggleDarkMode" title="Toggle dark mode (Ctrl+Shift+D)">🌙</button>
+    <button class="help-toggle floating-btn" id="toggleHelp" title="Keyboard shortcuts (?)">?</button>
     <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+
+    <!-- Export panel -->
+    <div class="export-panel" id="exportPanel" style="display: none;">
+        <div class="export-panel-header">
+            <h3>📥 Export Session</h3>
+            <button class="export-close-btn" id="closeExport">✕</button>
+        </div>
+        <div class="export-panel-content">
+            <div class="export-option" id="exportCSV">
+                <div class="export-icon">📊</div>
+                <div class="export-info">
+                    <div class="export-title">Export as CSV</div>
+                    <div class="export-desc">Messages with timestamps, roles, and content</div>
+                </div>
+            </div>
+            <div class="export-option" id="exportJSON">
+                <div class="export-icon">📋</div>
+                <div class="export-info">
+                    <div class="export-title">Export as JSON</div>
+                    <div class="export-desc">Full session data with metadata</div>
+                </div>
+            </div>
+            <div class="export-option" id="exportMarkdown">
+                <div class="export-icon">📝</div>
+                <div class="export-info">
+                    <div class="export-title">Export as Markdown</div>
+                    <div class="export-desc">Formatted conversation for sharing</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard shortcuts help panel -->
+    <div class="help-panel" id="helpPanel" style="display: none;">
+        <div class="help-panel-header">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <button class="help-close-btn" id="closeHelp">✕</button>
+        </div>
+        <div class="help-panel-content">
+            <div class="help-section">
+                <h4>Navigation</h4>
+                <div class="help-shortcut"><kbd>j</kbd> / <kbd>k</kbd> <span>Next / Previous message</span></div>
+                <div class="help-shortcut"><kbd>g</kbd> <span>Go to top</span></div>
+                <div class="help-shortcut"><kbd>G</kbd> <span>Go to bottom</span></div>
+            </div>
+            <div class="help-section">
+                <h4>Folding</h4>
+                <div class="help-shortcut"><kbd>Enter</kbd> <span>Toggle fold on selected message</span></div>
+                <div class="help-shortcut"><kbd>]</kbd> <span>Fold one level</span></div>
+                <div class="help-shortcut"><kbd>[</kbd> <span>Unfold one level</span></div>
+            </div>
+            <div class="help-section">
+                <h4>Search & Filter</h4>
+                <div class="help-shortcut"><kbd>/</kbd> <span>Focus search</span></div>
+                <div class="help-shortcut"><kbd>n</kbd> / <kbd>N</kbd> <span>Next / Previous search result</span></div>
+                <div class="help-shortcut"><kbd>Esc</kbd> <span>Close search / filter panel</span></div>
+            </div>
+            <div class="help-section">
+                <h4>View</h4>
+                <div class="help-shortcut"><kbd>d</kbd> <span>Toggle detail level</span></div>
+                <div class="help-shortcut"><kbd>t</kbd> <span>Toggle timeline</span></div>
+                <div class="help-shortcut"><kbd>Ctrl+Shift+D</kbd> <span>Toggle dark mode</span></div>
+                <div class="help-shortcut"><kbd>?</kbd> <span>Show this help</span></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -368,6 +437,189 @@
                         window.toggleTimeline();
                     }
                 });
+            }
+
+            // Help panel toggle
+            const helpButton = document.getElementById('toggleHelp');
+            const helpPanel = document.getElementById('helpPanel');
+            const closeHelpButton = document.getElementById('closeHelp');
+            
+            if (helpButton && helpPanel) {
+                helpButton.addEventListener('click', function () {
+                    helpPanel.style.display = helpPanel.style.display === 'none' ? 'flex' : 'none';
+                });
+                
+                if (closeHelpButton) {
+                    closeHelpButton.addEventListener('click', function () {
+                        helpPanel.style.display = 'none';
+                    });
+                }
+                
+                // Keyboard shortcut: ? to toggle help
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        const activeTag = document.activeElement?.tagName?.toLowerCase();
+                        if (activeTag !== 'input' && activeTag !== 'textarea' && !document.activeElement?.isContentEditable) {
+                            e.preventDefault();
+                            helpPanel.style.display = helpPanel.style.display === 'none' ? 'flex' : 'none';
+                        }
+                    }
+                });
+            }
+
+            // Dark mode toggle
+            const darkModeButton = document.getElementById('toggleDarkMode');
+            const DARK_MODE_KEY = 'claude-code-log:dark-mode';
+            
+            function setDarkMode(enabled) {
+                if (enabled) {
+                    document.body.classList.add('dark-mode');
+                    if (darkModeButton) darkModeButton.textContent = '☀️';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    if (darkModeButton) darkModeButton.textContent = '🌙';
+                }
+                localStorage.setItem(DARK_MODE_KEY, enabled ? 'true' : 'false');
+            }
+            
+            function toggleDarkMode() {
+                const isDark = document.body.classList.contains('dark-mode');
+                setDarkMode(!isDark);
+            }
+            
+            // Restore dark mode preference
+            const savedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+            if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                setDarkMode(true);
+            }
+            
+            if (darkModeButton) {
+                darkModeButton.addEventListener('click', toggleDarkMode);
+            }
+            
+            // Keyboard shortcut: Ctrl+Shift+D to toggle dark mode
+            document.addEventListener('keydown', function (e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                    e.preventDefault();
+                    toggleDarkMode();
+                }
+            });
+
+            // Export panel toggle
+            const exportButton = document.getElementById('toggleExport');
+            const exportPanel = document.getElementById('exportPanel');
+            const closeExportButton = document.getElementById('closeExport');
+            
+            if (exportButton && exportPanel) {
+                exportButton.addEventListener('click', function () {
+                    exportPanel.style.display = exportPanel.style.display === 'none' ? 'flex' : 'none';
+                });
+                
+                if (closeExportButton) {
+                    closeExportButton.addEventListener('click', function () {
+                        exportPanel.style.display = 'none';
+                    });
+                }
+                
+                // Export as CSV
+                document.getElementById('exportCSV')?.addEventListener('click', function () {
+                    exportSessionAsCSV();
+                });
+                
+                // Export as JSON
+                document.getElementById('exportJSON')?.addEventListener('click', function () {
+                    exportSessionAsJSON();
+                });
+                
+                // Export as Markdown
+                document.getElementById('exportMarkdown')?.addEventListener('click', function () {
+                    exportSessionAsMarkdown();
+                });
+            }
+            
+            function exportSessionAsCSV() {
+                const messages = document.querySelectorAll('.message:not(.session-header)');
+                let csv = 'Timestamp,Role,Content\n';
+                
+                messages.forEach(msg => {
+                    const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                    let role = 'unknown';
+                    if (msg.classList.contains('user')) role = 'user';
+                    else if (msg.classList.contains('assistant')) role = 'assistant';
+                    else if (msg.classList.contains('system')) role = 'system';
+                    else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                    
+                    const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                    const escapedContent = '"' + content.replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+                    csv += `"${timestamp}","${role}",${escapedContent}\n`;
+                });
+                
+                downloadFile(csv, 'session-export.csv', 'text/csv');
+                exportPanel.style.display = 'none';
+            }
+            
+            function exportSessionAsJSON() {
+                const title = document.getElementById('title')?.textContent || 'Session';
+                const messages = document.querySelectorAll('.message:not(.session-header)');
+                const data = {
+                    title: title,
+                    exportedAt: new Date().toISOString(),
+                    messageCount: messages.length,
+                    messages: []
+                };
+                
+                messages.forEach(msg => {
+                    const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                    let role = 'unknown';
+                    if (msg.classList.contains('user')) role = 'user';
+                    else if (msg.classList.contains('assistant')) role = 'assistant';
+                    else if (msg.classList.contains('system')) role = 'system';
+                    else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'tool';
+                    
+                    data.messages.push({
+                        timestamp: timestamp,
+                        role: role,
+                        content: msg.querySelector('.content')?.textContent?.trim() || ''
+                    });
+                });
+                
+                downloadFile(JSON.stringify(data, null, 2), 'session-export.json', 'application/json');
+                exportPanel.style.display = 'none';
+            }
+            
+            function exportSessionAsMarkdown() {
+                const title = document.getElementById('title')?.textContent || 'Session';
+                const messages = document.querySelectorAll('.message:not(.session-header)');
+                let md = `# ${title}\n\n`;
+                
+                messages.forEach(msg => {
+                    const timestamp = msg.querySelector('.timestamp')?.getAttribute('data-timestamp') || '';
+                    let role = 'Unknown';
+                    if (msg.classList.contains('user')) role = 'User';
+                    else if (msg.classList.contains('assistant')) role = 'Assistant';
+                    else if (msg.classList.contains('system')) role = 'System';
+                    else if (msg.classList.contains('tool_use') || msg.classList.contains('tool-result')) role = 'Tool';
+                    
+                    const content = msg.querySelector('.content')?.textContent?.trim() || '';
+                    md += `## ${role}\n\n`;
+                    if (timestamp) md += `*${timestamp}*\n\n`;
+                    md += `${content}\n\n---\n\n`;
+                });
+                
+                downloadFile(md, 'session-export.md', 'text/markdown');
+                exportPanel.style.display = 'none';
+            }
+            
+            function downloadFile(content, filename, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
 
             // Toggle details functionality
