@@ -731,6 +731,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -7988,6 +8046,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -15144,6 +15260,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -17956,6 +18130,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -25328,6 +25560,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -32967,6 +33257,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -40569,6 +40917,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
@@ -48114,6 +48520,64 @@
           bottom: 60px;
       }
   }
+  /* Skeleton loading animation */
+  @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
+  
+  .skeleton {
+      background: linear-gradient(90deg, var(--bg-hover, #f0f0f0) 25%, #e0e0e0 50%, var(--bg-hover, #f0f0f0) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: 4px;
+  }
+  
+  body.dark-mode .skeleton {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+  }
+  
+  .skeleton-message {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--bg-secondary, #f9f9f9);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  body.dark-mode .skeleton-message {
+      background: #1f2937;
+      border-color: #374151;
+  }
+  
+  .skeleton-header {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+  }
+  
+  .skeleton-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+  }
+  
+  .skeleton-title {
+      height: 16px;
+      width: 120px;
+  }
+  
+  .skeleton-body {
+      height: 60px;
+      width: 100%;
+  }
+  
+  .skeleton-body-short {
+      height: 40px;
+      width: 70%;
+  }
+  
   @media (max-width: 768px) {
       body {
           padding: 8px;
