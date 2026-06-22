@@ -1,0 +1,135 @@
+name: 'Claude Code Log'
+description: 'Generate readable HTML transcripts from Claude Code sessions'
+author: 'iansherr'
+
+inputs:
+  claude_projects_dir:
+    description: 'Path to Claude projects directory (default: ~/.claude/projects/)'
+    required: false
+    default: ''
+  output_dir:
+    description: 'Directory to store generated HTML files'
+    required: false
+    default: 'claude-code-logs'
+  format:
+    description: 'Output format: html or md'
+    required: false
+    default: 'html'
+  detail:
+    description: 'Detail level: full, high, low, minimal, user-only'
+    required: false
+    default: 'full'
+  compact:
+    description: 'Compact mode for markdown output'
+    required: false
+    default: 'false'
+  from_date:
+    description: 'Filter sessions from this date (natural language)'
+    required: false
+    default: ''
+  to_date:
+    description: 'Filter sessions until this date (natural language)'
+    required: false
+    default: ''
+  open_browser:
+    description: 'Open generated HTML in browser'
+    required: false
+    default: 'false'
+
+outputs:
+  html_path:
+    description: 'Path to generated HTML index file'
+    value: ${{ steps.generate.outputs.html_path }}
+  session_count:
+    description: 'Number of sessions processed'
+    value: ${{ steps.generate.outputs.session_count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install claude-code-log
+      shell: bash
+      run: |
+        pip install claude-code-log
+
+    - name: Generate HTML transcripts
+      id: generate
+      shell: bash
+      run: |
+        # Find Claude projects directory
+        PROJECTS_DIR="${{ inputs.claude_projects_dir }}"
+        if [ -z "$PROJECTS_DIR" ]; then
+          PROJECTS_DIR="$HOME/.claude/projects"
+        fi
+
+        if [ ! -d "$PROJECTS_DIR" ]; then
+          echo "Claude projects directory not found: $PROJECTS_DIR"
+          echo "html_path=" >> $GITHUB_OUTPUT
+          echo "session_count=0" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Create output directory
+        OUTPUT_DIR="${{ inputs.output_dir }}"
+        mkdir -p "$OUTPUT_DIR"
+
+        # Build command
+        CMD="claude-code-log"
+        ARGS="--output $OUTPUT_DIR"
+
+        # Add format
+        if [ "${{ inputs.format }}" = "md" ]; then
+          ARGS="$ARGS --format md"
+        fi
+
+        # Add detail level
+        if [ "${{ inputs.detail }}" != "full" ]; then
+          ARGS="$ARGS --detail ${{ inputs.detail }}"
+        fi
+
+        # Add compact mode
+        if [ "${{ inputs.compact }}" = "true" ]; then
+          ARGS="$ARGS --compact"
+        fi
+
+        # Add date filters
+        if [ -n "${{ inputs.from_date }}" ]; then
+          ARGS="$ARGS --from-date \"${{ inputs.from_date }}\""
+        fi
+        if [ -n "${{ inputs.to_date }}" ]; then
+          ARGS="$ARGS --to-date \"${{ inputs.to_date }}\""
+        fi
+
+        # Add browser open
+        if [ "${{ inputs.open_browser }}" = "true" ]; then
+          ARGS="$ARGS --open-browser"
+        fi
+
+        # Run command
+        echo "Running: $CMD $ARGS"
+        eval "$CMD $ARGS"
+
+        # Find generated index file
+        if [ "${{ inputs.format }}" = "md" ]; then
+          INDEX_FILE="$OUTPUT_DIR/index.md"
+        else
+          INDEX_FILE="$OUTPUT_DIR/index.html"
+        fi
+
+        if [ -f "$INDEX_FILE" ]; then
+          echo "html_path=$INDEX_FILE" >> $GITHUB_OUTPUT
+        else
+          echo "html_path=" >> $GITHUB_OUTPUT
+        fi
+
+        # Count sessions
+        SESSION_COUNT=$(find "$OUTPUT_DIR" -name "*.${{ inputs.format }}" | wc -l)
+        echo "session_count=$SESSION_COUNT" >> $GITHUB_OUTPUT
+
+    - name: Upload HTML transcripts
+      if: steps.generate.outputs.html_path != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: claude-code-logs
+        path: ${{ inputs.output_dir }}/
+        retention-days: 30
