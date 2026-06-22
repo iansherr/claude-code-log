@@ -268,6 +268,90 @@ def format_grep_input(grep_input: GrepInput) -> str:
     return render_params_table(params)
 
 
+# -- Glob Tool ----------------------------------------------------------------
+
+
+def format_glob_input(glob_input: Any) -> str:
+    """Format Glob tool use content showing pattern and optional path."""
+    from ..models import GlobInput as _GlobInput
+
+    if not isinstance(glob_input, _GlobInput):
+        return ""
+    params = glob_input.model_dump(exclude={"pattern"}, exclude_none=True)
+    if not params:
+        return ""
+    return render_params_table(params)
+
+
+def format_glob_output(output: Any) -> str:
+    """Format Glob tool result as a file list."""
+    files_str = str(output) if output else ""
+    if not files_str.strip():
+        return '<div class="tool-result"><em>No files matched</em></div>'
+    files = [f.strip() for f in files_str.strip().split("\n") if f.strip()]
+    if not files:
+        return '<div class="tool-result"><em>No files matched</em></div>'
+    items = "".join(f"<li>{escape_html(f)}</li>" for f in files)
+    return f'<div class="tool-result"><ul class="file-list">{items}</ul></div>'
+
+
+# -- LS Tool -------------------------------------------------------------------
+
+
+def format_ls_input(ls_input: Any) -> str:
+    """Format LS tool use content showing path parameter."""
+    params = {}
+    if hasattr(ls_input, "path") and ls_input.path:
+        params["path"] = ls_input.path
+    if hasattr(ls_input, "recursive") and ls_input.recursive:
+        params["recursive"] = ls_input.recursive
+    if not params:
+        return ""
+    return render_params_table(params)
+
+
+# -- TodoRead Tool -------------------------------------------------------------
+
+
+def format_todoread_input(inp: Any) -> str:
+    """Format TodoRead tool — no parameters to show."""
+    return ""
+
+
+# -- NotebookRead Tool ---------------------------------------------------------
+
+
+def format_notebookread_input(inp: Any) -> str:
+    """Format NotebookRead tool use content showing file path."""
+    params = {}
+    if hasattr(inp, "notebook_path") and inp.notebook_path:
+        params["notebook_path"] = inp.notebook_path
+    if hasattr(inp, "cell_id") and inp.cell_id:
+        params["cell_id"] = inp.cell_id
+    if not params:
+        return ""
+    return render_params_table(params)
+
+
+# -- NotebookEdit Tool ---------------------------------------------------------
+
+
+def format_notebookedit_input(inp: Any) -> str:
+    """Format NotebookEdit tool use content."""
+    params = {}
+    if hasattr(inp, "notebook_path") and inp.notebook_path:
+        params["notebook_path"] = inp.notebook_path
+    if hasattr(inp, "new_source") and inp.new_source:
+        params["new_source"] = inp.new_source[:200]
+    if hasattr(inp, "cell_type") and inp.cell_type:
+        params["cell_type"] = inp.cell_type
+    if hasattr(inp, "cell_id") and inp.cell_id:
+        params["cell_id"] = inp.cell_id
+    if not params:
+        return ""
+    return render_params_table(params)
+
+
 # -- WebSearch Tool -----------------------------------------------------------
 
 
@@ -354,13 +438,15 @@ def format_todowrite_input(todo_input: TodoWriteInput) -> str:
         item_class = f"todo-item {status} {priority}"
 
         id_html = f'<span class="todo-id">#{todo_id}</span>' if todo.id else ""
-        todo_items.append(f"""
+        todo_items.append(
+            f"""
             <div class="{item_class}">
                 <span class="todo-status">{status_emoji}</span>
                 <span class="todo-content">{content}</span>
                 {id_html}
             </div>
-        """)
+        """
+        )
 
     todos_html = "".join(todo_items)
 
@@ -1211,12 +1297,14 @@ def _params_table_html(items: "Iterable[tuple[Any, Any]]", depth: int) -> str:
             # text starts at the same x.
             key_cell = f"<span class='tool-param-fold-glyph'></span>{escaped_key}"
             row_attr = ""
-        html_parts.append(f"""
+        html_parts.append(
+            f"""
             <tr{row_attr}>
                 <td class='tool-param-key'>{key_cell}</td>
                 <td class='tool-param-value'>{value_html}</td>
             </tr>
-        """)
+        """
+        )
     html_parts.append("</table>")
     return "".join(html_parts)
 

@@ -224,7 +224,63 @@
     <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
     <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
     <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+    <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
     <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+
+    <!-- Tutorial Overlay -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-modal">
+            <h2>Welcome to Claude Code Log! 👋</h2>
+            <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+            <div class="tutorial-steps">
+                <div class="tutorial-step">
+                    <div class="tutorial-step-number">1</div>
+                    <div class="tutorial-step-content">
+                        <div class="tutorial-step-title">Message Navigation</div>
+                        <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-step-number">2</div>
+                    <div class="tutorial-step-content">
+                        <div class="tutorial-step-title">Filter Messages</div>
+                        <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-step-number">3</div>
+                    <div class="tutorial-step-content">
+                        <div class="tutorial-step-title">Timeline View</div>
+                        <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-step-number">4</div>
+                    <div class="tutorial-step-content">
+                        <div class="tutorial-step-title">Search & Export</div>
+                        <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-step-number">5</div>
+                    <div class="tutorial-step-content">
+                        <div class="tutorial-step-title">Themes & Shortcuts</div>
+                        <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tutorial-actions">
+                <label class="tutorial-checkbox">
+                    <input type="checkbox" id="tutorialDontShow"> Don't show again
+                </label>
+                <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spotlight overlay for guided tour -->
+    <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -237,6 +293,56 @@
             const selectNoneButton = document.getElementById('selectNone');
             const closeToolbarButton = document.getElementById('closeToolbar');
             const filterToggles = document.querySelectorAll('.filter-toggle');
+            const themeButton = document.getElementById('toggleTheme');
+
+            // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+            const THEME_KEY = 'claude-code-log:theme';
+            const themes = [
+                { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+            ];
+            let currentThemeIndex = 0;
+
+            function applyTheme(theme) {
+                document.body.className = theme.classes;
+                if (themeButton) {
+                    themeButton.textContent = theme.icon;
+                    themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                }
+            }
+
+            function cycleTheme() {
+                currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                applyTheme(themes[currentThemeIndex]);
+                localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+            }
+
+            // Restore saved theme
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme !== null) {
+                currentThemeIndex = parseInt(savedTheme, 10) || 0;
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                currentThemeIndex = 3; // dark
+            }
+            applyTheme(themes[currentThemeIndex]);
+
+            if (themeButton) {
+                themeButton.addEventListener('click', cycleTheme);
+            }
+
+            // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+            document.addEventListener('keydown', function (e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                    // Don't intercept if tutorial overlay is active
+                    if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                    e.preventDefault();
+                    cycleTheme();
+                }
+            });
 
             // Timezone conversion (included as component)
             {% include 'components/timezone_converter.js' %}
@@ -959,6 +1065,98 @@
             if (window.location.hash) {
                 unfoldAncestorsOf(window.location.hash);
             }
+
+            // Tutorial Overlay
+            const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+            const tutorialOverlay = document.getElementById('tutorialOverlay');
+            const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+            const tutorialStartBtn = document.getElementById('tutorialStart');
+            const tutorialSkipBtn = document.getElementById('tutorialSkip');
+            const tutorialDontShow = document.getElementById('tutorialDontShow');
+
+            // Tutorial steps for guided tour
+            const tutorialSteps = [
+                { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+            ];
+
+            let currentTutorialStep = 0;
+
+            function showTutorial() {
+                if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                tutorialOverlay.classList.add('visible');
+            }
+
+            function hideTutorial() {
+                tutorialOverlay.classList.remove('visible');
+                tutorialSpotlight.style.display = 'none';
+                if (tutorialDontShow.checked) {
+                    localStorage.setItem(TUTORIAL_KEY, 'true');
+                }
+            }
+
+            function startGuidedTour() {
+                tutorialOverlay.classList.remove('visible');
+                currentTutorialStep = 0;
+                showSpotlightStep();
+            }
+
+            function showSpotlightStep() {
+                if (currentTutorialStep >= tutorialSteps.length) {
+                    tutorialSpotlight.style.display = 'none';
+                    return;
+                }
+
+                const step = tutorialSteps[currentTutorialStep];
+                const element = document.querySelector(step.selector);
+                
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                    tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                    tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                    tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                    tutorialSpotlight.style.display = 'block';
+                    tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                    
+                    // Scroll element into view if needed
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    // Element not found, skip to next
+                    currentTutorialStep++;
+                    showSpotlightStep();
+                }
+            }
+
+            function nextSpotlightStep() {
+                currentTutorialStep++;
+                showSpotlightStep();
+            }
+
+            // Event listeners
+            if (tutorialStartBtn) {
+                tutorialStartBtn.addEventListener('click', startGuidedTour);
+            }
+            if (tutorialSkipBtn) {
+                tutorialSkipBtn.addEventListener('click', hideTutorial);
+            }
+            if (tutorialSpotlight) {
+                tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+            }
+
+            // Show tutorial on load (after a short delay)
+            setTimeout(showTutorial, 500);
+
+            // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+            document.addEventListener('keydown', function (e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                    e.preventDefault();
+                    localStorage.removeItem(TUTORIAL_KEY);
+                    showTutorial();
+                }
+            });
         });
     </script>
     <!-- Search functionality script -->

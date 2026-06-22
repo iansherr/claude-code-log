@@ -14,6 +14,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -356,6 +366,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -4715,7 +5081,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -4728,6 +5150,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -5564,6 +6036,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -6392,6 +6956,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -6734,6 +7308,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -10992,7 +11922,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -11005,6 +11991,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -11841,6 +12877,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -12669,6 +13797,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -13011,6 +14149,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Session navigation styles */
   .navigation {
@@ -14926,6 +16420,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -15268,6 +16772,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -19742,7 +21602,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -19755,6 +21671,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -20591,6 +22557,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -21419,6 +23477,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -21761,6 +23829,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -26502,7 +28926,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -26515,6 +28995,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -27351,6 +29881,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -28179,6 +30801,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -28521,6 +31153,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -33225,7 +36213,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -33238,6 +36282,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -34074,6 +37168,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -34902,6 +38088,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -35244,6 +38440,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -39891,7 +43443,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -39904,6 +43512,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -40740,6 +44398,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->
@@ -41568,6 +45318,16 @@
   
   /* CSS Variables for shared colors and consistent theming */
   :root {
+      /* Theme system */
+      --theme: default;
+      --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --theme-radius: 8px;
+      --theme-radius-sm: 4px;
+      --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+      --theme-transition: 0.2s ease;
+  
       /* Base colors */
       --code-bg-color: #f5f1e8;
       --tool-param-sep-color: #4b494822;
@@ -41910,6 +45670,362 @@
       .header > span:first-child {
           flex: auto;
       }
+  }
+  
+  /* Tutorial Overlay */
+  .tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+  }
+  
+  .tutorial-overlay.visible {
+      display: flex;
+  }
+  
+  .tutorial-modal {
+      background: var(--bg-secondary, #fff);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: tutorial-slide-in 0.3s ease-out;
+  }
+  
+  @keyframes tutorial-slide-in {
+      from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+      }
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+  
+  .tutorial-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.5rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-modal p {
+      margin: 0 0 1.5rem;
+      color: var(--text-secondary, #666);
+      line-height: 1.6;
+  }
+  
+  .tutorial-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+  }
+  
+  .tutorial-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-neutral, #f5f5f5);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color, #9c27b0);
+  }
+  
+  .tutorial-step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-color, #9c27b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+  }
+  
+  .tutorial-step-content {
+      flex: 1;
+  }
+  
+  .tutorial-step-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-primary, #333);
+  }
+  
+  .tutorial-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+  }
+  
+  .tutorial-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+  }
+  
+  .tutorial-btn-primary {
+      background: var(--primary-color, #9c27b0);
+      color: white;
+  }
+  
+  .tutorial-btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+  }
+  
+  .tutorial-btn-secondary {
+      background: var(--bg-neutral, #f5f5f5);
+      color: var(--text-primary, #333);
+      border: 1px solid var(--border-color, #e0e0e0);
+  }
+  
+  .tutorial-btn-secondary:hover {
+      background: var(--bg-hover, #e8e8e8);
+  }
+  
+  .tutorial-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+      cursor: pointer;
+  }
+  
+  .tutorial-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #9c27b0);
+  }
+  
+  /* Spotlight effect for tutorial */
+  .tutorial-spotlight {
+      position: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      pointer-events: none;
+      animation: tutorial-pulse 2s infinite;
+  }
+  
+  @keyframes tutorial-pulse {
+      0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+      50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+  }
+  
+  body.dark-mode .tutorial-modal {
+      background: #1f2937;
+  }
+  
+  body.dark-mode .tutorial-step {
+      background: #374151;
+  }
+  
+  body.dark-mode .tutorial-actions {
+      border-top-color: #374151;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+  }
+  
+  body.dark-mode .tutorial-btn-secondary:hover {
+      background: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .tutorial-modal {
+          padding: 1.5rem;
+          width: 95%;
+      }
+      
+      .tutorial-step {
+          padding: 0.75rem;
+      }
+  }
+  
+  /* Theme: Minimalist — stripped borders, muted palette, no shadows */
+  body.theme-minimalist {
+      --theme-radius: 2px;
+      --theme-radius-sm: 1px;
+      --theme-shadow: none;
+      --theme-shadow-lg: none;
+      --user-color: #6d5a00;
+      --assistant-color: #5e35a1;
+      --system-color: #b57100;
+      --tool-use-color: #2e7d32;
+  }
+  
+  body.theme-minimalist .message {
+      border: none;
+      border-left: 3px solid var(--border-color, #e0e0e0);
+      border-radius: 0;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .session-nav-card {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .floating-btn {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist .summary-stat {
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 2px;
+  }
+  
+  body.theme-minimalist .tutorial-modal {
+      box-shadow: none;
+  }
+  
+  body.theme-minimalist code, body.theme-minimalist pre {
+      border-radius: 2px;
+  }
+  
+  /* Theme: Fancy — gradient background, rounded cards, richer shadows */
+  body.theme-fancy {
+      --theme-radius: 12px;
+      --theme-radius-sm: 8px;
+      --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+      --user-color: #ff6d00;
+      --assistant-color: #aa00ff;
+      --system-color: #ff9100;
+      --tool-use-color: #00c853;
+  }
+  
+  body.theme-fancy {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+  }
+  
+  body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+  }
+  
+  body.theme-fancy .message {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  body.theme-fancy .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  body.theme-fancy .session-nav-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.theme-fancy .floating-btn {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  body.theme-fancy .floating-btn:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.theme-fancy .summary-stat {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.theme-fancy .tutorial-modal {
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.theme-fancy code, body.theme-fancy pre {
+      border-radius: 8px;
+  }
+  
+  body.theme-fancy h1 {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Fancy combo */
+  body.dark-mode.theme-fancy {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-attachment: fixed;
+  }
+  
+  body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+      background: rgba(31, 41, 55, 0.92);
+  }
+  
+  body.dark-mode.theme-fancy h1 {
+      background: linear-gradient(135deg, #a78bfa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+  }
+  
+  /* Dark + Minimalist combo */
+  body.dark-mode.theme-minimalist {
+      --user-color: #ffa94d;
+      --assistant-color: #b197fc;
+      --system-color: #ffd43b;
+      --tool-use-color: #69db7c;
+  }
+  
+  /* Theme selector floating button */
+  .theme-toggle.floating-btn {
+      bottom: 465px;
+      border-radius: 6px;
+      width: 38px;
+      height: 28px;
+      font-size: 0.85em;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn {
+      background-color: #374151;
+  }
+  
+  body.dark-mode .theme-toggle.floating-btn:hover {
+      background-color: #4b5563;
+  }
+  
+  @media (max-width: 768px) {
+      .theme-toggle.floating-btn { bottom: 340px; }
   }
   /* Message and content styles */
   
@@ -46384,7 +50500,63 @@
       <button class="toggle-details floating-btn" id="toggleDetails" title="Toggle all details">📋</button>
       <button class="debug-toggle floating-btn" id="toggleDebug" title="Show UUIDs">uuid</button>
       <button class="user-view-global floating-btn" id="toggleUserView" title="Show user messages as raw text">md</button>
+      <button class="theme-toggle floating-btn" id="toggleTheme" title="Cycle theme (Ctrl+Shift+T)">🎨</button>
       <a class="scroll-top floating-btn" title="Scroll to top" href="#title">🔝</a>
+  
+      <!-- Tutorial Overlay -->
+      <div class="tutorial-overlay" id="tutorialOverlay">
+          <div class="tutorial-modal">
+              <h2>Welcome to Claude Code Log! 👋</h2>
+              <p>This viewer helps you explore and navigate your AI coding assistant sessions. Here are the key features:</p>
+              <div class="tutorial-steps">
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">1</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Message Navigation</div>
+                          <div class="tutorial-step-desc">Use <kbd>j</kbd>/<kbd>k</kbd> to move between messages, <kbd>Enter</kbd> to expand/collapse</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">2</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Filter Messages</div>
+                          <div class="tutorial-step-desc">Click the 🔍 button or press <kbd>f</kbd> to filter by message type (user, assistant, tool, system)</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">3</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Timeline View</div>
+                          <div class="tutorial-step-desc">Click 📆 for an interactive timeline — click any event to jump to that message</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">4</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Search & Export</div>
+                          <div class="tutorial-step-desc">Use the search bar to find content, or 📥 to export as CSV/JSON/Markdown</div>
+                      </div>
+                  </div>
+                  <div class="tutorial-step">
+                      <div class="tutorial-step-number">5</div>
+                      <div class="tutorial-step-content">
+                          <div class="tutorial-step-title">Themes & Shortcuts</div>
+                          <div class="tutorial-step-desc">Click 🎨 to cycle themes (Light, Minimalist, Fancy, Dark). Press <kbd>?</kbd> for all shortcuts.</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="tutorial-actions">
+                  <label class="tutorial-checkbox">
+                      <input type="checkbox" id="tutorialDontShow"> Don't show again
+                  </label>
+                  <button class="tutorial-btn tutorial-btn-secondary" id="tutorialSkip">Skip</button>
+                  <button class="tutorial-btn tutorial-btn-primary" id="tutorialStart">Get Started</button>
+              </div>
+          </div>
+      </div>
+  
+      <!-- Spotlight overlay for guided tour -->
+      <div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;"></div>
   
       <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -46397,6 +50569,56 @@
               const selectNoneButton = document.getElementById('selectNone');
               const closeToolbarButton = document.getElementById('closeToolbar');
               const filterToggles = document.querySelectorAll('.filter-toggle');
+              const themeButton = document.getElementById('toggleTheme');
+  
+              // Theme cycle: default → minimalist → fancy → dark → dark+minimalist → dark+fancy → default
+              const THEME_KEY = 'claude-code-log:theme';
+              const themes = [
+                  { name: 'default', classes: '', icon: '☀️', label: 'Light (Default)' },
+                  { name: 'minimalist', classes: 'theme-minimalist', icon: '⬜', label: 'Minimalist' },
+                  { name: 'fancy', classes: 'theme-fancy', icon: '✨', label: 'Fancy' },
+                  { name: 'dark', classes: 'dark-mode', icon: '🌙', label: 'Dark' },
+                  { name: 'dark-minimalist', classes: 'dark-mode theme-minimalist', icon: '◼️', label: 'Dark Minimalist' },
+                  { name: 'dark-fancy', classes: 'dark-mode theme-fancy', icon: '🌟', label: 'Dark Fancy' },
+              ];
+              let currentThemeIndex = 0;
+  
+              function applyTheme(theme) {
+                  document.body.className = theme.classes;
+                  if (themeButton) {
+                      themeButton.textContent = theme.icon;
+                      themeButton.title = `Theme: ${theme.label} (Click to cycle)`;
+                  }
+              }
+  
+              function cycleTheme() {
+                  currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                  applyTheme(themes[currentThemeIndex]);
+                  localStorage.setItem(THEME_KEY, currentThemeIndex.toString());
+              }
+  
+              // Restore saved theme
+              const savedTheme = localStorage.getItem(THEME_KEY);
+              if (savedTheme !== null) {
+                  currentThemeIndex = parseInt(savedTheme, 10) || 0;
+              } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  currentThemeIndex = 3; // dark
+              }
+              applyTheme(themes[currentThemeIndex]);
+  
+              if (themeButton) {
+                  themeButton.addEventListener('click', cycleTheme);
+              }
+  
+              // Keyboard shortcut: Ctrl+Shift+T to cycle theme
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      // Don't intercept if tutorial overlay is active
+                      if (document.getElementById('tutorialOverlay')?.classList.contains('visible')) return;
+                      e.preventDefault();
+                      cycleTheme();
+                  }
+              });
   
               // Timezone conversion (included as component)
               // Convert timestamps to user's timezone
@@ -47233,6 +51455,98 @@
               if (window.location.hash) {
                   unfoldAncestorsOf(window.location.hash);
               }
+  
+              // Tutorial Overlay
+              const TUTORIAL_KEY = 'claude-code-log:tutorial-completed';
+              const tutorialOverlay = document.getElementById('tutorialOverlay');
+              const tutorialSpotlight = document.getElementById('tutorialSpotlight');
+              const tutorialStartBtn = document.getElementById('tutorialStart');
+              const tutorialSkipBtn = document.getElementById('tutorialSkip');
+              const tutorialDontShow = document.getElementById('tutorialDontShow');
+  
+              // Tutorial steps for guided tour
+              const tutorialSteps = [
+                  { selector: '#toggleTimeline', title: 'Timeline', desc: 'Interactive timeline — click any event to jump to that message' },
+                  { selector: '#filterMessages', title: 'Filter', desc: 'Filter messages by type (user, assistant, tool, system)' },
+                  { selector: '#toggleDetails', title: 'Details', desc: 'Expand or collapse all message details at once' },
+                  { selector: '#toggleUserView', title: 'Raw View', desc: 'Toggle user messages between rendered Markdown and raw text' },
+              ];
+  
+              let currentTutorialStep = 0;
+  
+              function showTutorial() {
+                  if (localStorage.getItem(TUTORIAL_KEY) === 'true') return;
+                  tutorialOverlay.classList.add('visible');
+              }
+  
+              function hideTutorial() {
+                  tutorialOverlay.classList.remove('visible');
+                  tutorialSpotlight.style.display = 'none';
+                  if (tutorialDontShow.checked) {
+                      localStorage.setItem(TUTORIAL_KEY, 'true');
+                  }
+              }
+  
+              function startGuidedTour() {
+                  tutorialOverlay.classList.remove('visible');
+                  currentTutorialStep = 0;
+                  showSpotlightStep();
+              }
+  
+              function showSpotlightStep() {
+                  if (currentTutorialStep >= tutorialSteps.length) {
+                      tutorialSpotlight.style.display = 'none';
+                      return;
+                  }
+  
+                  const step = tutorialSteps[currentTutorialStep];
+                  const element = document.querySelector(step.selector);
+                  
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      tutorialSpotlight.style.top = `${rect.top - 8}px`;
+                      tutorialSpotlight.style.left = `${rect.left - 8}px`;
+                      tutorialSpotlight.style.width = `${rect.width + 16}px`;
+                      tutorialSpotlight.style.height = `${rect.height + 16}px`;
+                      tutorialSpotlight.style.display = 'block';
+                      tutorialSpotlight.title = `${step.title}: ${step.desc}`;
+                      
+                      // Scroll element into view if needed
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                      // Element not found, skip to next
+                      currentTutorialStep++;
+                      showSpotlightStep();
+                  }
+              }
+  
+              function nextSpotlightStep() {
+                  currentTutorialStep++;
+                  showSpotlightStep();
+              }
+  
+              // Event listeners
+              if (tutorialStartBtn) {
+                  tutorialStartBtn.addEventListener('click', startGuidedTour);
+              }
+              if (tutorialSkipBtn) {
+                  tutorialSkipBtn.addEventListener('click', hideTutorial);
+              }
+              if (tutorialSpotlight) {
+                  tutorialSpotlight.addEventListener('click', nextSpotlightStep);
+              }
+  
+              // Show tutorial on load (after a short delay)
+              setTimeout(showTutorial, 500);
+  
+              // Also allow re-triggering tutorial via keyboard shortcut (Ctrl+Shift+T)
+              document.addEventListener('keydown', function (e) {
+                  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                      e.preventDefault();
+                      localStorage.removeItem(TUTORIAL_KEY);
+                      showTutorial();
+                  }
+              });
           });
       </script>
       <!-- Search functionality script -->

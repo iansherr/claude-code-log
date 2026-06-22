@@ -723,6 +723,18 @@ def _validate_git_link_template(template: str) -> None:
     ),
 )
 @click.option(
+    "-m",
+    "--message-types",
+    "message_types",
+    default=None,
+    help=(
+        "Comma-separated list of message types to include in output. "
+        "Valid types: user, assistant, tool, system, thinking, image, summary. "
+        "Example: --message-types user,assistant. When set, only matching "
+        "message types are rendered. Overrides --detail level filtering."
+    ),
+)
+@click.option(
     "--provider",
     type=click.Choice(
         ["claude", "codex", "gemini", "opencode", "agy", "all"], case_sensitive=False
@@ -770,6 +782,7 @@ def main(
     git_link: Optional[str],
     no_timestamps: bool,
     no_recaps: bool,
+    message_types: Optional[str],
     provider: Optional[str],
     list_providers: bool,
     debug: bool,
@@ -1171,6 +1184,7 @@ def main(
                 write_combined=write_combined,
                 no_timestamps=no_timestamps,
                 no_recaps=no_recaps,
+                message_types=message_types,
             )
 
             # Count processed projects
@@ -1231,6 +1245,7 @@ def main(
             write_combined=write_combined,
             no_timestamps=no_timestamps,
             no_recaps=no_recaps,
+            message_types=message_types,
         )
         if input_path.is_file():
             click.echo(f"Successfully converted {input_path} to {output_path}")

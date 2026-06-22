@@ -222,6 +222,77 @@ def filter_messages_by_date(
     return filtered_messages
 
 
+# Message type groupings for --message-types CLI option
+_MESSAGE_TYPE_GROUPS: dict[str, set[str]] = {
+    "user": {"user"},
+    "assistant": {"assistant"},
+    "tool": {"tool_use", "tool_result"},
+    "system": {
+        "system",
+        "hook_summary",
+        "hook_attachment",
+        "system_info",
+        "compacted_summary",
+    },
+    "thinking": {"thinking"},
+    "image": {"image"},
+    "summary": {"summary", "away_summary"},
+}
+
+
+def filter_messages_by_type(
+    messages: list[TranscriptEntry], message_types: Optional[str]
+) -> list[TranscriptEntry]:
+    """Filter messages to only include specified types.
+
+    Args:
+        messages: List of TranscriptEntry objects to filter.
+        message_types: Comma-separated string of type groups to include.
+            Valid groups: user, assistant, tool, system, thinking, image, summary.
+            If None or empty, no filtering is applied.
+
+    Returns:
+        Filtered list of TranscriptEntry objects.
+    """
+    if not message_types:
+        return messages
+
+    allowed_types: set[str] = set()
+    for group in message_types.split(","):
+        group = group.strip().lower()
+        if group in _MESSAGE_TYPE_GROUPS:
+            allowed_types.update(_MESSAGE_TYPE_GROUPS[group])
+        else:
+            # Allow raw message_type names too (e.g. "tool_use", "user_text")
+            allowed_types.add(group)
+
+    if not allowed_types:
+        return messages
+
+    filtered: list[TranscriptEntry] = []
+    for entry in messages:
+        # Always keep summary/title entries regardless of filter
+        if isinstance(entry, (SummaryTranscriptEntry, AiTitleTranscriptEntry)):
+            filtered.append(entry)
+            continue
+
+        message = getattr(entry, "message", None)
+        if message is None:
+            filtered.append(entry)
+            continue
+
+        content = getattr(message, "content", None)
+        if content is None:
+            filtered.append(entry)
+            continue
+
+        msg_type = getattr(content, "message_type", "unknown")
+        if msg_type in allowed_types:
+            filtered.append(entry)
+
+    return filtered
+
+
 def load_transcript(
     jsonl_path: Path,
     cache_manager: Optional["CacheManager"] = None,
@@ -1555,6 +1626,7 @@ def convert_jsonl_to(
     write_combined: bool = True,
     no_timestamps: bool = False,
     no_recaps: bool = False,
+    message_types: Optional[str] = None,
 ) -> Path:
     """Convert JSONL transcript(s) to the specified format.
 
@@ -1686,6 +1758,9 @@ def convert_jsonl_to(
 
     # Apply date filtering
     messages = filter_messages_by_date(messages, from_date, to_date)
+
+    # Apply message type filtering
+    messages = filter_messages_by_type(messages, message_types)
 
     # Deduplicate messages (removes version stutters while preserving concurrent tool results)
     messages = deduplicate_messages(messages)
@@ -2366,6 +2441,7 @@ def process_projects_hierarchy(
     write_combined: bool = True,
     no_timestamps: bool = False,
     no_recaps: bool = False,
+    message_types: Optional[str] = None,
 ) -> Path:
     """Process the entire ~/.claude/projects/ hierarchy and create linked output files.
 
@@ -2615,6 +2691,7 @@ def process_projects_hierarchy(
                     write_combined=write_combined,
                     no_timestamps=no_timestamps,
                     no_recaps=no_recaps,
+                    message_types=message_types,
                 )
 
                 # Track timing
@@ -2742,6 +2819,8 @@ def process_projects_hierarchy(
                 _update_cache_with_session_data(cache_manager, messages)
             if from_date or to_date:
                 messages = filter_messages_by_date(messages, from_date, to_date)
+            if message_types:
+                messages = filter_messages_by_type(messages, message_types)
 
             # Project-wide token totals + earliest/latest timestamps
             # — single-sourced via the shared ``compute_project_aggregates``

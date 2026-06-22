@@ -169,6 +169,12 @@ from .tool_formatters import (
     format_todowrite_input,
     format_tool_result_content_raw,
     format_grep_input,
+    format_glob_input,
+    format_glob_output,
+    format_ls_input,
+    format_todoread_input,
+    format_notebookread_input,
+    format_notebookedit_input,
     format_websearch_input,
     format_websearch_output,
     format_webfetch_input,
@@ -662,6 +668,26 @@ class HtmlRenderer(Renderer):
     def format_GrepInput(self, input: GrepInput, _: TemplateMessage) -> str:
         """Format → params table (path, glob, type, etc.) without pattern."""
         return format_grep_input(input)
+
+    def format_GlobInput(self, input: Any, _: TemplateMessage) -> str:
+        """Format → params table (path) without pattern."""
+        return format_glob_input(input)
+
+    def format_LSInput(self, input: Any, _: TemplateMessage) -> str:
+        """Format → params table (path)."""
+        return format_ls_input(input)
+
+    def format_TodoReadInput(self, input: Any, _: TemplateMessage) -> str:
+        """Format → empty (no parameters)."""
+        return format_todoread_input(input)
+
+    def format_NotebookReadInput(self, input: Any, _: TemplateMessage) -> str:
+        """Format → params table (notebook_path, cell_id)."""
+        return format_notebookread_input(input)
+
+    def format_NotebookEditInput(self, input: Any, _: TemplateMessage) -> str:
+        """Format → params table (notebook_path, cell_type, new_source excerpt)."""
+        return format_notebookedit_input(input)
 
     def format_WebSearchInput(self, input: WebSearchInput, _: TemplateMessage) -> str:
         """Format → search query display."""
@@ -1236,7 +1262,9 @@ class HtmlRenderer(Renderer):
         # Re-use the formatter module's badge helper. The underscore is
         # legacy intra-module convention; surfacing the title here is
         # the only cross-module call.
-        from .teammate_formatter import _teammate_badge  # pyright: ignore[reportPrivateUsage]
+        from .teammate_formatter import (
+            _teammate_badge,
+        )  # pyright: ignore[reportPrivateUsage]
 
         if input.recipient:
             color = self._colors_for(message).get(input.recipient)

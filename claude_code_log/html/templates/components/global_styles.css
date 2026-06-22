@@ -2,6 +2,16 @@
 
 /* CSS Variables for shared colors and consistent theming */
 :root {
+    /* Theme system */
+    --theme: default;
+    --theme-font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --theme-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --theme-radius: 8px;
+    --theme-radius-sm: 4px;
+    --theme-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+    --theme-transition: 0.2s ease;
+
     /* Base colors */
     --code-bg-color: #f5f1e8;
     --tool-param-sep-color: #4b494822;
@@ -344,4 +354,360 @@ body.show-raw-user .user-content:not([data-user-view="md"]) .user-raw {
     .header > span:first-child {
         flex: auto;
     }
+}
+
+/* Tutorial Overlay */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.tutorial-overlay.visible {
+    display: flex;
+}
+
+.tutorial-modal {
+    background: var(--bg-secondary, #fff);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: tutorial-slide-in 0.3s ease-out;
+}
+
+@keyframes tutorial-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.tutorial-modal h2 {
+    margin: 0 0 1rem;
+    font-size: 1.5rem;
+    color: var(--text-primary, #333);
+}
+
+.tutorial-modal p {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary, #666);
+    line-height: 1.6;
+}
+
+.tutorial-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tutorial-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-neutral, #f5f5f5);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color, #9c27b0);
+}
+
+.tutorial-step-number {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-color, #9c27b0);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.tutorial-step-content {
+    flex: 1;
+}
+
+.tutorial-step-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary, #333);
+}
+
+.tutorial-step-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #666);
+    margin: 0;
+}
+
+.tutorial-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.tutorial-btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.tutorial-btn-primary {
+    background: var(--primary-color, #9c27b0);
+    color: white;
+}
+
+.tutorial-btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.tutorial-btn-secondary {
+    background: var(--bg-neutral, #f5f5f5);
+    color: var(--text-primary, #333);
+    border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.tutorial-btn-secondary:hover {
+    background: var(--bg-hover, #e8e8e8);
+}
+
+.tutorial-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #666);
+    cursor: pointer;
+}
+
+.tutorial-checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color, #9c27b0);
+}
+
+/* Spotlight effect for tutorial */
+.tutorial-spotlight {
+    position: fixed;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    pointer-events: none;
+    animation: tutorial-pulse 2s infinite;
+}
+
+@keyframes tutorial-pulse {
+    0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); }
+    50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+}
+
+body.dark-mode .tutorial-modal {
+    background: #1f2937;
+}
+
+body.dark-mode .tutorial-step {
+    background: #374151;
+}
+
+body.dark-mode .tutorial-actions {
+    border-top-color: #374151;
+}
+
+body.dark-mode .tutorial-btn-secondary {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+body.dark-mode .tutorial-btn-secondary:hover {
+    background: #4b5563;
+}
+
+@media (max-width: 768px) {
+    .tutorial-modal {
+        padding: 1.5rem;
+        width: 95%;
+    }
+    
+    .tutorial-step {
+        padding: 0.75rem;
+    }
+}
+
+/* Theme: Minimalist — stripped borders, muted palette, no shadows */
+body.theme-minimalist {
+    --theme-radius: 2px;
+    --theme-radius-sm: 1px;
+    --theme-shadow: none;
+    --theme-shadow-lg: none;
+    --user-color: #6d5a00;
+    --assistant-color: #5e35a1;
+    --system-color: #b57100;
+    --tool-use-color: #2e7d32;
+}
+
+body.theme-minimalist .message {
+    border: none;
+    border-left: 3px solid var(--border-color, #e0e0e0);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+body.theme-minimalist .session-nav-card {
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 2px;
+    box-shadow: none;
+}
+
+body.theme-minimalist .floating-btn {
+    box-shadow: none;
+}
+
+body.theme-minimalist .summary-stat {
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 2px;
+}
+
+body.theme-minimalist .tutorial-modal {
+    box-shadow: none;
+}
+
+body.theme-minimalist code, body.theme-minimalist pre {
+    border-radius: 2px;
+}
+
+/* Theme: Fancy — gradient background, rounded cards, richer shadows */
+body.theme-fancy {
+    --theme-radius: 12px;
+    --theme-radius-sm: 8px;
+    --theme-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --theme-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.2);
+    --user-color: #ff6d00;
+    --assistant-color: #aa00ff;
+    --system-color: #ff9100;
+    --tool-use-color: #00c853;
+}
+
+body.theme-fancy {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+body.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+}
+
+body.theme-fancy .message {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+body.theme-fancy .message:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-fancy .session-nav-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+body.theme-fancy .floating-btn {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-fancy .floating-btn:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-fancy .summary-stat {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-fancy .tutorial-modal {
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-fancy code, body.theme-fancy pre {
+    border-radius: 8px;
+}
+
+body.theme-fancy h1 {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Dark + Fancy combo */
+body.dark-mode.theme-fancy {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background-attachment: fixed;
+}
+
+body.dark-mode.theme-fancy > *:not(.tutorial-overlay):not(.tutorial-spotlight):not(.filter-toolbar):not(.timeline-container) {
+    background: rgba(31, 41, 55, 0.92);
+}
+
+body.dark-mode.theme-fancy h1 {
+    background: linear-gradient(135deg, #a78bfa, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Dark + Minimalist combo */
+body.dark-mode.theme-minimalist {
+    --user-color: #ffa94d;
+    --assistant-color: #b197fc;
+    --system-color: #ffd43b;
+    --tool-use-color: #69db7c;
+}
+
+/* Theme selector floating button */
+.theme-toggle.floating-btn {
+    bottom: 465px;
+    border-radius: 6px;
+    width: 38px;
+    height: 28px;
+    font-size: 0.85em;
+}
+
+body.dark-mode .theme-toggle.floating-btn {
+    background-color: #374151;
+}
+
+body.dark-mode .theme-toggle.floating-btn:hover {
+    background-color: #4b5563;
+}
+
+@media (max-width: 768px) {
+    .theme-toggle.floating-btn { bottom: 340px; }
 }
