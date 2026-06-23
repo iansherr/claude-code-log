@@ -220,6 +220,46 @@ def get_library_version() -> str:
 # ========== Cache Path Configuration ==========
 
 
+def subagents_fingerprint(jsonl_path: Path) -> str:
+    """Fingerprint of the sidecar inputs that feed spawn discovery (#213).
+
+    Parsing a transcript also reads ``agent-*.meta.json`` sidecars (see
+    ``converter._subagent_meta_map``), so they must take part in cache
+    invalidation: a sidecar appearing after the transcript was cached
+    (e.g. a still-running agent spawning a child without touching the
+    trunk file) would otherwise go unnoticed by the mtime-only check.
+
+    The fingerprint is ``"<count>:<newest int mtime>"`` over the sidecars
+    of the dirs where this transcript's children can live — the sibling
+    ``<stem>/subagents/`` dir, plus the containing dir for agent files
+    (the flat layout puts children next to their parent). Sidecars are
+    written once at spawn time, so count+newest-mtime captures every
+    addition and removal. Empty string when there are none.
+
+    Deliberately narrower than ``converter._subagent_meta_map``'s scan
+    for TRUNK files: the parse also defensively checks the project dir
+    itself, but Claude Code never writes sidecars there, and
+    fingerprinting it would rescan a potentially large dir on every
+    cache read for a theoretical-only input.
+    """
+    candidates = [jsonl_path.parent / jsonl_path.stem / "subagents"]
+    if jsonl_path.parent.name == "subagents":
+        candidates.append(jsonl_path.parent)
+    metas: list[Path] = []
+    for directory in candidates:
+        if directory.is_dir():
+            metas.extend(directory.glob("agent-*.meta.json"))
+    if not metas:
+        return ""
+    try:
+        newest = max(int(p.stat().st_mtime) for p in metas)
+    except OSError:
+        # A sidecar vanished mid-scan; treat as unstable so the next
+        # check re-reads (an always-mismatching fingerprint is safe).
+        return f"{len(metas)}:unstable"
+    return f"{len(metas)}:{newest}"
+
+
 def get_cache_db_path(projects_dir: Path) -> Path:
     """Get cache database path, respecting CLAUDE_CODE_LOG_CACHE_PATH env var.
 
@@ -471,7 +511,8 @@ class CacheManager:
 
         with self._get_connection() as conn:
             row = conn.execute(
-                "SELECT source_mtime FROM cached_files WHERE project_id = ? AND file_name = ?",
+                "SELECT source_mtime, subagents_fingerprint FROM cached_files"
+                " WHERE project_id = ? AND file_name = ?",
                 (self._project_id, jsonl_path.name),
             ).fetchone()
 
@@ -482,7 +523,19 @@ class CacheManager:
         cached_mtime = row["source_mtime"]
 
         # Cache is valid if modification times match (within 1 second tolerance)
-        return abs(source_mtime - cached_mtime) < 1.0
+        if abs(source_mtime - cached_mtime) >= 1.0:
+            return False
+
+        # The sidecar inputs of spawn discovery (#213) must match too —
+        # new agent-*.meta.json files appear without touching the source
+        # jsonl. Pre-007 rows carry NULL: accept those only when the file
+        # has no sidecars today (nothing to miss), so legacy caches don't
+        # mass-invalidate while sessions WITH sidecars reparse once.
+        cached_fp = row["subagents_fingerprint"]
+        current_fp = subagents_fingerprint(jsonl_path)
+        if cached_fp is None:
+            return current_fp == ""
+        return cached_fp == current_fp
 
     def load_cached_entries(self, jsonl_path: Path) -> Optional[List[TranscriptEntry]]:
         """Load cached transcript entries for a JSONL file."""
@@ -564,14 +617,27 @@ class CacheManager:
         return [self._deserialize_entry(row) for row in rows]
 
     def save_cached_entries(
-        self, jsonl_path: Path, entries: List[TranscriptEntry]
+        self,
+        jsonl_path: Path,
+        entries: List[TranscriptEntry],
+        subagents_fp: Optional[str] = None,
     ) -> None:
-        """Save parsed transcript entries to cache."""
+        """Save parsed transcript entries to cache.
+
+        ``subagents_fp`` is the sidecar fingerprint AS OF THE PARSE —
+        callers that scanned sidecars should pass the value captured
+        before the scan, so a sidecar landing mid-parse mismatches on the
+        next read and forces a reparse (over-invalidation; computing it
+        here at save time would instead validate a parse that never saw
+        the late sidecar). Falls back to computing now when omitted.
+        """
         if self._project_id is None:
             return
 
         source_mtime = jsonl_path.stat().st_mtime
         cached_mtime = datetime.now().timestamp()
+        if subagents_fp is None:
+            subagents_fp = subagents_fingerprint(jsonl_path)
 
         with self._get_connection() as conn:
             # Insert or update file record
@@ -579,13 +645,15 @@ class CacheManager:
             conn.execute(
                 """
                 INSERT INTO cached_files
-                (project_id, file_name, file_path, source_mtime, cached_mtime, message_count)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (project_id, file_name, file_path, source_mtime, cached_mtime,
+                 message_count, subagents_fingerprint)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(project_id, file_name) DO UPDATE SET
                     file_path = excluded.file_path,
                     source_mtime = excluded.source_mtime,
                     cached_mtime = excluded.cached_mtime,
-                    message_count = excluded.message_count
+                    message_count = excluded.message_count,
+                    subagents_fingerprint = excluded.subagents_fingerprint
                 """,
                 (
                     self._project_id,
@@ -594,6 +662,7 @@ class CacheManager:
                     source_mtime,
                     cached_mtime,
                     len(entries),
+                    subagents_fp,
                 ),
             )
 

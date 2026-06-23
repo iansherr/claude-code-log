@@ -132,8 +132,10 @@ Subagent transcripts live in `<session>/subagents/agent-*.jsonl` with
 `parentUuid: null` on their first entry. Before the DAG is built,
 `_integrate_agent_entries` (converter.py) makes two adjustments per agent:
 
-1. **Re-parent** the agent's root to the trunk entry whose `agentId`
-   references this agent (the spawning Task/Agent `tool_result`). Nested
+1. **Re-parent** the agent's root to the entry that spawned it — by
+   preference the sidecar-resolved `spawnedAgentId` anchor (#213; works
+   at any nesting depth, see [agents.md](agents.md) §5), falling back to
+   the legacy trunk entry whose `agentId` references this agent. Nested
    spawns (agent A spawns agent B) anchor inside A's sidechain; a
    cross-agent-boundary guard prevents an agent's own root from acting as
    its anchor (which would self-loop).

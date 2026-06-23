@@ -2080,9 +2080,13 @@ def _relocate_subagent_blocks(
     This pass walks the message list, identifies each subagent block by
     its synthetic ``{trunk}#agent-{agentId}`` sessionId (stamped by
     ``_integrate_agent_entries``), and re-inserts the block right after
-    the trunk Task/Agent tool_result whose ``meta.agent_id`` matches.
-    The block keeps its parentUuid-derived order; only its position in
-    the linear message list moves.
+    its spawn anchor — the Task/Agent tool_result whose
+    ``meta.spawned_agent_id`` (or legacy trunk ``meta.agent_id``)
+    matches. Anchors may themselves sit inside another agent's block
+    (nested agents, issue #213): blocks are emitted recursively so each
+    lands at its spawn position at any depth. The block keeps its
+    parentUuid-derived order; only its position in the linear message
+    list moves.
 
     Empty subagent session headers (which ``_reorder_session_template_
     messages`` leaves at the end) are excluded from blocks and stay
@@ -2105,25 +2109,45 @@ def _relocate_subagent_blocks(
         return messages
 
     result: list[TemplateMessage] = []
-    for msg in messages:
-        if id(msg) in block_ids:
-            continue
-        result.append(msg)
-        # An anchor is any trunk-session tool_result that carries an
-        # ``agent_id`` (set by the loader from
-        # ``toolUseResult.agentId``). The ``tool_name`` would normally
-        # be ``"Task"`` or ``"Agent"``, but the tool_factory's
-        # context-lookup occasionally fails to populate it (e.g. when
-        # the tool_use sits in a session-fork branch); falling back to
-        # the agent_id alone keeps relocation working in those cases.
+
+    def _spawned_id(msg: TemplateMessage) -> Optional[str]:
+        """The agent spawned at this message, if it's a spawn anchor.
+
+        The sidecar-resolved ``spawned_agent_id`` (issue #213) works at any
+        nesting depth — an anchor INSIDE agent A's block links agent B's
+        block. The fallback is the legacy trunk shape: a trunk-session
+        tool_result whose ``agent_id`` is a reference backpatched from
+        ``toolUseResult.agentId`` (the ``tool_name`` would normally be
+        ``"Task"`` or ``"Agent"``, but the tool_factory's context-lookup
+        occasionally fails to populate it — e.g. when the tool_use sits in
+        a session-fork branch — so the agent_id alone decides).
+        """
+        if msg.meta.spawned_agent_id:
+            return msg.meta.spawned_agent_id
         if (
             isinstance(msg.content, ToolResultMessage)
             and msg.meta.agent_id
             and "#agent-" not in (msg.meta.session_id or "")
         ):
-            block = blocks.pop(msg.meta.agent_id, None)
+            return msg.meta.agent_id
+        return None
+
+    def _emit(msg: TemplateMessage) -> None:
+        """Emit a message, then any block it anchors — recursively, so a
+        nested agent's block lands right after its spawn entry inside the
+        parent agent's block (one frame per nesting level)."""
+        result.append(msg)
+        spawned = _spawned_id(msg)
+        if spawned:
+            block = blocks.pop(spawned, None)
             if block:
-                result.extend(block)
+                for member in block:
+                    _emit(member)
+
+    for msg in messages:
+        if id(msg) in block_ids:
+            continue
+        _emit(msg)
 
     # Defensive: emit any subagent block whose anchor we never saw, so
     # content is never silently dropped.
@@ -2240,8 +2264,13 @@ def _get_message_hierarchy_level(msg: TemplateMessage) -> int:
     sidechain assistant (duplicate of Task output) are cleaned up from the tree
     by _cleanup_sidechain_duplicates after tree building.
 
+    The sidechain levels here (4/5) are the DEPTH-1 block: for nested agents
+    (issue #213) ``_build_message_hierarchy`` shifts a depth-``d``
+    transcript's levels by ``2 * (d - 1)`` on top of this function's result.
+
     Returns:
-        Integer hierarchy level (1-5, session headers are 0)
+        Integer hierarchy level (1-5, session headers are 0; before the
+        caller's nesting-depth shift)
     """
     msg_type = msg.type
     is_sidechain = msg.is_sidechain
@@ -2335,9 +2364,48 @@ def _build_message_hierarchy(messages: list[TemplateMessage]) -> None:
     nest under the parent session rather than restart the ancestry. This
     lets fold controls on the parent session cascade into branch content.
 
+    Nested agents (issue #213): every message of a depth-``d`` agent
+    transcript has its level shifted by ``2 * (d - 1)`` — the size of the
+    per-transcript level span the depth-1 sidechain rules already use
+    (assistant 4 / tools 5) — so a sub-sub-agent's entries nest under its
+    spawning tool pair instead of flattening into the parent agent's
+    level. Depth comes from chasing the ``spawned_agent_id`` links; agent
+    sessions without one (legacy data) default to depth 1, reproducing
+    the pre-#213 behavior exactly.
+
     Args:
         messages: List of template messages in their final order (modified in place)
     """
+    # Map each agent session line to the session line that spawned it,
+    # via the sidecar-resolved spawn anchors (see _relocate_subagent_blocks).
+    parent_sid: dict[str, str] = {}
+    for message in messages:
+        spawned = message.meta.spawned_agent_id
+        if not spawned:
+            continue
+        sid = message.meta.session_id or ""
+        trunk = sid.split("#agent-", 1)[0]
+        parent_sid[f"{trunk}#agent-{spawned}"] = sid
+
+    depth_cache: dict[str, int] = {}
+
+    def _agent_depth(sid: str) -> int:
+        """Agent-nesting depth of a session line (trunk 0, direct spawn 1, …).
+
+        Unknown parents (legacy data without spawn links) count as direct
+        trunk spawns. The provisional cache entry doubles as a cycle
+        breaker for corrupt linkage."""
+        if "#agent-" not in sid:
+            return 0
+        cached = depth_cache.get(sid)
+        if cached is not None:
+            return cached
+        depth_cache[sid] = 1
+        parent = parent_sid.get(sid)
+        depth = 1 + _agent_depth(parent) if parent and parent != sid else 1
+        depth_cache[sid] = depth
+        return depth
+
     # Stack of (level, message_index) tuples. Levels may be fractional for
     # within-session branch-headers; see class-level note.
     hierarchy_stack: list[tuple[float, int]] = []
@@ -2351,8 +2419,12 @@ def _build_message_hierarchy(messages: list[TemplateMessage]) -> None:
         elif message.is_session_header:
             current_level = 0
         else:
-            # Determine level from message type and modifiers
+            # Determine level from message type and modifiers, shifted by
+            # the agent-nesting depth of the message's session line.
             current_level = _get_message_hierarchy_level(message)
+            agent_depth = _agent_depth(message.meta.session_id or "")
+            if agent_depth > 1:
+                current_level += 2 * (agent_depth - 1)
 
         # Pop stack until we find the appropriate parent level
         while hierarchy_stack and hierarchy_stack[-1][0] >= current_level:

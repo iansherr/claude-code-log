@@ -29,6 +29,7 @@ def create_meta(transcript: BaseTranscriptEntry) -> MessageMeta:
         is_meta=getattr(transcript, "isMeta", False) or False,
         source_tool_use_id=getattr(transcript, "sourceToolUseID", None),
         agent_id=transcript.agentId,
+        spawned_agent_id=transcript.spawnedAgentId,
         cwd=transcript.cwd,
         git_branch=transcript.gitBranch,
         team_name=getattr(transcript, "teamName", None),

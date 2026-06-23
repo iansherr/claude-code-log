@@ -25,6 +25,10 @@ Session (level 0)
 **Notes:**
 - **Paired messages** (tool_use + tool_result, thinking + assistant) fold together as a single visual unit
 - **Sidechain (sub-agent) messages** appear nested under the Task tool that spawned them
+- **Nested agents** (#213): levels 4/5 are the depth-1 block. A sub-agent
+  spawned *by* a sub-agent repeats the pattern two levels further down
+  (its sub-assistant at 6, its tools at 7, and so on — depth is
+  unbounded). See [agents.md](agents.md) §5.
 - **Deduplication**: When a sub-agent's final message duplicates the Task result, it's replaced with a link to avoid redundancy
 
 At each level, we want to fold/unfold immediate children or all children.
