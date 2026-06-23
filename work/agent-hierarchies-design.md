@@ -203,3 +203,27 @@ fixtures must come from real spawns, not from trusting the narrative.
    is treated as unbounded throughout.
 4. **PR slicing per §5 approved**: PR1 structural (Phases A+B+D),
    PR2 visual (Phase C).
+
+## 8. PR2 scope (visual layer)
+
+Branch `dev/agent-hierarchies-visuals` (PR #219, vs main). As-built
+reference: [agents.md](../dev-docs/agents.md) §5.4.
+
+- [x] Depth badge ("Depth N") on nested spawn cards — shows the depth
+      the spawn opens; nothing at depth 1.
+- [x] Per-depth group-line colour ramp (5-cycle, depth 1 = tool-green;
+      2 blue, 3 purple, 4 orange, 5 teal).
+- [x] "≡ full transcript" marker for fully-collapsed nested spawns
+      (the sub-agent answered directly; what's shown is its whole
+      transcript) — distinguishes it from a spawn with no transcript.
+- [x] Deep-chain indent ergonomics: 2em step for depths 1-5, compressed
+      to 0.5em for depths 6+ (cards tagged `.agent-deep`), so an
+      80-level chain fits (~1118px vs ~2560px); depth read from the
+      badge + colour.
+- [x] Interactive polish round on cboos's real nested session
+      (2026-06-23): badge wording "Depth N", palette + marker + indent
+      confirmed.
+
+Deferred follow-up (monk review of #219, optional): a fixture variant
+with a thinking→spawn block to unit-pin the 0-width passthrough that
+§5.4/§5.5 currently only verify on real data.
